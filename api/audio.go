@@ -150,19 +150,12 @@ func (s *Server) processFile(e echo.Context, titleName string) ([]models.Phrase,
 // createAudioFromTitle is a helper function that performs the tasks shared by
 // AudioFromFile and AudioFromTitle
 func (s *Server) createAudioFromTitle(e echo.Context, title models.Title) (*os.File, error) {
-	fromVoice, ok := models.Voices[title.FromVoiceId]
-	if !ok {
-		return nil, util.ErrVoiceIdInvalid
-	}
-	toVoice, ok := models.Voices[title.ToVoiceId]
-	if !ok {
-		return nil, util.ErrVoiceIdInvalid
-	}
+
 	// TODO if you don't want these files to persist then you need to defer removing them from calling function
 	audioBasePath := s.config.TTSBasePath + title.Name
 
-	fromAudioBasePath := fmt.Sprintf("%s%d/", audioBasePath, fromVoice.LangId)
-	toAudioBasePath := fmt.Sprintf("%s%d/", audioBasePath, toVoice.LangId)
+	fromAudioBasePath := fmt.Sprintf("%s/%d/", audioBasePath, title.FromVoiceId)
+	toAudioBasePath := fmt.Sprintf("%s/%d/", audioBasePath, title.ToVoiceId)
 
 	if _, err := s.translates.CreateTTS(e, title, title.FromVoiceId, fromAudioBasePath); err != nil {
 		e.Logger().Error(err)

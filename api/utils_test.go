@@ -37,7 +37,7 @@ var (
 )
 
 const (
-	audioBasePath = "/audio"
+	audioBasePath = "/v1/audio"
 )
 
 type MockStubs struct {

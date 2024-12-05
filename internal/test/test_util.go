@@ -2,9 +2,7 @@ package test
 
 import (
 	"math/rand"
-	"path/filepath"
 	"reflect"
-	"runtime"
 	"slices"
 	"strings"
 	"talkliketv.click/tltv/internal/models"
@@ -14,13 +12,8 @@ import (
 )
 
 var (
-	AudioBasePath = GetProjectRoot() + "/tmp/test/audio/"
+	AudioBasePath = "/tmp/test/audio/"
 )
-
-func GetProjectRoot() string {
-	_, filename, _, _ := runtime.Caller(0)
-	return filepath.Dir(filepath.Dir(filename))
-}
 
 func RequireMatchAnyExcept(t *testing.T, model any, response any, skip []string, except string, shouldEqual any) {
 	v := reflect.ValueOf(response)
@@ -50,10 +43,9 @@ func RequireMatchAnyExcept(t *testing.T, model any, response any, skip []string,
 }
 
 const (
-	ValidTitleId       = -1
-	ValidOgLanguageId  = -1
-	ValidNewLanguageId = -1
-	alphabet           = "abcdefghijklmnopqrstuvwxyz"
+	DefaultPause   = 5
+	DefaultPattern = 2
+	alphabet       = "abcdefghijklmnopqrstuvwxyz"
 )
 
 // RandomString generates a random string of length n
@@ -71,7 +63,7 @@ func RandomString(n int) string {
 
 func RandomPhrase() models.Phrase {
 	return models.Phrase{
-		ID:   rand.Int(),
+		ID:   rand.Intn(100),
 		Text: RandomString(20),
 	}
 }
@@ -79,7 +71,7 @@ func RandomPhrase() models.Phrase {
 // RandomVoice creates a random Voice for testing
 func RandomVoice() models.Voice {
 	return models.Voice{
-		LangId:                 rand.Int(),
+		LangId:                 rand.Intn(100),
 		LanguageCodes:          []string{RandomString(8), RandomString(8)},
 		SsmlGender:             "FEMALE",
 		Name:                   RandomString(8),
@@ -90,12 +82,12 @@ func RandomVoice() models.Voice {
 func RandomTitle() (title models.Title) {
 	return models.Title{
 		Name:        RandomString(8),
-		TitleLangId: rand.Int(),
-		ToVoiceId:   rand.Int(),
-		FromVoiceId: rand.Int(),
-		Pause:       rand.Int(),
+		TitleLangId: rand.Intn(100),
+		ToVoiceId:   rand.Intn(100),
+		FromVoiceId: rand.Intn(100),
+		Pause:       DefaultPause,
 		Phrases:     nil,
 		Translates:  nil,
-		Pattern:     2,
+		Pattern:     DefaultPattern,
 	}
 }

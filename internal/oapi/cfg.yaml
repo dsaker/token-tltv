@@ -1,0 +1,7 @@
+# yaml-language-server: $schema=../../../../configuration-schema.json
+package: oapi
+generate:
+  echo-server: true
+  embedded-spec: true
+  models: true
+output: internal/oapi/tltv.gen.go

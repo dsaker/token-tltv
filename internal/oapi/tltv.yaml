@@ -1,0 +1,122 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: TalkLikeTv
+  description: |
+    TalkLikeTV is a language learning application designed to help users overcome the plateau 
+    often encountered with other language apps. It offers a personalized learning experience 
+    by allowing users to choose the specific phrases they want to focus on. Users can upload 
+    a text file with phrases in paragraph form, one phrase per line, or even an SRT file, and 
+    the application will generate a set of MP3 audio files to facilitate learning through listening. 
+    
+    You can create an audio file straight from the file at Post /audio/fromfile. If the title has 
+    more phrases than the max set at config.MaxNumPhrases it will return a zipped file of text files split into the max
+    number of phrases. I recommend starting this way so you can check to make sure that your file
+    was parsed correctly.
+  contact:
+    name: Dusty Saker
+    email: dustywayne@comcast.net
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+paths:
+  /audio:
+    post:
+      description: |
+        create a language learning audio file from uploaded txt or srt file. txt file can be in paragraphs or one phrase per line
+      operationId: audioFromFile
+      requestBody:
+        description: >
+          fromLanguageId is your native tongue. toLanguageId is the language you want to learn. 
+          Use GET /languages for a list of language ids.
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - titleName
+                - fileLanguageId
+                - fromVoiceId
+                - toVoiceId
+                - filePath
+              properties:
+                titleName:
+                  type: string
+                  description: choose a descriptive title that includes to and from languages
+                fileLanguageId:
+                  type: string
+                  example: "49"
+                  description: the original language of the file you are uploading
+                fromVoiceId:
+                  type: string
+                  example: "162"
+                  description: the language you know
+                toVoiceId:
+                  type: string
+                  example: "208"
+                  description: the language you want to learn
+                pause:
+                  type: string
+                  example: "5"
+                  minimum: 3
+                  maximum: 10
+                  description: the pause in seconds between phrases in the audiofile (default is 5)
+                pattern:
+                  type: string
+                  example: "1"
+                  description: |
+                    pattern is the pattern used to construct the audio files. You have 3 choices: 
+                    1 is beginner and repeats closer together -- 
+                    2 is intermediate -- 
+                    3 is advanced and repeats phrases less often and should only be used if you are at an advanced level -- 
+                    4 is review and repeats each phrase one time and can be used to review already learned phrases
+                filePath:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: audio from file response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Translates'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    Translates:
+      required:
+        - phraseId
+        - languageId
+        - phrase
+        - phraseHint
+      properties:
+        phraseId:
+          type: integer
+          format: int64
+        languageId:
+          type: integer
+          format: int16
+        phrase:
+          type: string
+        phraseHint:
+          type: string
+    Error:
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: Error code
+        message:
+          type: string
+          description: Error message

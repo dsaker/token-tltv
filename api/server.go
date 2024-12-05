@@ -4,11 +4,18 @@ import (
 	texttospeech "cloud.google.com/go/texttospeech/apiv1"
 	"cloud.google.com/go/translate"
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/getkin/kin-openapi/openapi3"
+	runtimemw "github.com/go-openapi/runtime/middleware"
+	echomw "github.com/labstack/echo/v4/middleware"
+	middleware "github.com/oapi-codegen/echo-middleware"
+	"golang.org/x/time/rate"
 	"log"
 	"os"
 	"sync"
 	"talkliketv.click/tltv/internal/models"
+	"talkliketv.click/tltv/internal/oapi"
 
 	"github.com/labstack/echo/v4"
 	"talkliketv.click/tltv/internal/audio"
@@ -30,18 +37,52 @@ func NewServer(e *echo.Echo, cfg config.Config, t translates.TranslateX, af audi
 	// make sure silence mp3s exist in your base path
 	initSilence(e, cfg)
 
+	// create maps of voices and languages we will use instead of database
 	models.MakeMaps(e)
+
+	spec, err := oapi.GetSwagger()
+	if err != nil {
+		log.Fatalln("loading spec: %w", err)
+	}
+
+	g := e.Group("/swagger")
+	g.GET("/doc.json", func(ctx echo.Context) error {
+		if err = json.NewEncoder(ctx.Response().Writer).Encode(spec); err != nil {
+			log.Fatalf("Error encoding swagger spec\n: %s\n", err)
+		}
+		return nil
+	})
+
+	swaggerHandler := runtimemw.SwaggerUI(runtimemw.SwaggerUIOpts{
+		Path:    "/swagger/",
+		SpecURL: "/swagger/doc.json",
+	}, nil)
+
+	g.GET("/", echo.WrapHandler(swaggerHandler))
+
+	spec.Servers = openapi3.Servers{&openapi3.Server{URL: "/v1"}}
+
+	apiGrp := e.Group("/v1")
+	// add middleware
+	apiGrp.Use(echomw.RateLimiter(echomw.NewRateLimiterMemoryStore(rate.Limit(20))))
+	apiGrp.Use(echomw.Logger())
+	apiGrp.Use(echomw.Recover())
+
+	// Use our validation middleware to check all requests against the
+	// OpenAPI schema.
+	apiGrp.Use(middleware.OapiRequestValidator(spec))
 
 	srv := &Server{
 		translates: t,
 		config:     cfg,
 		af:         af,
 	}
-
-	e.POST("/audio", srv.AudioFromFile)
-
+	oapi.RegisterHandlersWithBaseURL(apiGrp, srv, "")
 	return srv
 }
+
+// Make sure we conform to ServerInterface
+var _ oapi.ServerInterface = (*Server)(nil)
 
 // initSilence copies the silence mp3's from the embedded filesystem to the config TTSBasePath
 func initSilence(e *echo.Echo, cfg config.Config) {

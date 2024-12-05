@@ -113,7 +113,7 @@ func MakeMaps(e *echo.Echo) {
 			}
 		}
 		if !found {
-			log.Println("langId not found for " + voice.Name + voice.LanguageCodes[0])
+			e.Logger.Debug("langId not found for " + voice.Name + voice.LanguageCodes[0])
 		} else {
 			// add to VoiceLangId map
 			Voices[i] = Voice{

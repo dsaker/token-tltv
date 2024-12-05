@@ -34,30 +34,7 @@ generate:
 
 ## run: run the api application
 run:
-	go run . -db-dsn=${TOKEN_DB_DSN} -private-key-path=${PRIVATE_KEY_PATH}
-
-## db/psql: connect to the database using psql
-db/psql:
-	psql ${TOKEN_DB_DSN}
-
-## db/migrations/new name=$1: create a new database migration
-db/migrations/new:
-	@echo 'Creating migration files for ${name}...'
-	migrate create -seq -ext=.sql -dir=./db/migrations ${name}
-
-## db/migrations/up: apply all up database migrations
-db/migrations/up: confirm
-	@echo 'Running up migrations...'
-	migrate -path ./db/migrations -database ${TOKEN_DB_DSN} up
-
-## db/migrations/down: apply all down database migrations
-db/migrations/down: confirm
-	@echo 'Running down migrations...'
-	migrate -path ./db/migrations -database ${TOKEN_DB_DSN} down
-
-## db/dump: pg_dump current tltv database
-db/dump: confirm
-	pg_dump --dbname=${TOKEN_DB_DSN} -F t >> db/testdata/tltv_db_$(shell date +%s).tar
+	go run .
 
 # ==================================================================================== #
 # QUALITY CONTROL
@@ -108,9 +85,6 @@ install-govulncheck:
 
 vuln: install-govulncheck
 	govulncheck ./*.go
-
-key:
-	openssl ecparam -name prime256v1 -genkey -noout -out ecprivatekey.pem
 
 # ==================================================================================== #
 # BUILD
