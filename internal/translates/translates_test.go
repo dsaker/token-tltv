@@ -91,7 +91,7 @@ func TestTextToSpeech(t *testing.T) {
 			rec := httptest.NewRecorder()
 			newE := e.NewContext(req, rec)
 
-			translates := New(trc, tts)
+			translates := NewGoogleClients(trc, tts)
 
 			err = translates.TextToSpeech(newE, []models.Phrase{{ID: 0, Text: text1}}, voice, basepath)
 			tc.checkTranslate(nil, err)
@@ -140,7 +140,7 @@ func TestTranslatePhrases(t *testing.T) {
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
 
-			translateX := New(trc, tts)
+			translateX := NewGoogleClients(trc, tts)
 			translatesRow, err := translateX.TranslatePhrases(c, []models.Phrase{translate1}, modelsLang)
 			tc.checkTranslate(translatesRow, err)
 		})

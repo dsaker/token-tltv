@@ -168,7 +168,7 @@ func (s *Server) createAudioFromTitle(e echo.Context, title models.Title) (*os.F
 	fromAudioBasePath := fmt.Sprintf("%s/%d/", audioBasePath, title.FromVoiceId)
 	toAudioBasePath := fmt.Sprintf("%s/%d/", audioBasePath, title.ToVoiceId)
 
-	if _, err := s.translates.CreateTTS(e, title, title.FromVoiceId, fromAudioBasePath); err != nil {
+	if _, err := s.translate.CreateTTS(e, title, title.FromVoiceId, fromAudioBasePath); err != nil {
 		e.Logger().Error(err)
 		// if error remove all the text-to-speech created up to that point
 		osErr := os.RemoveAll(audioBasePath)
@@ -178,7 +178,7 @@ func (s *Server) createAudioFromTitle(e echo.Context, title models.Title) (*os.F
 		return nil, err
 	}
 
-	tr, err := s.translates.CreateTTS(e, title, title.ToVoiceId, toAudioBasePath)
+	tr, err := s.translate.CreateTTS(e, title, title.ToVoiceId, toAudioBasePath)
 	if err != nil {
 		e.Logger().Error(err)
 		osErr := os.RemoveAll(audioBasePath)

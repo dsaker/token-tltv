@@ -11,7 +11,9 @@ import (
 	"net/http/httptest"
 	"os"
 	"strconv"
+	"talkliketv.click/tltv/internal/audio/audiofile"
 	"talkliketv.click/tltv/internal/models"
+	"talkliketv.click/tltv/internal/translates"
 	"testing"
 
 	"talkliketv.click/tltv/internal/util"
@@ -473,7 +475,9 @@ func TestAudioFromFileIntegration(t *testing.T) {
 
 	t.Parallel()
 
-	tr, af := CreateDependencies()
+	//initialize audiofile with the real command runner
+	af := audiofile.New(&audiofile.RealCmdRunner{})
+	tr := translates.New(*translates.NewGoogleClients(), translates.AmazonClients{})
 	e := NewServer(testCfg.Config, tr, af)
 
 	title := test.RandomTitle()

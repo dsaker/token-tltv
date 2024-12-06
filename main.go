@@ -9,7 +9,9 @@ import (
 	"os/exec"
 	"strings"
 	"talkliketv.click/tltv/api"
+	"talkliketv.click/tltv/internal/audio/audiofile"
 	"talkliketv.click/tltv/internal/config"
+	"talkliketv.click/tltv/internal/translates"
 )
 
 func main() {
@@ -30,7 +32,12 @@ func main() {
 		log.Fatalf("Please make sure ffmep is installed and in PATH\n: %s", string(output))
 	}
 
-	t, af := api.CreateDependencies()
+	//initialize audiofile with the real command runner
+	af := audiofile.New(&audiofile.RealCmdRunner{})
+	t := translates.New(*translates.NewGoogleClients(), translates.AmazonClients{})
+	if cfg.Platform == 1 {
+		t = translates.New(translates.GoogleClients{}, *translates.NewAmazonClients())
+	}
 
 	// create new server
 	e := api.NewServer(cfg, t, af)

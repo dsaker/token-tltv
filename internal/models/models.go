@@ -6,6 +6,10 @@ import (
 	"strings"
 )
 
+// aws_languages => aws translate list-languages > aws_languages.json
+// aws_voices => aws polly describe-voices > aws_voices.json
+// google_languages => /scripts/python/supported_languages.json
+
 type Title struct {
 	Name        string
 	TitleLangId int
