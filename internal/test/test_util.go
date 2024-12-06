@@ -63,7 +63,7 @@ func RandomString(n int) string {
 
 func RandomPhrase() models.Phrase {
 	return models.Phrase{
-		ID:   rand.Intn(100),
+		ID:   rand.Intn(100), //nolint:gosec
 		Text: RandomString(20),
 	}
 }
@@ -71,7 +71,7 @@ func RandomPhrase() models.Phrase {
 // RandomVoice creates a random Voice for testing
 func RandomVoice() models.Voice {
 	return models.Voice{
-		LangId:                 rand.Intn(100),
+		LangId:                 rand.Intn(100), //nolint:gosec
 		LanguageCodes:          []string{RandomString(8), RandomString(8)},
 		SsmlGender:             "FEMALE",
 		Name:                   RandomString(8),
@@ -82,9 +82,9 @@ func RandomVoice() models.Voice {
 func RandomTitle() (title models.Title) {
 	return models.Title{
 		Name:        RandomString(8),
-		TitleLangId: rand.Intn(100),
-		ToVoiceId:   rand.Intn(100),
-		FromVoiceId: rand.Intn(100),
+		TitleLangId: rand.Intn(100), //nolint:gosec
+		ToVoiceId:   rand.Intn(100), //nolint:gosec
+		FromVoiceId: rand.Intn(100), //nolint:gosec
 		Pause:       DefaultPause,
 		Phrases:     nil,
 		Translates:  nil,

@@ -258,7 +258,6 @@ func (t *Translate) GetSpeech(
 
 // CreateTranslates creates the translates in the language
 func (t *Translate) CreateTranslates(e echo.Context, title models.Title, lang models.Language) ([]models.Phrase, error) {
-
 	// if the original language of file matches the language you desire translates for return original phrases
 	if title.TitleLangId == lang.ID {
 		return title.Phrases, nil

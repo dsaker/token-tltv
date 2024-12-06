@@ -2,7 +2,6 @@ package api
 
 import (
 	"bytes"
-	"database/sql"
 	"flag"
 	"fmt"
 	"io"
@@ -13,11 +12,9 @@ import (
 
 	"testing"
 
-	"github.com/docker/go-connections/nat"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
 	"go.uber.org/mock/gomock"
 	"talkliketv.click/tltv/internal/config"
 	mocka "talkliketv.click/tltv/internal/mock/audiofile"
@@ -27,9 +24,7 @@ import (
 )
 
 var (
-	testCfg    TestConfig
-	count      = 0
-	mappedPort nat.Port
+	testCfg TestConfig
 )
 
 const (
@@ -45,8 +40,6 @@ type MockStubs struct {
 
 type TestConfig struct {
 	config.Config
-	conn      *sql.DB
-	container testcontainers.Container
 }
 
 // NewMockStubs creates instantiates new instances of all the mock interfaces for testing
@@ -62,13 +55,9 @@ func NewMockStubs(ctrl *gomock.Controller) MockStubs {
 // testCase struct groups together the fields necessary for running most of the test cases
 type testCase struct {
 	name          string
-	body          interface{}
 	buildStubs    func(stubs MockStubs)
 	multipartBody func(t *testing.T) (*bytes.Buffer, *multipart.Writer)
-	checkRecorder func(rec *httptest.ResponseRecorder)
 	checkResponse func(res *http.Response)
-	values        map[string]any
-	cleanUp       func(*testing.T)
 }
 
 func TestMain(m *testing.M) {

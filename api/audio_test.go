@@ -164,6 +164,197 @@ func TestAudioFromFile(t *testing.T) {
 			},
 		},
 		{
+			name: "File LanguageId out of range",
+			buildStubs: func(stubs MockStubs) {
+			},
+			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
+				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
+				formMap := map[string]string{
+					"fileLanguageId": "1000",
+					"titleName":      title.Name,
+					"fromVoiceId":    strconv.Itoa(title.FromVoiceId),
+					"toVoiceId":      strconv.Itoa(title.ToVoiceId),
+					"pause":          "10",
+				}
+				return createMultiPartBody(t, data, filename, formMap)
+			},
+			checkResponse: func(res *http.Response) {
+				require.Equal(t, http.StatusBadRequest, res.StatusCode)
+				resBody := readBody(t, res)
+				require.Contains(t, resBody, "fileLangId must be between 0 and")
+			},
+		},
+		{
+			name: "File LanguageId string",
+			buildStubs: func(stubs MockStubs) {
+			},
+			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
+				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
+				formMap := map[string]string{
+					"fileLanguageId": "abcdefg",
+					"titleName":      title.Name,
+					"fromVoiceId":    strconv.Itoa(title.FromVoiceId),
+					"toVoiceId":      strconv.Itoa(title.ToVoiceId),
+					"pause":          "10",
+				}
+				return createMultiPartBody(t, data, filename, formMap)
+			},
+			checkResponse: func(res *http.Response) {
+				require.Equal(t, http.StatusBadRequest, res.StatusCode)
+				resBody := readBody(t, res)
+				require.Contains(t, resBody, "error converting fileLanguageId to int: strconv.Atoi: parsing \"abcdefg\": invalid syntax")
+			},
+		},
+		{
+			name: "toVoiceId out of range",
+			buildStubs: func(stubs MockStubs) {
+			},
+			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
+				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
+				formMap := map[string]string{
+					"fileLanguageId": strconv.Itoa(title.TitleLangId),
+					"titleName":      title.Name,
+					"fromVoiceId":    strconv.Itoa(title.FromVoiceId),
+					"toVoiceId":      "9999",
+					"pause":          "10",
+				}
+				return createMultiPartBody(t, data, filename, formMap)
+			},
+			checkResponse: func(res *http.Response) {
+				require.Equal(t, http.StatusBadRequest, res.StatusCode)
+				resBody := readBody(t, res)
+				require.Contains(t, resBody, "toVoiceId must be between 0 and 192")
+			},
+		},
+		{
+			name: "toVoiceId string",
+			buildStubs: func(stubs MockStubs) {
+			},
+			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
+				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
+				formMap := map[string]string{
+					"fileLanguageId": strconv.Itoa(title.TitleLangId),
+					"titleName":      title.Name,
+					"fromVoiceId":    strconv.Itoa(title.FromVoiceId),
+					"toVoiceId":      "a",
+					"pause":          "10",
+				}
+				return createMultiPartBody(t, data, filename, formMap)
+			},
+			checkResponse: func(res *http.Response) {
+				require.Equal(t, http.StatusBadRequest, res.StatusCode)
+				resBody := readBody(t, res)
+				require.Contains(t, resBody, "error converting toVoiceId to int: strconv.Atoi: parsing \"a\": invalid syntax")
+			},
+		},
+		{
+			name: "pause string",
+			buildStubs: func(stubs MockStubs) {
+			},
+			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
+				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
+				formMap := map[string]string{
+					"fileLanguageId": strconv.Itoa(title.TitleLangId),
+					"titleName":      title.Name,
+					"fromVoiceId":    strconv.Itoa(title.FromVoiceId),
+					"toVoiceId":      strconv.Itoa(title.ToVoiceId),
+					"pause":          "a",
+				}
+				return createMultiPartBody(t, data, filename, formMap)
+			},
+			checkResponse: func(res *http.Response) {
+				require.Equal(t, http.StatusBadRequest, res.StatusCode)
+				resBody := readBody(t, res)
+				require.Contains(t, resBody, "error converting pause to int: strconv.Atoi: parsing \"a\": invalid syntax")
+			},
+		},
+		{
+			name: "fromVoiceId out of range",
+			buildStubs: func(stubs MockStubs) {
+			},
+			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
+				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
+				formMap := map[string]string{
+					"fileLanguageId": strconv.Itoa(title.TitleLangId),
+					"titleName":      title.Name,
+					"fromVoiceId":    "9999",
+					"toVoiceId":      strconv.Itoa(title.FromVoiceId),
+					"pause":          "10",
+				}
+				return createMultiPartBody(t, data, filename, formMap)
+			},
+			checkResponse: func(res *http.Response) {
+				require.Equal(t, http.StatusBadRequest, res.StatusCode)
+				resBody := readBody(t, res)
+				require.Contains(t, resBody, "fromVoiceId must be between 0 and 192")
+			},
+		},
+		{
+			name: "fromVoiceId string",
+			buildStubs: func(stubs MockStubs) {
+			},
+			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
+				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
+				formMap := map[string]string{
+					"fileLanguageId": strconv.Itoa(title.TitleLangId),
+					"titleName":      title.Name,
+					"fromVoiceId":    "a",
+					"toVoiceId":      strconv.Itoa(title.FromVoiceId),
+					"pause":          "10",
+				}
+				return createMultiPartBody(t, data, filename, formMap)
+			},
+			checkResponse: func(res *http.Response) {
+				require.Equal(t, http.StatusBadRequest, res.StatusCode)
+				resBody := readBody(t, res)
+				require.Contains(t, resBody, "error converting fromVoiceId to int: strconv.Atoi: parsing \"a\": invalid syntax")
+			},
+		},
+		{
+			name: "pattern out of range",
+			buildStubs: func(stubs MockStubs) {
+			},
+			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
+				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
+				formMap := map[string]string{
+					"fileLanguageId": strconv.Itoa(title.TitleLangId),
+					"titleName":      title.Name,
+					"fromVoiceId":    strconv.Itoa(title.FromVoiceId),
+					"toVoiceId":      strconv.Itoa(title.FromVoiceId),
+					"pause":          "10",
+					"pattern":        "5",
+				}
+				return createMultiPartBody(t, data, filename, formMap)
+			},
+			checkResponse: func(res *http.Response) {
+				require.Equal(t, http.StatusBadRequest, res.StatusCode)
+				resBody := readBody(t, res)
+				require.Contains(t, resBody, "pattern must be between 1 and 4: 5")
+			},
+		},
+		{
+			name: "pattern string",
+			buildStubs: func(stubs MockStubs) {
+			},
+			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
+				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
+				formMap := map[string]string{
+					"fileLanguageId": strconv.Itoa(title.TitleLangId),
+					"titleName":      title.Name,
+					"fromVoiceId":    strconv.Itoa(title.FromVoiceId),
+					"toVoiceId":      strconv.Itoa(title.FromVoiceId),
+					"pause":          "10",
+					"pattern":        "a",
+				}
+				return createMultiPartBody(t, data, filename, formMap)
+			},
+			checkResponse: func(res *http.Response) {
+				require.Equal(t, http.StatusBadRequest, res.StatusCode)
+				resBody := readBody(t, res)
+				require.Contains(t, resBody, "error converting pattern to int: strconv.Atoi: parsing \"a\": invalid syntax")
+			},
+		},
+		{
 			name: "Bad Request Body",
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
@@ -223,6 +414,35 @@ func TestAudioFromFile(t *testing.T) {
 				require.Contains(t, resBody, "file too large")
 			},
 		},
+		{
+			name: "Too Many Phrases",
+			buildStubs: func(stubs MockStubs) {
+				for i := 0; i < 101; i++ {
+					phrase := test.RandomString(4) + " " + test.RandomString(4)
+					stringsSlice = append(stringsSlice, phrase)
+				}
+
+				file, err := os.Create(filename)
+				require.NoError(t, err)
+				defer file.Close()
+
+				// GetLines(echo.Context, multipart.File) ([]string, error)
+				stubs.AudioFileX.EXPECT().
+					GetLines(gomock.Any(), gomock.Any()).
+					Return(stringsSlice, nil)
+				// CreatePhrasesZip(e echo.Context, chunkedPhrases iter.Seq[[]string], tmpPath string, filename string) (*os.File, error)
+				stubs.AudioFileX.EXPECT().
+					CreatePhrasesZip(gomock.Any(), gomock.Any(), tmpAudioBasePath, title.Name).
+					Return(file, nil)
+			},
+			checkResponse: func(res *http.Response) {
+				require.Equal(t, http.StatusOK, res.StatusCode)
+			},
+			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
+				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
+				return createMultiPartBody(t, data, filename, okFormMap)
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -269,7 +489,7 @@ func TestAudioFromFileIntegration(t *testing.T) {
 	filename := tmpAudioBasePath + "TestAudioFromFile.txt"
 
 	okFormMap := map[string]string{
-		"fileLanguageId": strconv.Itoa(rand.IntN(100)),
+		"fileLanguageId": strconv.Itoa(rand.IntN(100)), //nolint:gosec
 		"titleName":      title.Name,
 		"fromVoiceId":    strconv.Itoa(80),
 		"toVoiceId":      strconv.Itoa(182),
@@ -281,8 +501,6 @@ func TestAudioFromFileIntegration(t *testing.T) {
 			name: "OK",
 			checkResponse: func(res *http.Response) {
 				require.Equal(t, http.StatusOK, res.StatusCode)
-				resBody := readBody(t, res)
-				require.Contains(t, resBody, "pause must be between 3 and 10: 11")
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
@@ -291,46 +509,6 @@ func TestAudioFromFileIntegration(t *testing.T) {
 				return createMultiPartBody(t, data, filename, formMap)
 			},
 		},
-		//{
-		//	name: "Invalid Voice Id",
-		//	user: user,
-		//	checkResponse: func(res *http.Response) {
-		//		require.Equal(t, http.StatusBadRequest, res.StatusCode)
-		//		resBody := readBody(t, res)
-		//		require.Contains(t, resBody, "voice id invalid")
-		//	},
-		//	multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
-		//		data := []byte("This is the first sentence.\nThis is the second sentence.\n")
-		//		badFormMap := map[string]string{
-		//			"fileLanguageId": strconv.Itoa(int(title.OgLanguageID)),
-		//			"titleName":      title.Title,
-		//			"fromVoiceId":    strconv.Itoa(80),
-		//			"toVoiceId":      strconv.Itoa(1000),
-		//		}
-		//		return createMultiPartBody(t, data, filename, badFormMap)
-		//	},
-		//	permissions: []string{db.WriteTitlesCode},
-		//},
-		//{
-		//	name: "OK with Pause",
-		//	user: user,
-		//	checkResponse: func(res *http.Response) {
-		//		require.Equal(t, http.StatusOK, res.StatusCode)
-		//	},
-		//	multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
-		//		data := []byte("This is the first sentence.\nThis is the second sentence.\n")
-		//
-		//		pauseFormMap := map[string]string{
-		//			"fileLanguageId": strconv.Itoa(int(title.OgLanguageID)),
-		//			"titleName":      title.Title,
-		//			"fromVoiceId":    strconv.Itoa(80),
-		//			"toVoiceId":      strconv.Itoa(182),
-		//			"pause":          "6",
-		//		}
-		//		return createMultiPartBody(t, data, filename, pauseFormMap)
-		//	},
-		//	permissions: []string{db.WriteTitlesCode},
-		//},
 	}
 
 	for _, tc := range testCases {
