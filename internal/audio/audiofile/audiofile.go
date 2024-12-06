@@ -19,7 +19,6 @@ import (
 
 	"github.com/labstack/echo/v4"
 	audio "talkliketv.click/tltv/internal/audio/pattern"
-	"talkliketv.click/tltv/internal/util"
 )
 
 // AudioPauseFilePath is a map to the silence mp3's of the embedded FS in
@@ -425,21 +424,14 @@ func addFileToZip(e echo.Context, zipWriter *zip.Writer, filename string) error 
 // the output files with ffmpeg in CreateMp3Zip
 func (a *AudioFile) BuildAudioInputFiles(e echo.Context, t models.Title, pause, from, to, tmpDir string) error {
 	// map phrase ids to zero through len(phrase ids) to map correctly to pattern.Pattern
-	pMap := make(map[int]int)
-	for i, phrase := range t.Phrases {
-		pMap[i] = phrase.ID
-	}
+	//pMap := make(map[int]int)
+	//for i, phrase := range t.Phrases {
+	//	pMap[i] = phrase.ID
+	//}
 	// maxP is the highest phrase id and determines the last block of mp3's that will be built
 	maxP := len(t.Phrases) - 1
 
-	// get the pattern represented as an int from the context
-	// TODO add type check
-	value, ok := e.Get(util.PatternKey).(int)
-	if !ok {
-		e.Logger().Error("error getting pattern from context")
-		return util.ErrIntConversion
-	}
-	pattern := audio.GetPattern(value)
+	pattern := audio.GetPattern(t.Pattern)
 	if pattern == nil {
 		e.Logger().Error("error getting pattern from audio file")
 		return errors.New("no pattern")
@@ -470,7 +462,7 @@ func (a *AudioFile) BuildAudioInputFiles(e echo.Context, t models.Title, pause, 
 			// else if: skip if phraseId does not exist (is greater than maxP)
 			// else if: native language then we add filepath for from audio mp3
 			// else: add audio filepath for language you want to learn
-			phraseId := pMap[audioStruct.Id]
+			phraseId := audioStruct.Id
 			if phraseId == maxP {
 				last = true
 			}

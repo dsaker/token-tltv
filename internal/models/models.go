@@ -2,7 +2,6 @@ package models
 
 import (
 	"encoding/json"
-	"github.com/labstack/echo/v4"
 	"log"
 	"strings"
 )
@@ -53,7 +52,7 @@ var Languages = make(map[int]Language)
 var Voices = make(map[int]Voice)
 var VoicesByLangId = make(map[int][]JsonVoice)
 
-func MakeMaps(e *echo.Echo) {
+func MakeMaps() {
 	languageFile, err := JsonModels.Open("jsonmodels/google_languages.json")
 	if err != nil {
 		log.Fatal(err)
@@ -113,7 +112,7 @@ func MakeMaps(e *echo.Echo) {
 			}
 		}
 		if !found {
-			e.Logger.Debug("langId not found for " + voice.Name + voice.LanguageCodes[0])
+			log.Println("langId not found for " + voice.Name + voice.LanguageCodes[0])
 		} else {
 			// add to VoiceLangId map
 			Voices[i] = Voice{

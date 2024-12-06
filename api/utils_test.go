@@ -6,20 +6,16 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"math/rand"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
 
-	"strings"
-	"talkliketv.click/tltv/internal/models"
 	"testing"
 
 	"github.com/docker/go-connections/nat"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"go.uber.org/mock/gomock"
@@ -37,7 +33,7 @@ var (
 )
 
 const (
-	audioBasePath = "/v1/audio"
+	audioBasePath = "/audio"
 )
 
 type MockStubs struct {
@@ -103,57 +99,16 @@ func readBody(t *testing.T, rs *http.Response) string {
 	return string(body)
 }
 
-// randomLanguage creates a random db Language for testing
-func randomLanguage() (language models.Language) {
-	return models.Language{
-		ID:       rand.Int(),
-		Language: test.RandomString(6),
-		Name:     "en",
-	}
-}
-
-// setupHandlerTest sets up a testCase that will be run through the handler
-// these tests will not include the middleware JWT verification or the automated validation
-// through openapi
-func setupHandlerTest(t *testing.T, ctrl *gomock.Controller, tc testCase, urlBasePath, body, method string) (*Server, echo.Context, *httptest.ResponseRecorder) {
-	stubs := NewMockStubs(ctrl)
-	tc.buildStubs(stubs)
-
-	e := echo.New()
-	srv := NewServer(e, testCfg.Config, stubs.TranslateX, stubs.AudioFileX)
-
-	urlPath := urlBasePath + string(rune(rand.Int()))
-
-	req := httptest.NewRequest(method, urlPath, strings.NewReader(body))
-
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	return srv, c, rec
-}
-
 // setupServerTest sets up testCase that will include the middleware not included in handler tests
 func setupServerTest(t *testing.T, ctrl *gomock.Controller, tc testCase) *httptest.Server {
 	stubs := NewMockStubs(ctrl)
 	tc.buildStubs(stubs)
 
-	e := echo.New()
-	_ = NewServer(e, testCfg.Config, stubs.TranslateX, stubs.AudioFileX)
+	e := NewServer(testCfg.Config, stubs.TranslateX, stubs.AudioFileX)
 
 	ts := httptest.NewServer(e)
 
 	return ts
-}
-
-// jsonRequest creates a new request which has json as the body and sets the Header content type to
-// application/json
-func jsonRequest(t *testing.T, json []byte, ts *httptest.Server, urlPath, method string) *http.Request {
-	req, err := http.NewRequest(method, ts.URL+urlPath, bytes.NewBuffer(json))
-	require.NoError(t, err)
-
-	req.Header.Set("Content-Type", "application/json")
-
-	return req
 }
 
 // createMultiPartBody creates and returns a multipart Writer.

@@ -4,10 +4,7 @@ import (
 	texttospeech "cloud.google.com/go/texttospeech/apiv1"
 	"cloud.google.com/go/translate"
 	"context"
-	"encoding/json"
 	"fmt"
-	"github.com/getkin/kin-openapi/openapi3"
-	runtimemw "github.com/go-openapi/runtime/middleware"
 	echomw "github.com/labstack/echo/v4/middleware"
 	middleware "github.com/oapi-codegen/echo-middleware"
 	"golang.org/x/time/rate"
@@ -33,59 +30,43 @@ type Server struct {
 }
 
 // NewServer creates a new HTTP server and sets up routing.
-func NewServer(e *echo.Echo, cfg config.Config, t translates.TranslateX, af audiofile.AudioFileX) *Server {
+func NewServer(cfg config.Config, t translates.TranslateX, af audiofile.AudioFileX) *echo.Echo {
+	e := echo.New()
 	// make sure silence mp3s exist in your base path
-	initSilence(e, cfg)
+	initSilence(cfg)
 
 	// create maps of voices and languages we will use instead of database
-	models.MakeMaps(e)
+	models.MakeMaps()
 
 	spec, err := oapi.GetSwagger()
 	if err != nil {
 		log.Fatalln("loading spec: %w", err)
 	}
 
-	g := e.Group("/swagger")
-	g.GET("/doc.json", func(ctx echo.Context) error {
-		if err = json.NewEncoder(ctx.Response().Writer).Encode(spec); err != nil {
-			log.Fatalf("Error encoding swagger spec\n: %s\n", err)
-		}
-		return nil
-	})
-
-	swaggerHandler := runtimemw.SwaggerUI(runtimemw.SwaggerUIOpts{
-		Path:    "/swagger/",
-		SpecURL: "/swagger/doc.json",
-	}, nil)
-
-	g.GET("/", echo.WrapHandler(swaggerHandler))
-
-	spec.Servers = openapi3.Servers{&openapi3.Server{URL: "/v1"}}
-
-	apiGrp := e.Group("/v1")
+	spec.Servers = nil
 	// add middleware
-	apiGrp.Use(echomw.RateLimiter(echomw.NewRateLimiterMemoryStore(rate.Limit(20))))
-	apiGrp.Use(echomw.Logger())
-	apiGrp.Use(echomw.Recover())
+	e.Use(echomw.RateLimiter(echomw.NewRateLimiterMemoryStore(rate.Limit(5))))
+	e.Use(echomw.Logger())
+	e.Use(echomw.Recover())
 
 	// Use our validation middleware to check all requests against the
 	// OpenAPI schema.
-	apiGrp.Use(middleware.OapiRequestValidator(spec))
+	e.Use(middleware.OapiRequestValidator(spec))
 
 	srv := &Server{
 		translates: t,
 		config:     cfg,
 		af:         af,
 	}
-	oapi.RegisterHandlersWithBaseURL(apiGrp, srv, "")
-	return srv
+	oapi.RegisterHandlers(e, srv)
+	return e
 }
 
 // Make sure we conform to ServerInterface
 var _ oapi.ServerInterface = (*Server)(nil)
 
 // initSilence copies the silence mp3's from the embedded filesystem to the config TTSBasePath
-func initSilence(e *echo.Echo, cfg config.Config) {
+func initSilence(cfg config.Config) {
 	// check if silence mp3s exist in your base path
 	silencePath := cfg.TTSBasePath + audiofile.AudioPauseFilePath[cfg.PhrasePause]
 	exists, err := util.PathExists(silencePath)
@@ -126,7 +107,7 @@ func initSilence(e *echo.Echo, cfg config.Config) {
 
 // CreateDependencies creates a new google translate and text-to-speech clients; constructs
 // the translates and audiofile dependencies and returns them
-func CreateDependencies(e *echo.Echo) (*translates.Translate, *audiofile.AudioFile) {
+func CreateDependencies() (*translates.Translate, *audiofile.AudioFile) {
 	// create google translate and text-to-speech clients
 	ctx := context.Background()
 	transClient, err := translate.NewClient(ctx)

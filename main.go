@@ -4,7 +4,6 @@ package main
 
 import (
 	"flag"
-	"github.com/labstack/echo/v4"
 	"log"
 	"net"
 	"os/exec"
@@ -14,7 +13,6 @@ import (
 )
 
 func main() {
-	e := echo.New()
 	var cfg config.Config
 	err := config.SetConfigs(&cfg)
 	if err != nil {
@@ -32,10 +30,10 @@ func main() {
 		log.Fatalf("Please make sure ffmep is installed and in PATH\n: %s", string(output))
 	}
 
-	t, af := api.CreateDependencies(e)
+	t, af := api.CreateDependencies()
 
 	// create new server
-	api.NewServer(e, cfg, t, af)
+	e := api.NewServer(cfg, t, af)
 
 	e.Logger.Fatal(e.Start(net.JoinHostPort("0.0.0.0", cfg.Port)))
 }

@@ -1,22 +1,20 @@
 package translates
 
 import (
+	"cloud.google.com/go/texttospeech/apiv1/texttospeechpb"
+	"cloud.google.com/go/translate"
 	"context"
 	"errors"
 	"fmt"
-	"os"
-	"strings"
-	"sync"
-	"talkliketv.click/tltv/internal/models"
-	"time"
-	"unicode"
-
-	"cloud.google.com/go/texttospeech/apiv1/texttospeechpb"
-	"cloud.google.com/go/translate"
 	"github.com/googleapis/gax-go/v2"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/text/language"
+	"os"
+	"strconv"
+	"sync"
+	"talkliketv.click/tltv/internal/models"
 	"talkliketv.click/tltv/internal/util"
+	"time"
 )
 
 // TranslateClientX creates an interface for google translate.Translate so it can
@@ -248,7 +246,7 @@ func (t *Translate) GetSpeech(
 		}
 
 		// The resp AudioContent is binary.
-		filename := basePath + string(rune(translate.ID))
+		filename := basePath + strconv.Itoa(translate.ID)
 		err = os.WriteFile(filename, resp.AudioContent, 0600)
 		if err != nil {
 			e.Logger().Error(fmt.Errorf("error creating translate client: %s", err))
@@ -274,30 +272,4 @@ func (t *Translate) CreateTranslates(e echo.Context, title models.Title, lang mo
 	}
 
 	return translatesReturn, nil
-}
-
-// makeHintString creates a hint string that is the first character of each word of a phrase
-// and an underscore for every following character giving the user help when requested.
-func makeHintString(s string) string {
-	hintString := ""
-	words := strings.Fields(s)
-	for _, word := range words {
-		punctuation := false
-		hintString += string(word[0])
-		if unicode.IsPunct(rune(word[0])) {
-			punctuation = true
-		}
-		for i := 1; i < len(word); i++ {
-			if punctuation {
-				hintString += string(word[i])
-				punctuation = false
-			} else if unicode.IsLetter(rune(word[i])) {
-				hintString += "_"
-			} else {
-				hintString += string(word[i])
-			}
-		}
-		hintString += " "
-	}
-	return hintString
 }

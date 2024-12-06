@@ -1,8 +1,10 @@
 package api
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"math/rand/v2"
 	"mime/multipart"
 	"net/http"
@@ -14,7 +16,6 @@ import (
 
 	"talkliketv.click/tltv/internal/util"
 
-	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"talkliketv.click/tltv/internal/test"
@@ -144,30 +145,11 @@ func TestAudioFromFile(t *testing.T) {
 		{
 			name: "Pause out of range",
 			buildStubs: func(stubs MockStubs) {
-				file, err := os.Create(filename)
-				require.NoError(t, err)
-				defer file.Close()
-				// GetLines(echo.Context, multipart.File) ([]string, error)
-				stubs.AudioFileX.EXPECT().
-					GetLines(gomock.Any(), gomock.Any()).
-					Return(stringsSlice, nil)
-				stubs.TranslateX.EXPECT().
-					CreateTTS(gomock.Any(), title, title.FromVoiceId, fromAudioBasePath).
-					Return(title.Phrases, nil)
-				stubs.TranslateX.EXPECT().
-					CreateTTS(gomock.Any(), title, title.ToVoiceId, toAudioBasePath).
-					Return(title.Phrases, nil)
-				// BuildAudioInputFiles(echo.Context, []int64, db.Title, string, string, string, string) error
-				stubs.AudioFileX.EXPECT().
-					BuildAudioInputFiles(gomock.Any(), titleWithTranslates, fiveSecSilenceBasePath, fromAudioBasePath, toAudioBasePath, gomock.Any()).
-					Return(nil)
-				// CreateMp3Zip(e echo.Context, t models.Title, tmpDir string) (*os.File, error)
-				stubs.AudioFileX.EXPECT().
-					CreateMp3Zip(gomock.Any(), titleWithTranslates, gomock.Any()).
-					Return(file, nil)
 			},
 			checkResponse: func(res *http.Response) {
-				require.Equal(t, http.StatusOK, res.StatusCode)
+				require.Equal(t, http.StatusBadRequest, res.StatusCode)
+				resBody := readBody(t, res)
+				require.Contains(t, resBody, "pause must be between 3 and 10: 11")
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
@@ -181,69 +163,66 @@ func TestAudioFromFile(t *testing.T) {
 				return createMultiPartBody(t, data, filename, formMap)
 			},
 		},
-		//{
-		//	name: "Bad Request Body",
-		//	user: user,
-		//	multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
-		//		data := []byte("This is the first sentence.\nThis is the second sentence.\n")
-		//		formMap := map[string]string{
-		//			"fileLanguageId": strconv.Itoa(int(title.OgLanguageID)),
-		//			"toVoiceId":      strconv.Itoa(int(toVoice.ID)),
-		//			"fromVoiceId":    strconv.Itoa(int(fromVoice.ID)),
-		//		}
-		//		return createMultiPartBody(t, data, filename, formMap)
-		//	},
-		//	buildStubs: func(stubs MockStubs) {
-		//	},
-		//	checkResponse: func(res *http.Response) {
-		//		require.Equal(t, http.StatusBadRequest, res.StatusCode)
-		//		resBody := readBody(t, res)
-		//		require.Contains(t, resBody, "{\"message\":\"request body has an error: doesn't match schema: Error at \\\"/titleName\\\": property \\\"titleName\\\" is missing\"}")
-		//	},
-		//	permissions: []string{db.WriteTitlesCode},
-		//},
-		//{
-		//	name: "File Too Big",
-		//	user: user,
-		//	multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
-		//		tooBigFile := test.AudioBasePath + "tooBigFile.txt"
-		//		file, err := os.Create(tooBigFile)
-		//		require.NoError(t, err)
-		//		defer file.Close()
-		//		writer := bufio.NewWriter(file)
-		//		for i := 0; i < 64100; i++ {
-		//			// Write random characters to the file
-		//			char := byte('a')
-		//			err = writer.WriteByte(char)
-		//			require.NoError(t, err)
-		//		}
-		//		writer.Flush()
-		//
-		//		multiFile, err := os.Open(tooBigFile)
-		//		require.NoError(t, err)
-		//		body := new(bytes.Buffer)
-		//		multiWriter := multipart.NewWriter(body)
-		//		part, err := multiWriter.CreateFormFile("filePath", tooBigFile)
-		//		require.NoError(t, err)
-		//		_, err = io.Copy(part, multiFile)
-		//		require.NoError(t, err)
-		//		fieldMap := okFormMap
-		//		for field, value := range fieldMap {
-		//			err = multiWriter.WriteField(field, value)
-		//			require.NoError(t, err)
-		//		}
-		//		require.NoError(t, multiWriter.Close())
-		//		return body, multiWriter
-		//	},
-		//	buildStubs: func(stubs MockStubs) {
-		//	},
-		//	checkResponse: func(res *http.Response) {
-		//		require.Equal(t, http.StatusBadRequest, res.StatusCode)
-		//		resBody := readBody(t, res)
-		//		require.Contains(t, resBody, "file too large")
-		//	},
-		//	permissions: []string{db.WriteTitlesCode},
-		//},
+		{
+			name: "Bad Request Body",
+			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
+				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
+				formMap := map[string]string{
+					"fileLanguageId": strconv.Itoa(title.TitleLangId),
+					"fromVoiceId":    strconv.Itoa(title.FromVoiceId),
+					"toVoiceId":      strconv.Itoa(title.ToVoiceId),
+					"pause":          "11",
+				}
+				return createMultiPartBody(t, data, filename, formMap)
+			},
+			buildStubs: func(stubs MockStubs) {
+			},
+			checkResponse: func(res *http.Response) {
+				require.Equal(t, http.StatusBadRequest, res.StatusCode)
+				resBody := readBody(t, res)
+				require.Contains(t, resBody, "{\"message\":\"request body has an error: doesn't match schema: Error at \\\"/titleName\\\": property \\\"titleName\\\" is missing\"}")
+			},
+		},
+		{
+			name: "File Too Big",
+			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
+				tooBigFile := test.AudioBasePath + "tooBigFile.txt"
+				file, err := os.Create(tooBigFile)
+				require.NoError(t, err)
+				defer file.Close()
+				writer := bufio.NewWriter(file)
+				for i := 0; i < 64100; i++ {
+					// Write random characters to the file
+					char := byte('a')
+					err = writer.WriteByte(char)
+					require.NoError(t, err)
+				}
+				writer.Flush()
+
+				multiFile, err := os.Open(tooBigFile)
+				require.NoError(t, err)
+				body := new(bytes.Buffer)
+				multiWriter := multipart.NewWriter(body)
+				part, err := multiWriter.CreateFormFile("filePath", tooBigFile)
+				require.NoError(t, err)
+				_, err = io.Copy(part, multiFile)
+				require.NoError(t, err)
+				fieldMap := okFormMap
+				for field, value := range fieldMap {
+					err = multiWriter.WriteField(field, value)
+					require.NoError(t, err)
+				}
+				require.NoError(t, multiWriter.Close())
+				return body, multiWriter
+			},
+			buildStubs: func(stubs MockStubs) {
+			},
+			checkResponse: func(res *http.Response) {
+				require.Equal(t, http.StatusBadRequest, res.StatusCode)
+				resBody := readBody(t, res)
+				require.Contains(t, resBody, "file too large")
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -273,10 +252,9 @@ func TestAudioFromFileIntegration(t *testing.T) {
 	}
 
 	t.Parallel()
-	e := echo.New()
 
-	tr, af := CreateDependencies(e)
-	_ = NewServer(e, testCfg.Config, tr, af)
+	tr, af := CreateDependencies()
+	e := NewServer(testCfg.Config, tr, af)
 
 	title := test.RandomTitle()
 
@@ -303,6 +281,8 @@ func TestAudioFromFileIntegration(t *testing.T) {
 			name: "OK",
 			checkResponse: func(res *http.Response) {
 				require.Equal(t, http.StatusOK, res.StatusCode)
+				resBody := readBody(t, res)
+				require.Contains(t, resBody, "pause must be between 3 and 10: 11")
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
@@ -361,8 +341,7 @@ func TestAudioFromFileIntegration(t *testing.T) {
 			ts := httptest.NewServer(e)
 
 			multiBody, multiWriter := tc.multipartBody(t)
-			url := ts.URL + audioBasePath + filename
-			req, err := http.NewRequest(http.MethodPost, url, multiBody)
+			req, err := http.NewRequest(http.MethodPost, ts.URL+audioBasePath, multiBody)
 			require.NoError(t, err)
 
 			req.Header.Set("Content-Type", multiWriter.FormDataContentType())
