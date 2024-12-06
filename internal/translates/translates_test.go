@@ -93,7 +93,7 @@ func TestTextToSpeech(t *testing.T) {
 
 			translates := New(trc, tts)
 
-			err = translates.TextToSpeech(newE, []models.Phrase{{0, text1}}, voice, basepath)
+			err = translates.TextToSpeech(newE, []models.Phrase{{ID: 0, Text: text1}}, voice, basepath)
 			tc.checkTranslate(nil, err)
 		})
 	}
@@ -105,11 +105,11 @@ func TestTranslatePhrases(t *testing.T) {
 	}
 	t.Parallel()
 
-	modelsLang := models.Language{0, "es", "Spanish"}
+	modelsLang := models.Language{ID: 0, Language: "es", Name: "Spanish"}
 	text1 := "This is sentence one."
-	translate1 := models.Phrase{0, text1}
+	translate1 := models.Phrase{ID: 0, Text: text1}
 	translateText := "Esta es la primera oración."
-	returnedPhrase := []models.Phrase{{0, translateText}, translate1}
+	returnedPhrase := []models.Phrase{{ID: 0, Text: translateText}, translate1}
 	translation := translate.Translation{Text: "Esta es la primera oración."}
 	testCases := []translatesTestCase{
 		{

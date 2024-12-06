@@ -22,18 +22,30 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 	// TODO add more oapi validation
 	// get values from multipart form
 	titleName := e.FormValue("titleName")
-	// convert strings from multipart form to int16's
+	// convert strings from multipart form to int
 	fileLangId, err := strconv.Atoi(e.FormValue("fileLanguageId"))
 	if err != nil {
-		return e.String(http.StatusBadRequest, fmt.Sprintf("error converting fileLanguageId to int16: %s", err.Error()))
+		return e.String(http.StatusBadRequest, fmt.Sprintf("error converting fileLanguageId to int: %s", err.Error()))
+	}
+	// validate fileLangId
+	if fileLangId < 0 || fileLangId > len(models.Languages)-1 {
+		return e.String(http.StatusBadRequest, fmt.Sprintf("fileLangId must be between 0 and %d", len(models.Languages)-1))
 	}
 	toVoiceId, err := strconv.Atoi(e.FormValue("toVoiceId"))
 	if err != nil {
-		return e.String(http.StatusBadRequest, fmt.Sprintf("error converting toVoiceId to int16: %s", err.Error()))
+		return e.String(http.StatusBadRequest, fmt.Sprintf("error converting toVoiceId to int: %s", err.Error()))
+	}
+	// validate voiceId
+	if toVoiceId < 0 || toVoiceId > len(models.Voices)-1 {
+		return e.String(http.StatusBadRequest, fmt.Sprintf("toVoiceId must be between 0 and %d", len(models.Languages)-1))
 	}
 	fromVoiceId, err := strconv.Atoi(e.FormValue("fromVoiceId"))
 	if err != nil {
-		return e.String(http.StatusBadRequest, fmt.Sprintf("error converting fromVoiceId to int16: %s", err.Error()))
+		return e.String(http.StatusBadRequest, fmt.Sprintf("error converting fromVoiceId to int: %s", err.Error()))
+	}
+	// validate voiceId
+	if fromVoiceId < 0 || fromVoiceId > len(models.Voices)-1 {
+		return e.String(http.StatusBadRequest, fmt.Sprintf("fromVoiceId must be between 0 and %d", len(models.Languages)-1))
 	}
 
 	pause := s.config.PhrasePause
@@ -42,7 +54,7 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 	if pauseForm != "" {
 		pauseInt, err := strconv.Atoi(pauseForm)
 		if err != nil {
-			return e.String(http.StatusBadRequest, fmt.Sprintf("error converting fromVoiceId to int: %s", err.Error()))
+			return e.String(http.StatusBadRequest, fmt.Sprintf("error converting pause to int: %s", err.Error()))
 		}
 		if pauseInt > 10 || pauseInt < 3 {
 			return e.String(http.StatusBadRequest, fmt.Sprintf("pause must be between 3 and 10: %d", pauseInt))
@@ -57,8 +69,8 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 		if err != nil {
 			return e.String(http.StatusBadRequest, fmt.Sprintf("error converting pattern to int: %s", err.Error()))
 		}
-		if patternInt > 3 || patternInt < 1 {
-			return e.String(http.StatusBadRequest, fmt.Sprintf("pattern must be between 1 and 3: %d", patternInt))
+		if patternInt > 4 || patternInt < 1 {
+			return e.String(http.StatusBadRequest, fmt.Sprintf("pattern must be between 1 and 4: %d", patternInt))
 		}
 		pattern = patternInt
 	}
@@ -150,7 +162,6 @@ func (s *Server) processFile(e echo.Context, titleName string) ([]models.Phrase,
 // createAudioFromTitle is a helper function that performs the tasks shared by
 // AudioFromFile and AudioFromTitle
 func (s *Server) createAudioFromTitle(e echo.Context, title models.Title) (*os.File, error) {
-
 	// TODO if you don't want these files to persist then you need to defer removing them from calling function
 	audioBasePath := s.config.TTSBasePath + title.Name
 

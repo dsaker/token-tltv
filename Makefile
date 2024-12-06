@@ -57,8 +57,9 @@ audit/pipeline:
 ## audit/local: tidy dependencies and format, vet and test all code (race off)
 audit/local:
 	make audit
-	go test -vet=off ./... -coverprofile=coverage.out
-	go tool cover -html=coverage.out -o cover.html
+	make ci-lint
+	make vuln
+	make report
 
 ## staticcheck:  detect bugs, suggest code simplifications, and point out dead code
 staticcheck:
