@@ -33,7 +33,7 @@ func NewServer(cfg config.Config, t translates.TranslateX, af audiofile.AudioFil
 	initSilence(cfg)
 
 	// create maps of voices and languages we will use instead of database
-	models.MakeMaps()
+	models.MakeGoogleMaps()
 
 	spec, err := oapi.GetSwagger()
 	if err != nil {

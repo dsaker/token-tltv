@@ -15,18 +15,18 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"golang.org/x/text/language"
-	mockt "talkliketv.click/tltv/internal/mock/translates"
+	"talkliketv.click/tltv/internal/mock/translates"
 	"talkliketv.click/tltv/internal/test"
 	"talkliketv.click/tltv/internal/util"
 )
 
 type translatesTestCase struct {
 	name           string
-	buildStubs     func(*mockt.MockTranslateX, *mockt.MockTranslateClientX, *mockt.MockTTSClientX)
+	buildStubs     func(*mockt.MockTranslateX, *mockt.MockGoogleTranslateClientX, *mockt.MockGoogleTTSClientX)
 	checkTranslate func([]models.Phrase, error)
 }
 
-func TestTextToSpeech(t *testing.T) {
+func TestGoogleTTS(t *testing.T) {
 	if util.Integration {
 		t.Skip("skipping unit test")
 	}
@@ -46,7 +46,7 @@ func TestTextToSpeech(t *testing.T) {
 	testCases := []translatesTestCase{
 		{
 			name: "No error",
-			buildStubs: func(t *mockt.MockTranslateX, tc *mockt.MockTranslateClientX, tts *mockt.MockTTSClientX) {
+			buildStubs: func(t *mockt.MockTranslateX, tc *mockt.MockGoogleTranslateClientX, tts *mockt.MockGoogleTTSClientX) {
 				req := texttospeechpb.SynthesizeSpeechRequest{
 					// Set the text input to be synthesized.
 					Input: &texttospeechpb.SynthesisInput{
@@ -82,30 +82,33 @@ func TestTextToSpeech(t *testing.T) {
 			defer ctrl.Finish()
 
 			text := mockt.NewMockTranslateX(ctrl)
-			trc := mockt.NewMockTranslateClientX(ctrl)
-			tts := mockt.NewMockTTSClientX(ctrl)
-			tc.buildStubs(text, trc, tts)
+			gtc := mockt.NewMockGoogleTranslateClientX(ctrl)
+			gtts := mockt.NewMockGoogleTTSClientX(ctrl)
+			tc.buildStubs(text, gtc, gtts)
 
 			e := echo.New()
 			req := httptest.NewRequest(http.MethodPost, "/any", nil)
 			rec := httptest.NewRecorder()
 			newE := e.NewContext(req, rec)
 
-			translates := NewGoogleClients(trc, tts)
-
+			clients := GoogleClients{
+				gtc:  gtc,
+				gtts: gtts,
+			}
+			translates := New(clients, AmazonClients{})
 			err = translates.TextToSpeech(newE, []models.Phrase{{ID: 0, Text: text1}}, voice, basepath)
 			tc.checkTranslate(nil, err)
 		})
 	}
 }
 
-func TestTranslatePhrases(t *testing.T) {
+func TestGoogleTranslate(t *testing.T) {
 	if util.Integration {
 		t.Skip("skipping unit test")
 	}
 	t.Parallel()
 
-	modelsLang := models.Language{ID: 0, Language: "es", Name: "Spanish"}
+	modelsLang := models.Language{ID: 0, Code: "es", Name: "Spanish"}
 	text1 := "This is sentence one."
 	translate1 := models.Phrase{ID: 0, Text: text1}
 	translateText := "Esta es la primera oración."
@@ -114,7 +117,7 @@ func TestTranslatePhrases(t *testing.T) {
 	testCases := []translatesTestCase{
 		{
 			name: "No error",
-			buildStubs: func(t *mockt.MockTranslateX, tr *mockt.MockTranslateClientX, ts *mockt.MockTTSClientX) {
+			buildStubs: func(t *mockt.MockTranslateX, tr *mockt.MockGoogleTranslateClientX, ts *mockt.MockGoogleTTSClientX) {
 				tr.EXPECT().Translate(gomock.Any(), []string{text1}, language.Spanish, nil).
 					Return([]translate.Translation{translation}, nil)
 			},
@@ -131,8 +134,8 @@ func TestTranslatePhrases(t *testing.T) {
 			defer ctrl.Finish()
 
 			text := mockt.NewMockTranslateX(ctrl)
-			trc := mockt.NewMockTranslateClientX(ctrl)
-			tts := mockt.NewMockTTSClientX(ctrl)
+			trc := mockt.NewMockGoogleTranslateClientX(ctrl)
+			tts := mockt.NewMockGoogleTTSClientX(ctrl)
 			tc.buildStubs(text, trc, tts)
 
 			e := echo.New()
@@ -140,8 +143,12 @@ func TestTranslatePhrases(t *testing.T) {
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
 
-			translateX := NewGoogleClients(trc, tts)
-			translatesRow, err := translateX.TranslatePhrases(c, []models.Phrase{translate1}, modelsLang)
+			clients := GoogleClients{
+				gtc:  trc,
+				gtts: tts,
+			}
+			translates := New(clients, AmazonClients{})
+			translatesRow, err := translates.TranslatePhrases(c, []models.Phrase{translate1}, modelsLang)
 			tc.checkTranslate(translatesRow, err)
 		})
 	}

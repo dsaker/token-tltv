@@ -33,8 +33,8 @@ const (
 
 type MockStubs struct {
 	TranslateX       *mockt.MockTranslateX
-	TranslateClientX *mockt.MockTranslateClientX
-	TtsClientX       *mockt.MockTTSClientX
+	TranslateClientX *mockt.MockGoogleTranslateClientX
+	TtsClientX       *mockt.MockGoogleTTSClientX
 	AudioFileX       *mocka.MockAudioFileX
 }
 
@@ -46,8 +46,8 @@ type TestConfig struct {
 func NewMockStubs(ctrl *gomock.Controller) MockStubs {
 	return MockStubs{
 		TranslateX:       mockt.NewMockTranslateX(ctrl),
-		TranslateClientX: mockt.NewMockTranslateClientX(ctrl),
-		TtsClientX:       mockt.NewMockTTSClientX(ctrl),
+		TranslateClientX: mockt.NewMockGoogleTranslateClientX(ctrl),
+		TtsClientX:       mockt.NewMockGoogleTTSClientX(ctrl),
 		AudioFileX:       mocka.NewMockAudioFileX(ctrl),
 	}
 }

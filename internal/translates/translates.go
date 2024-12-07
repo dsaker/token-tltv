@@ -42,7 +42,7 @@ type TranslateX interface {
 // of util.TranslatesReturn to be inserted into the db
 func (t *Translate) TranslatePhrases(e echo.Context, phrases []models.Phrase, lang models.Language) ([]models.Phrase, error) {
 	// get language tag to translate to
-	langTag, err := language.Parse(lang.Language)
+	langTag, err := language.Parse(lang.Code)
 	if err != nil {
 		e.Logger().Error(err)
 		return nil, err
