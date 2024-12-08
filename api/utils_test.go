@@ -3,7 +3,6 @@ package api
 import (
 	"bytes"
 	"flag"
-	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -17,8 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"talkliketv.click/tltv/internal/config"
-	mocka "talkliketv.click/tltv/internal/mock/audiofile"
-	mockt "talkliketv.click/tltv/internal/mock/translates"
 	"talkliketv.click/tltv/internal/test"
 	"talkliketv.click/tltv/internal/util"
 )
@@ -31,31 +28,14 @@ const (
 	audioBasePath = "/audio"
 )
 
-type MockStubs struct {
-	TranslateX       *mockt.MockTranslateX
-	TranslateClientX *mockt.MockGoogleTranslateClientX
-	TtsClientX       *mockt.MockGoogleTTSClientX
-	AudioFileX       *mocka.MockAudioFileX
-}
-
 type TestConfig struct {
 	config.Config
-}
-
-// NewMockStubs creates instantiates new instances of all the mock interfaces for testing
-func NewMockStubs(ctrl *gomock.Controller) MockStubs {
-	return MockStubs{
-		TranslateX:       mockt.NewMockTranslateX(ctrl),
-		TranslateClientX: mockt.NewMockGoogleTranslateClientX(ctrl),
-		TtsClientX:       mockt.NewMockGoogleTTSClientX(ctrl),
-		AudioFileX:       mocka.NewMockAudioFileX(ctrl),
-	}
 }
 
 // testCase struct groups together the fields necessary for running most of the test cases
 type testCase struct {
 	name          string
-	buildStubs    func(stubs MockStubs)
+	buildStubs    func(stubs test.MockStubs)
 	multipartBody func(t *testing.T) (*bytes.Buffer, *multipart.Writer)
 	checkResponse func(res *http.Response)
 }
@@ -89,8 +69,8 @@ func readBody(t *testing.T, rs *http.Response) string {
 }
 
 // setupServerTest sets up testCase that will include the middleware not included in handler tests
-func setupServerTest(t *testing.T, ctrl *gomock.Controller, tc testCase) *httptest.Server {
-	stubs := NewMockStubs(ctrl)
+func setupServerTest(ctrl *gomock.Controller, tc testCase) *httptest.Server {
+	stubs := test.NewMockStubs(ctrl)
 	tc.buildStubs(stubs)
 
 	e := NewServer(testCfg.Config, stubs.TranslateX, stubs.AudioFileX)
@@ -108,7 +88,6 @@ func createMultiPartBody(t *testing.T, data []byte, filename string, m map[strin
 	require.NoError(t, err)
 	file, err := os.Open(filename)
 	require.NoError(t, err)
-	fmt.Println(file.Name())
 	body := new(bytes.Buffer)
 	writer := multipart.NewWriter(body)
 	part, err := writer.CreateFormFile("filePath", filename)

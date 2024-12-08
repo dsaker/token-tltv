@@ -11,6 +11,7 @@ import (
 	"talkliketv.click/tltv/api"
 	"talkliketv.click/tltv/internal/audio/audiofile"
 	"talkliketv.click/tltv/internal/config"
+	"talkliketv.click/tltv/internal/models"
 	"talkliketv.click/tltv/internal/translates"
 )
 
@@ -34,9 +35,11 @@ func main() {
 
 	//initialize audiofile with the real command runner
 	af := audiofile.New(&audiofile.RealCmdRunner{})
-	t := translates.New(*translates.NewGoogleClients(), translates.AmazonClients{})
-	if cfg.Platform == 1 {
-		t = translates.New(translates.GoogleClients{}, *translates.NewAmazonClients())
+	// create translates with google or amazon clients depending on the flag set in conifg
+	// I also set a global platform since this will not be changed during execution
+	t := translates.New(*translates.NewGoogleClients(), translates.AmazonClients{}, &models.Models{})
+	if translates.GlobalPlatform == translates.Amazon {
+		t = translates.New(translates.GoogleClients{}, *translates.NewAmazonClients(), &models.Models{})
 	}
 
 	// create new server

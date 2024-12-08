@@ -36,6 +36,7 @@ var AudioPauseFilePath = map[int]string{
 }
 
 // endSentenceMap is a map to find the ending punctuation of a sentence
+// TODO change this to work for any language
 var (
 	endSentenceMap = map[rune]bool{
 		'!': true,
@@ -364,7 +365,8 @@ func (a *AudioFile) CreateMp3Zip(e echo.Context, t models.Title, tmpDir string) 
 		}
 	}
 
-	if t.Translates != nil {
+	// add a text files of the translated phrases, this is useful studying
+	if t.ToPhrases != nil {
 		// Create file to write all the translated phrases to
 		f, err := os.Create(outDirPath + "/" + t.Name + "-translates.txt")
 		if err != nil {
@@ -372,7 +374,7 @@ func (a *AudioFile) CreateMp3Zip(e echo.Context, t models.Title, tmpDir string) 
 			return nil, err
 		}
 		defer f.Close()
-		for _, text := range t.Translates {
+		for _, text := range t.ToPhrases {
 			_, err = f.WriteString(text.Text + "\n")
 			if err != nil {
 				e.Logger().Error(err)
@@ -423,13 +425,7 @@ func addFileToZip(e echo.Context, zipWriter *zip.Writer, filename string) error 
 // BuildAudioInputFiles creates a file with the filepaths of the mp3's used to construct
 // the output files with ffmpeg in CreateMp3Zip
 func (a *AudioFile) BuildAudioInputFiles(e echo.Context, t models.Title, pause, from, to, tmpDir string) error {
-	// map phrase ids to zero through len(phrase ids) to map correctly to pattern.Pattern
-	//pMap := make(map[int]int)
-	//for i, phrase := range t.Phrases {
-	//	pMap[i] = phrase.ID
-	//}
-	// maxP is the highest phrase id and determines the last block of mp3's that will be built
-	maxP := len(t.Phrases) - 1
+	maxP := len(t.TitlePhrases) - 1
 
 	pattern := audio.GetPattern(t.Pattern)
 	if pattern == nil {

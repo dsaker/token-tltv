@@ -32,8 +32,12 @@ func NewServer(cfg config.Config, t translates.TranslateX, af audiofile.AudioFil
 	// make sure silence mp3s exist in your base path
 	initSilence(cfg)
 
-	// create maps of voices and languages we will use instead of database
-	models.MakeGoogleMaps()
+	// create maps of voices and languages depending on platform
+	if translates.GlobalPlatform == translates.Google {
+		models.MakeGoogleMaps()
+	} else {
+		models.MakeAmazonMaps()
+	}
 
 	spec, err := oapi.GetSwagger()
 	if err != nil {

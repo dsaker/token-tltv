@@ -15,14 +15,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"golang.org/x/text/language"
-	"talkliketv.click/tltv/internal/mock/translates"
 	"talkliketv.click/tltv/internal/test"
 	"talkliketv.click/tltv/internal/util"
 )
 
 type translatesTestCase struct {
 	name           string
-	buildStubs     func(*mockt.MockTranslateX, *mockt.MockGoogleTranslateClientX, *mockt.MockGoogleTTSClientX)
+	buildStubs     func(stubs test.MockStubs)
 	checkTranslate func([]models.Phrase, error)
 }
 
@@ -40,13 +39,13 @@ func TestGoogleTTS(t *testing.T) {
 	defer os.RemoveAll(basepath)
 
 	voice := test.RandomVoice()
-	voice.SsmlGender = "MALE"
+	voice.Gender = "MALE"
 	text1 := "This is sentence one."
 
 	testCases := []translatesTestCase{
 		{
 			name: "No error",
-			buildStubs: func(t *mockt.MockTranslateX, tc *mockt.MockGoogleTranslateClientX, tts *mockt.MockGoogleTTSClientX) {
+			buildStubs: func(stubs test.MockStubs) {
 				req := texttospeechpb.SynthesizeSpeechRequest{
 					// Set the text input to be synthesized.
 					Input: &texttospeechpb.SynthesisInput{
@@ -57,7 +56,7 @@ func TestGoogleTTS(t *testing.T) {
 					Voice: &texttospeechpb.VoiceSelectionParams{
 						LanguageCode: voice.LanguageCodes[0],
 						SsmlGender:   texttospeechpb.SsmlVoiceGender_MALE,
-						Name:         voice.Name,
+						Name:         voice.VoiceName,
 					},
 					// Select the type of audio file you want returned.
 					AudioConfig: &texttospeechpb.AudioConfig{
@@ -65,7 +64,7 @@ func TestGoogleTTS(t *testing.T) {
 					},
 				}
 				resp := texttospeechpb.SynthesizeSpeechResponse{}
-				tts.EXPECT().SynthesizeSpeech(gomock.Any(), &req).Return(&resp, nil)
+				stubs.TtsClientX.EXPECT().SynthesizeSpeech(gomock.Any(), &req).Return(&resp, nil)
 			},
 			checkTranslate: func(translates []models.Phrase, err error) {
 				require.NoError(t, err)
@@ -80,11 +79,8 @@ func TestGoogleTTS(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-
-			text := mockt.NewMockTranslateX(ctrl)
-			gtc := mockt.NewMockGoogleTranslateClientX(ctrl)
-			gtts := mockt.NewMockGoogleTTSClientX(ctrl)
-			tc.buildStubs(text, gtc, gtts)
+			stubs := test.NewMockStubs(ctrl)
+			tc.buildStubs(stubs)
 
 			e := echo.New()
 			req := httptest.NewRequest(http.MethodPost, "/any", nil)
@@ -92,10 +88,10 @@ func TestGoogleTTS(t *testing.T) {
 			newE := e.NewContext(req, rec)
 
 			clients := GoogleClients{
-				gtc:  gtc,
-				gtts: gtts,
+				gtc:  stubs.TranslateClientX,
+				gtts: stubs.TtsClientX,
 			}
-			translates := New(clients, AmazonClients{})
+			translates := New(clients, AmazonClients{}, stubs.ModelsX)
 			err = translates.TextToSpeech(newE, []models.Phrase{{ID: 0, Text: text1}}, voice, basepath)
 			tc.checkTranslate(nil, err)
 		})
@@ -114,11 +110,14 @@ func TestGoogleTranslate(t *testing.T) {
 	translateText := "Esta es la primera oración."
 	returnedPhrase := []models.Phrase{{ID: 0, Text: translateText}, translate1}
 	translation := translate.Translation{Text: "Esta es la primera oración."}
+	title := test.RandomTitle()
+	title.TitlePhrases = []models.Phrase{{0, text1}}
+
 	testCases := []translatesTestCase{
 		{
 			name: "No error",
-			buildStubs: func(t *mockt.MockTranslateX, tr *mockt.MockGoogleTranslateClientX, ts *mockt.MockGoogleTTSClientX) {
-				tr.EXPECT().Translate(gomock.Any(), []string{text1}, language.Spanish, nil).
+			buildStubs: func(stubs test.MockStubs) {
+				stubs.TranslateClientX.EXPECT().Translate(gomock.Any(), []string{text1}, language.Spanish, nil).
 					Return([]translate.Translation{translation}, nil)
 			},
 			checkTranslate: func(translates []models.Phrase, err error) {
@@ -133,10 +132,8 @@ func TestGoogleTranslate(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			text := mockt.NewMockTranslateX(ctrl)
-			trc := mockt.NewMockGoogleTranslateClientX(ctrl)
-			tts := mockt.NewMockGoogleTTSClientX(ctrl)
-			tc.buildStubs(text, trc, tts)
+			stubs := test.NewMockStubs(ctrl)
+			tc.buildStubs(stubs)
 
 			e := echo.New()
 			req := httptest.NewRequest(http.MethodPost, "/titles/translates", nil)
@@ -144,11 +141,11 @@ func TestGoogleTranslate(t *testing.T) {
 			c := e.NewContext(req, rec)
 
 			clients := GoogleClients{
-				gtc:  trc,
-				gtts: tts,
+				gtc:  stubs.TranslateClientX,
+				gtts: stubs.TtsClientX,
 			}
-			translates := New(clients, AmazonClients{})
-			translatesRow, err := translates.TranslatePhrases(c, []models.Phrase{translate1}, modelsLang)
+			translates := New(clients, AmazonClients{}, stubs.ModelsX)
+			translatesRow, err := translates.TranslatePhrases(c, title, modelsLang)
 			tc.checkTranslate(translatesRow, err)
 		})
 	}

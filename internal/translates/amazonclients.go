@@ -115,13 +115,13 @@ func (g *AmazonClients) GetTranslate(e echo.Context,
 // GetSpeech is a helper function for TextToSpeech that is run concurrently.
 // it is passed a cancel context, so if one routine fails, the following routines can
 // be canceled
+
 func (g *AmazonClients) GetSpeech(
 	e echo.Context,
 	ctx context.Context,
 	cancel context.CancelFunc,
 	translate models.Phrase,
-	voiceID string,
-	outputFormat string,
+	voice models.Voice,
 	wg *sync.WaitGroup,
 	basePath string) {
 	defer wg.Done()
@@ -131,8 +131,9 @@ func (g *AmazonClients) GetSpeech(
 	default:
 		resp, err := g.atts.SynthesizeSpeech(ctx, &polly.SynthesizeSpeechInput{
 			Text:         &translate.Text,
-			VoiceId:      types.VoiceId(voiceID),
-			OutputFormat: types.OutputFormat(outputFormat),
+			VoiceId:      types.VoiceId(voice.VoiceName), // voice.Name
+			OutputFormat: "mp3",
+			Engine:       types.Engine(voice.Engine),
 		})
 		if err != nil {
 			switch {

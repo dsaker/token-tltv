@@ -1,10 +1,14 @@
 package test
 
 import (
+	"go.uber.org/mock/gomock"
 	"math/rand"
 	"reflect"
 	"slices"
 	"strings"
+	mocka "talkliketv.click/tltv/internal/mock/audiofile"
+	mockm "talkliketv.click/tltv/internal/mock/models"
+	mockt "talkliketv.click/tltv/internal/mock/translates"
 	"talkliketv.click/tltv/internal/models"
 	"testing"
 
@@ -48,6 +52,23 @@ const (
 	alphabet       = "abcdefghijklmnopqrstuvwxyz"
 )
 
+var (
+	ValidGoogleVoice = models.Voice{
+		LanguageCodes:          []string{"en-US"},
+		Gender:                 "MALE",
+		VoiceName:              "en-US-Casual-K",
+		LanguageName:           "",
+		NaturalSampleRateHertz: 24000,
+		Engine:                 "",
+		LangId:                 0,
+	}
+	ValidLangauge = models.Language{
+		ID:   0,
+		Code: "en",
+		Name: "English",
+	}
+)
+
 // RandomString generates a random string of length n
 func RandomString(n int) string {
 	var sb strings.Builder
@@ -73,8 +94,8 @@ func RandomVoice() models.Voice {
 	return models.Voice{
 		LangId:                 rand.Intn(100), //nolint:gosec
 		LanguageCodes:          []string{RandomString(8), RandomString(8)},
-		SsmlGender:             "FEMALE",
-		Name:                   RandomString(8),
+		Gender:                 "FEMALE",
+		VoiceName:              RandomString(8),
 		NaturalSampleRateHertz: 24000,
 	}
 }
@@ -86,8 +107,25 @@ func RandomTitle() (title models.Title) {
 		ToVoiceId:   rand.Intn(100), //nolint:gosec
 		FromVoiceId: rand.Intn(100), //nolint:gosec
 		Pause:       DefaultPause,
-		Phrases:     nil,
-		Translates:  nil,
 		Pattern:     DefaultPattern,
+	}
+}
+
+type MockStubs struct {
+	TranslateX       *mockt.MockTranslateX
+	TranslateClientX *mockt.MockGoogleTranslateClientX
+	TtsClientX       *mockt.MockGoogleTTSClientX
+	AudioFileX       *mocka.MockAudioFileX
+	ModelsX          *mockm.MockModelsX
+}
+
+// NewMockStubs creates instantiates new instances of all the mock interfaces for testing
+func NewMockStubs(ctrl *gomock.Controller) MockStubs {
+	return MockStubs{
+		TranslateX:       mockt.NewMockTranslateX(ctrl),
+		TranslateClientX: mockt.NewMockGoogleTranslateClientX(ctrl),
+		TtsClientX:       mockt.NewMockGoogleTTSClientX(ctrl),
+		AudioFileX:       mocka.NewMockAudioFileX(ctrl),
+		ModelsX:          mockm.NewMockModelsX(ctrl),
 	}
 }

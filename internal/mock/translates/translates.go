@@ -57,7 +57,7 @@ func (mr *MockTranslateXMockRecorder) CreateTTS(arg0, arg1, arg2, arg3 any) *gom
 }
 
 // TranslatePhrases mocks base method.
-func (m *MockTranslateX) TranslatePhrases(arg0 echo.Context, arg1 []models.Phrase, arg2 models.Language) ([]models.Phrase, error) {
+func (m *MockTranslateX) TranslatePhrases(arg0 echo.Context, arg1 models.Title, arg2 models.Language) ([]models.Phrase, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TranslatePhrases", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]models.Phrase)

@@ -4,21 +4,23 @@ import (
 	"encoding/json"
 	"log"
 	"strings"
+	"talkliketv.click/tltv/internal/util"
 )
 
 // aws_languages => aws translate list-languages > aws_languages.json
 // aws_voices => aws polly describe-voices > aws_voices.json
 // google_languages => /scripts/python/supported_languages.json
+// google_voices => /scripts/python/voices_api.json
 
 type Title struct {
-	Name        string
-	TitleLangId int
-	ToVoiceId   int
-	FromVoiceId int
-	Pause       int
-	Phrases     []Phrase
-	Translates  []Phrase
-	Pattern     int
+	Name         string
+	TitleLangId  int
+	ToVoiceId    int
+	FromVoiceId  int
+	Pause        int
+	TitlePhrases []Phrase
+	ToPhrases    []Phrase
+	Pattern      int
 }
 
 type Phrase struct {
@@ -33,14 +35,6 @@ type GoogleJsonVoice struct {
 	NaturalSampleRateHertz int
 }
 
-type Voice struct {
-	LanguageCodes          []string
-	SsmlGender             string
-	Name                   string
-	NaturalSampleRateHertz int
-	LangId                 int
-}
-
 type GoogleJsonLanguage struct {
 	Language string
 	Name     string
@@ -51,16 +45,65 @@ type AmazonJsonLanguage struct {
 	LanguageName string
 }
 
+type AmazonJsonVoice struct {
+	Gender           string
+	Id               string
+	LanguageCode     string
+	LanguageName     string
+	Name             string
+	SupportedEngines []string
+}
+
 type Language struct {
 	ID   int
 	Code string
 	Name string
 }
 
-var Languages = make(map[int]Language)
-var Voices = make(map[int]Voice)
+type Voice struct {
+	ID                     int
+	LanguageCodes          []string
+	Gender                 string
+	VoiceName              string
+	LanguageName           string
+	NaturalSampleRateHertz int
+	Engine                 string
+	LangId                 int
+}
 
-//var VoicesByLangId = make(map[int][]Voice)
+var languages = make(map[int]Language)
+var voices = make(map[int]Voice)
+
+type ModelsX interface {
+	GetLanguage(int) (Language, error)
+	GetVoice(int) (Voice, error)
+}
+
+type Models struct{}
+
+func (m *Models) GetLanguage(id int) (Language, error) {
+	lang, ok := languages[id]
+	if !ok {
+		return Language{}, util.ErrLanguageIdInvalid
+	}
+	return lang, nil
+}
+
+func (m *Models) GetVoice(id int) (Voice, error) {
+	voice, ok := voices[id]
+	if !ok {
+		return Voice{}, util.ErrVoiceIdInvalid
+	}
+	return voice, nil
+}
+
+func GetLanguagesLength() int {
+	return len(languages)
+}
+
+func GetVoicesLength() int {
+	return len(voices)
+}
 
 func MakeGoogleMaps() {
 	languageFile, err := JsonModels.Open("jsonmodels/google_languages.json")
@@ -68,15 +111,15 @@ func MakeGoogleMaps() {
 		log.Fatal(err)
 	}
 	// Decode the JSON data into a struct
-	var languages []GoogleJsonLanguage
+	var glangs []GoogleJsonLanguage
 	decoder := json.NewDecoder(languageFile)
-	err = decoder.Decode(&languages)
+	err = decoder.Decode(&glangs)
 	if err != nil {
 		log.Fatal("Error decoding JSON:", err)
 	}
 	// add each voice to the Languages map using key for the id
-	for i, lang := range languages {
-		Languages[i] = Language{
+	for i, lang := range glangs {
+		languages[i] = Language{
 			ID:   i,
 			Code: lang.Language,
 			Name: lang.Name,
@@ -88,21 +131,21 @@ func MakeGoogleMaps() {
 		log.Fatal(err)
 	}
 	// Decode the JSON data into a struct
-	var voices []GoogleJsonVoice
+	var gvoices []GoogleJsonVoice
 	decoder = json.NewDecoder(voiceFile)
-	err = decoder.Decode(&voices)
+	err = decoder.Decode(&gvoices)
 	if err != nil {
 		log.Fatal("Error decoding JSON:", err)
 	}
 
-	for i, voice := range voices {
+	for i, voice := range gvoices {
 		langCode := voice.LanguageCodes[0]
 		// get the language id for the voice from the language tag
 		langTag := strings.Split(langCode, "-")
 		found := false
 		langId := -1
 		// find the language id (key) for the language that corresponds to the voice
-		for j, lang := range languages {
+		for j, lang := range glangs {
 			// filipino voice langTag does not match language tag
 			if langTag[0] == "fil" && lang.Language == "tl" {
 				found = true
@@ -122,13 +165,14 @@ func MakeGoogleMaps() {
 			}
 		}
 		if !found {
-			log.Println("langId not found for " + voice.Name + voice.LanguageCodes[0])
+			//log.Println("langId not found for " + voice.Name + " : " + voice.LanguageCodes[0])
 		} else {
 			// add to VoiceLangId map
-			Voices[i] = Voice{
+			voices[i] = Voice{
+				ID:                     i,
 				LanguageCodes:          voice.LanguageCodes,
-				SsmlGender:             voice.SsmlGender,
-				Name:                   voice.Name,
+				Gender:                 voice.SsmlGender,
+				VoiceName:              voice.Name,
 				NaturalSampleRateHertz: voice.NaturalSampleRateHertz,
 				LangId:                 langId,
 			}
@@ -136,76 +180,66 @@ func MakeGoogleMaps() {
 	}
 }
 
-//func MakeAmazonMaps() {
-//	languageFile, err := JsonModels.Open("jsonmodels/aws_languages.json")
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//	// Decode the JSON data into a struct
-//	var languages []GoogleJsonLanguage
-//	decoder := json.NewDecoder(languageFile)
-//	err = decoder.Decode(&languages)
-//	if err != nil {
-//		log.Fatal("Error decoding JSON:", err)
-//	}
-//	// add each voice to the Languages map using key for the id
-//	for i, lang := range languages {
-//		Languages[i] = Language{
-//			ID:       i,
-//			Language: lang.Language,
-//			Name:     lang.Name,
-//		}
-//	}
-//
-//	voiceFile, err := JsonModels.Open("jsonmodels/google_voices.json")
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//	// Decode the JSON data into a struct
-//	var voices []GoogleJsonVoice
-//	decoder = json.NewDecoder(voiceFile)
-//	err = decoder.Decode(&voices)
-//	if err != nil {
-//		log.Fatal("Error decoding JSON:", err)
-//	}
-//
-//	for i, voice := range voices {
-//		langCode := voice.LanguageCodes[0]
-//		// get the language id for the voice from the language tag
-//		langTag := strings.Split(langCode, "-")
-//		found := false
-//		langId := -1
-//		// find the language id (key) for the language that corresponds to the voice
-//		for j, lang := range languages {
-//			// filipino voice langTag does not match language tag
-//			if langTag[0] == "fil" && lang.Language == "tl" {
-//				found = true
-//				langId = j
-//				break
-//			}
-//			// norwegian voice langTag does not match language tag
-//			if langTag[0] == "nb" && lang.Language == "no" {
-//				found = true
-//				langId = j
-//				break
-//			}
-//			if lang.Language == langTag[0] {
-//				found = true
-//				langId = j
-//				break
-//			}
-//		}
-//		if !found {
-//			log.Println("langId not found for " + voice.Name + voice.LanguageCodes[0])
-//		} else {
-//			// add to VoiceLangId map
-//			Voices[i] = Voice{
-//				LanguageCodes:          voice.LanguageCodes,
-//				SsmlGender:             voice.SsmlGender,
-//				Name:                   voice.Name,
-//				NaturalSampleRateHertz: voice.NaturalSampleRateHertz,
-//				LangId:                 langId,
-//			}
-//		}
-//	}
-//}
+func MakeAmazonMaps() {
+	languageFile, err := JsonModels.Open("jsonmodels/aws_languages.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Decode the JSON data into a struct
+	var alangs []AmazonJsonLanguage
+	decoder := json.NewDecoder(languageFile)
+	err = decoder.Decode(&alangs)
+	if err != nil {
+		log.Fatal("Error decoding JSON:", err)
+	}
+	// add each voice to the Languages map using key for the id
+	for i, lang := range alangs {
+		languages[i] = Language{
+			ID:   i,
+			Code: lang.LanguageCode,
+			Name: lang.LanguageName,
+		}
+	}
+
+	voiceFile, err := JsonModels.Open("jsonmodels/aws_voices.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Decode the JSON data into a struct
+	var avoices []AmazonJsonVoice
+	decoder = json.NewDecoder(voiceFile)
+	err = decoder.Decode(&avoices)
+	if err != nil {
+		log.Fatal("Error decoding JSON:", err)
+	}
+
+	for i, voice := range avoices {
+		langCode := voice.LanguageCode
+		// get the language id for the voice from the language tag
+		langTag := strings.Split(langCode, "-")
+		found := false
+		langId := -1
+		// find the language id (key) for the language that corresponds to the voice
+		for j, lang := range alangs {
+			if lang.LanguageCode == langTag[0] {
+				found = true
+				langId = j
+				break
+			}
+		}
+		if !found {
+			log.Println("langId not found for " + voice.Name + voice.LanguageCode)
+		} else {
+			// add to VoiceLangId map
+			voices[i] = Voice{
+				ID:            i,
+				LanguageCodes: []string{voice.LanguageCode},
+				Gender:        voice.Gender,
+				VoiceName:     voice.Name,
+				LanguageName:  voice.LanguageName,
+				LangId:        langId,
+				Engine:        voice.SupportedEngines[0],
+			}
+		}
+	}
+}

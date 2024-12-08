@@ -16,7 +16,6 @@ type Config struct {
 	MaxNumPhrases   int
 	TTSBasePath     string
 	FileUploadLimit int64
-	Platform        translates.Platform
 }
 
 func SetConfigs(config *Config) error {
@@ -39,9 +38,9 @@ func SetConfigs(config *Config) error {
 	var platform string
 	flag.StringVar(&platform, "platform", "google", "which platform you are using [google|amazon]")
 	if platform == "google" {
-		config.Platform = translates.Google
+		translates.GlobalPlatform = translates.Google
 	} else if platform == "amazon" {
-		config.Platform = translates.Amazon
+		translates.GlobalPlatform = translates.Amazon
 	} else {
 		return errors.New("invalid platform (must be google|amazon)")
 	}

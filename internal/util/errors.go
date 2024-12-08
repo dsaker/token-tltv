@@ -11,7 +11,8 @@ var (
 	ErrUnableToParseFile  = func(err error) error {
 		return fmt.Errorf("unable to parse file: %s", err)
 	}
-	ErrTooManyPhrases = errors.New("too many phrases")
-	ErrIntConversion  = errors.New("conversion failed: The interface does not hold an int")
-	ErrVoiceIdInvalid = errors.New("voice id invalid")
+	ErrTooManyPhrases    = errors.New("too many phrases")
+	ErrVoiceIdInvalid    = errors.New("voice id invalid")
+	ErrPauseNotFound     = errors.New("audio pause file not found")
+	ErrLanguageIdInvalid = errors.New("language id invalid")
 )

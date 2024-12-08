@@ -30,7 +30,6 @@ func TestAudioFromFile(t *testing.T) {
 
 	t.Parallel()
 
-	// TODO add test for pattern
 	title := test.RandomTitle()
 
 	//create a base path for storing mp3 audio files
@@ -50,10 +49,10 @@ func TestAudioFromFile(t *testing.T) {
 		ID:   1,
 		Text: "This is the second sentence.",
 	}
-	title.Phrases = []models.Phrase{phrase1, phrase2}
+	title.TitlePhrases = []models.Phrase{phrase1, phrase2}
 
 	titleWithTranslates := title
-	titleWithTranslates.Translates = []models.Phrase{phrase1, phrase2}
+	titleWithTranslates.ToPhrases = []models.Phrase{phrase1, phrase2}
 
 	fiveSecSilenceBasePath := test.AudioBasePath + "silence/5SecSilence.mp3"
 	threeSecSilenceBasePath := test.AudioBasePath + "silence/3SecSilence.mp3"
@@ -70,7 +69,7 @@ func TestAudioFromFile(t *testing.T) {
 	testCases := []testCase{
 		{
 			name: "OK",
-			buildStubs: func(stubs MockStubs) {
+			buildStubs: func(stubs test.MockStubs) {
 				file, err := os.Create(filename)
 				require.NoError(t, err)
 				defer file.Close()
@@ -80,10 +79,10 @@ func TestAudioFromFile(t *testing.T) {
 					Return(stringsSlice, nil)
 				stubs.TranslateX.EXPECT().
 					CreateTTS(gomock.Any(), title, title.FromVoiceId, fromAudioBasePath).
-					Return(title.Phrases, nil)
+					Return(title.TitlePhrases, nil)
 				stubs.TranslateX.EXPECT().
 					CreateTTS(gomock.Any(), title, title.ToVoiceId, toAudioBasePath).
-					Return(title.Phrases, nil)
+					Return(title.TitlePhrases, nil)
 				// BuildAudioInputFiles(echo.Context, []int64, db.Title, string, string, string, string) error
 				stubs.AudioFileX.EXPECT().
 					BuildAudioInputFiles(gomock.Any(), titleWithTranslates, fiveSecSilenceBasePath, fromAudioBasePath, toAudioBasePath, gomock.Any()).
@@ -103,10 +102,11 @@ func TestAudioFromFile(t *testing.T) {
 		},
 		{
 			name: "OK with Pause",
-			buildStubs: func(stubs MockStubs) {
+			buildStubs: func(stubs test.MockStubs) {
 				file, err := os.Create(filename)
 				require.NoError(t, err)
 				defer file.Close()
+				// change pause
 				title.Pause = 3
 				titleWithTranslates.Pause = 3
 				// GetLines(echo.Context, multipart.File) ([]string, error)
@@ -115,10 +115,10 @@ func TestAudioFromFile(t *testing.T) {
 					Return(stringsSlice, nil)
 				stubs.TranslateX.EXPECT().
 					CreateTTS(gomock.Any(), title, title.FromVoiceId, fromAudioBasePath).
-					Return(title.Phrases, nil)
+					Return(title.TitlePhrases, nil)
 				stubs.TranslateX.EXPECT().
 					CreateTTS(gomock.Any(), title, title.ToVoiceId, toAudioBasePath).
-					Return(title.Phrases, nil)
+					Return(title.TitlePhrases, nil)
 				// BuildAudioInputFiles(echo.Context, []int64, db.Title, string, string, string, string) error
 				stubs.AudioFileX.EXPECT().
 					BuildAudioInputFiles(gomock.Any(), titleWithTranslates, threeSecSilenceBasePath, fromAudioBasePath, toAudioBasePath, gomock.Any()).
@@ -146,7 +146,7 @@ func TestAudioFromFile(t *testing.T) {
 		},
 		{
 			name: "Pause out of range",
-			buildStubs: func(stubs MockStubs) {
+			buildStubs: func(stubs test.MockStubs) {
 			},
 			checkResponse: func(res *http.Response) {
 				require.Equal(t, http.StatusBadRequest, res.StatusCode)
@@ -167,7 +167,7 @@ func TestAudioFromFile(t *testing.T) {
 		},
 		{
 			name: "File LanguageId out of range",
-			buildStubs: func(stubs MockStubs) {
+			buildStubs: func(stubs test.MockStubs) {
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
@@ -188,7 +188,7 @@ func TestAudioFromFile(t *testing.T) {
 		},
 		{
 			name: "File LanguageId string",
-			buildStubs: func(stubs MockStubs) {
+			buildStubs: func(stubs test.MockStubs) {
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
@@ -209,7 +209,7 @@ func TestAudioFromFile(t *testing.T) {
 		},
 		{
 			name: "toVoiceId out of range",
-			buildStubs: func(stubs MockStubs) {
+			buildStubs: func(stubs test.MockStubs) {
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
@@ -225,12 +225,12 @@ func TestAudioFromFile(t *testing.T) {
 			checkResponse: func(res *http.Response) {
 				require.Equal(t, http.StatusBadRequest, res.StatusCode)
 				resBody := readBody(t, res)
-				require.Contains(t, resBody, "toVoiceId must be between 0 and 192")
+				require.Contains(t, resBody, "toVoiceId must be between 0 and "+strconv.Itoa(models.GetVoicesLength()-1))
 			},
 		},
 		{
 			name: "toVoiceId string",
-			buildStubs: func(stubs MockStubs) {
+			buildStubs: func(stubs test.MockStubs) {
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
@@ -251,7 +251,7 @@ func TestAudioFromFile(t *testing.T) {
 		},
 		{
 			name: "pause string",
-			buildStubs: func(stubs MockStubs) {
+			buildStubs: func(stubs test.MockStubs) {
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
@@ -272,7 +272,7 @@ func TestAudioFromFile(t *testing.T) {
 		},
 		{
 			name: "fromVoiceId out of range",
-			buildStubs: func(stubs MockStubs) {
+			buildStubs: func(stubs test.MockStubs) {
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
@@ -288,12 +288,13 @@ func TestAudioFromFile(t *testing.T) {
 			checkResponse: func(res *http.Response) {
 				require.Equal(t, http.StatusBadRequest, res.StatusCode)
 				resBody := readBody(t, res)
-				require.Contains(t, resBody, "fromVoiceId must be between 0 and 192")
+
+				require.Contains(t, resBody, "fromVoiceId must be between 0 and "+strconv.Itoa(models.GetVoicesLength()-1))
 			},
 		},
 		{
 			name: "fromVoiceId string",
-			buildStubs: func(stubs MockStubs) {
+			buildStubs: func(stubs test.MockStubs) {
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
@@ -314,7 +315,7 @@ func TestAudioFromFile(t *testing.T) {
 		},
 		{
 			name: "pattern out of range",
-			buildStubs: func(stubs MockStubs) {
+			buildStubs: func(stubs test.MockStubs) {
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
@@ -336,7 +337,7 @@ func TestAudioFromFile(t *testing.T) {
 		},
 		{
 			name: "pattern string",
-			buildStubs: func(stubs MockStubs) {
+			buildStubs: func(stubs test.MockStubs) {
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
@@ -368,7 +369,7 @@ func TestAudioFromFile(t *testing.T) {
 				}
 				return createMultiPartBody(t, data, filename, formMap)
 			},
-			buildStubs: func(stubs MockStubs) {
+			buildStubs: func(stubs test.MockStubs) {
 			},
 			checkResponse: func(res *http.Response) {
 				require.Equal(t, http.StatusBadRequest, res.StatusCode)
@@ -408,7 +409,7 @@ func TestAudioFromFile(t *testing.T) {
 				require.NoError(t, multiWriter.Close())
 				return body, multiWriter
 			},
-			buildStubs: func(stubs MockStubs) {
+			buildStubs: func(stubs test.MockStubs) {
 			},
 			checkResponse: func(res *http.Response) {
 				require.Equal(t, http.StatusBadRequest, res.StatusCode)
@@ -418,7 +419,7 @@ func TestAudioFromFile(t *testing.T) {
 		},
 		{
 			name: "Too Many Phrases",
-			buildStubs: func(stubs MockStubs) {
+			buildStubs: func(stubs test.MockStubs) {
 				for i := 0; i < 101; i++ {
 					phrase := test.RandomString(4) + " " + test.RandomString(4)
 					stringsSlice = append(stringsSlice, phrase)
@@ -452,7 +453,7 @@ func TestAudioFromFile(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			ts := setupServerTest(t, ctrl, tc)
+			ts := setupServerTest(ctrl, tc)
 			multiBody, multiWriter := tc.multipartBody(t)
 			req, err := http.NewRequest(http.MethodPost, ts.URL+audioBasePath, multiBody)
 			require.NoError(t, err)
@@ -468,7 +469,7 @@ func TestAudioFromFile(t *testing.T) {
 	}
 }
 
-func TestAudioFromFileIntegration(t *testing.T) {
+func TestGoogleIntegration(t *testing.T) {
 	if !util.Integration {
 		t.Skip("skipping integration test")
 	}
@@ -477,7 +478,7 @@ func TestAudioFromFileIntegration(t *testing.T) {
 
 	//initialize audiofile with the real command runner
 	af := audiofile.New(&audiofile.RealCmdRunner{})
-	tr := translates.New(*translates.NewGoogleClients(), translates.AmazonClients{})
+	tr := translates.New(*translates.NewGoogleClients(), translates.AmazonClients{}, &models.Models{})
 	e := NewServer(testCfg.Config, tr, af)
 
 	title := test.RandomTitle()
