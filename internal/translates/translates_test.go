@@ -2,10 +2,13 @@ package translates
 
 import (
 	"flag"
+	"github.com/aws/aws-sdk-go-v2/service/polly"
+	"github.com/aws/aws-sdk-go-v2/service/polly/types"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"talkliketv.click/tltv/internal/models"
 	"testing"
 
@@ -52,7 +55,6 @@ func TestGoogleTTS(t *testing.T) {
 						InputSource: &texttospeechpb.SynthesisInput_Text{Text: text1},
 					},
 					// Build the voice request, select the language code ("en-US") and the SSML
-					// voice gender ("neutral").
 					Voice: &texttospeechpb.VoiceSelectionParams{
 						LanguageCode: voice.LanguageCodes[0],
 						SsmlGender:   texttospeechpb.SsmlVoiceGender_MALE,
@@ -64,7 +66,7 @@ func TestGoogleTTS(t *testing.T) {
 					},
 				}
 				resp := texttospeechpb.SynthesizeSpeechResponse{}
-				stubs.TtsClientX.EXPECT().SynthesizeSpeech(gomock.Any(), &req).Return(&resp, nil)
+				stubs.GoogleTTsClientX.EXPECT().SynthesizeSpeech(gomock.Any(), &req).Return(&resp, nil)
 			},
 			checkTranslate: func(translates []models.Phrase, err error) {
 				require.NoError(t, err)
@@ -88,10 +90,96 @@ func TestGoogleTTS(t *testing.T) {
 			newE := e.NewContext(req, rec)
 
 			clients := GoogleClients{
-				gtc:  stubs.TranslateClientX,
-				gtts: stubs.TtsClientX,
+				gtc:  stubs.GoogleTranslateClientX,
+				gtts: stubs.GoogleTTsClientX,
 			}
 			translates := New(clients, AmazonClients{}, stubs.ModelsX)
+			err = translates.TextToSpeech(newE, []models.Phrase{{ID: 0, Text: text1}}, voice, basepath)
+			tc.checkTranslate(nil, err)
+		})
+	}
+}
+
+func TestAmazonTTS(t *testing.T) {
+	if util.Integration {
+		t.Skip("skipping unit test")
+	}
+	t.Parallel()
+
+	title := test.RandomTitle()
+
+	basepath := test.AudioBasePath + title.Name + "/"
+	err := os.MkdirAll(basepath, 0777)
+	require.NoError(t, err)
+	defer os.RemoveAll(basepath)
+
+	voice := test.RandomVoice()
+	voice.Gender = "MALE"
+	text1 := "This is sentence one."
+
+	testCases := []translatesTestCase{
+		{
+			name: "Nil response",
+			buildStubs: func(stubs test.MockStubs) {
+				ssi := polly.SynthesizeSpeechInput{
+					Text:         &text1,
+					VoiceId:      types.VoiceId(voice.VoiceName), // voice.Name
+					OutputFormat: "mp3",
+					Engine:       types.Engine(voice.Engine),
+				}
+				resp := polly.SynthesizeSpeechOutput{}
+				//SynthesizeSpeech(context.Context, *polly.SynthesizeSpeechInput, ...func(*polly.Options)) (*polly.SynthesizeSpeechOutput, error)
+				stubs.AmazonTTsClientX.EXPECT().SynthesizeSpeech(gomock.Any(), &ssi).Return(&resp, nil)
+			},
+			checkTranslate: func(translates []models.Phrase, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "context canceled")
+			},
+		},
+		{
+			name: "No error",
+			buildStubs: func(stubs test.MockStubs) {
+				ssi := polly.SynthesizeSpeechInput{
+					Text:         &text1,
+					VoiceId:      types.VoiceId(voice.VoiceName), // voice.Name
+					OutputFormat: "mp3",
+					Engine:       types.Engine(voice.Engine),
+				}
+				stringReader := strings.NewReader("shiny!")
+				stringReadCloser := io.NopCloser(stringReader)
+				resp := polly.SynthesizeSpeechOutput{
+					AudioStream: stringReadCloser,
+				}
+				//SynthesizeSpeech(context.Context, *polly.SynthesizeSpeechInput, ...func(*polly.Options)) (*polly.SynthesizeSpeechOutput, error)
+				stubs.AmazonTTsClientX.EXPECT().SynthesizeSpeech(gomock.Any(), &ssi).Return(&resp, nil)
+			},
+			checkTranslate: func(translates []models.Phrase, err error) {
+				require.NoError(t, err)
+				isEmpty, err := IsDirectoryEmpty(basepath)
+				require.NoError(t, err)
+				require.False(t, isEmpty)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			stubs := test.NewMockStubs(ctrl)
+			tc.buildStubs(stubs)
+
+			e := echo.New()
+			req := httptest.NewRequest(http.MethodPost, "/any", nil)
+			rec := httptest.NewRecorder()
+			newE := e.NewContext(req, rec)
+
+			GlobalPlatform = Amazon
+			clients := AmazonClients{
+				atc:  stubs.AmazonTranslateClientX,
+				atts: stubs.AmazonTTsClientX,
+			}
+			translates := New(GoogleClients{}, clients, stubs.ModelsX)
 			err = translates.TextToSpeech(newE, []models.Phrase{{ID: 0, Text: text1}}, voice, basepath)
 			tc.checkTranslate(nil, err)
 		})
@@ -111,13 +199,13 @@ func TestGoogleTranslate(t *testing.T) {
 	returnedPhrase := []models.Phrase{{ID: 0, Text: translateText}, translate1}
 	translation := translate.Translation{Text: "Esta es la primera oración."}
 	title := test.RandomTitle()
-	title.TitlePhrases = []models.Phrase{{0, text1}}
+	title.TitlePhrases = []models.Phrase{{ID: 0, Text: text1}}
 
 	testCases := []translatesTestCase{
 		{
 			name: "No error",
 			buildStubs: func(stubs test.MockStubs) {
-				stubs.TranslateClientX.EXPECT().Translate(gomock.Any(), []string{text1}, language.Spanish, nil).
+				stubs.GoogleTranslateClientX.EXPECT().Translate(gomock.Any(), []string{text1}, language.Spanish, nil).
 					Return([]translate.Translation{translation}, nil)
 			},
 			checkTranslate: func(translates []models.Phrase, err error) {
@@ -141,8 +229,8 @@ func TestGoogleTranslate(t *testing.T) {
 			c := e.NewContext(req, rec)
 
 			clients := GoogleClients{
-				gtc:  stubs.TranslateClientX,
-				gtts: stubs.TtsClientX,
+				gtc:  stubs.GoogleTranslateClientX,
+				gtts: stubs.GoogleTTsClientX,
 			}
 			translates := New(clients, AmazonClients{}, stubs.ModelsX)
 			translatesRow, err := translates.TranslatePhrases(c, title, modelsLang)

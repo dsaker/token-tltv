@@ -26,26 +26,32 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 	// convert strings from multipart form to int
 	fileLangId, err := strconv.Atoi(e.FormValue("fileLanguageId"))
 	if err != nil {
+		e.Logger().Error(util.ErrLanguageIdInvalid)
 		return e.String(http.StatusBadRequest, fmt.Sprintf("error converting fileLanguageId to int: %s", err.Error()))
 	}
 	// validate fileLangId
 	if fileLangId < 0 || fileLangId > languagesCount {
+		e.Logger().Error(util.ErrLanguageIdInvalid)
 		return e.String(http.StatusBadRequest, fmt.Sprintf("fileLangId must be between 0 and %d", languagesCount))
 	}
 	toVoiceId, err := strconv.Atoi(e.FormValue("toVoiceId"))
 	if err != nil {
+		e.Logger().Error(util.ErrVoiceIdInvalid)
 		return e.String(http.StatusBadRequest, fmt.Sprintf("error converting toVoiceId to int: %s", err.Error()))
 	}
 	// validate voiceId
 	if toVoiceId < 0 || toVoiceId > voicesCount {
+		e.Logger().Error(util.ErrVoiceIdInvalid)
 		return e.String(http.StatusBadRequest, fmt.Sprintf("toVoiceId must be between 0 and %d", voicesCount))
 	}
 	fromVoiceId, err := strconv.Atoi(e.FormValue("fromVoiceId"))
 	if err != nil {
+		e.Logger().Error(util.ErrVoiceIdInvalid)
 		return e.String(http.StatusBadRequest, fmt.Sprintf("error converting fromVoiceId to int: %s", err.Error()))
 	}
 	// validate voiceId
 	if fromVoiceId < 0 || fromVoiceId > voicesCount {
+		e.Logger().Error(util.ErrVoiceIdInvalid)
 		return e.String(http.StatusBadRequest, fmt.Sprintf("fromVoiceId must be between 0 and %d", voicesCount))
 	}
 

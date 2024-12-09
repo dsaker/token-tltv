@@ -55,33 +55,43 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">talkliketv.click/tltv/api/audio.go (71.6%)</option>
+				<option value="file0">talkliketv.click/tltv/api/audio.go (72.6%)</option>
 				
-				<option value="file1">talkliketv.click/tltv/api/server.go (36.2%)</option>
+				<option value="file1">talkliketv.click/tltv/api/server.go (46.2%)</option>
 				
 				<option value="file2">talkliketv.click/tltv/internal/audio/audiofile/audiofile.go (78.3%)</option>
 				
 				<option value="file3">talkliketv.click/tltv/internal/audio/pattern/pattern.go (33.3%)</option>
 				
-				<option value="file4">talkliketv.click/tltv/internal/config/config.go (90.9%)</option>
+				<option value="file4">talkliketv.click/tltv/internal/config/config.go (77.8%)</option>
 				
 				<option value="file5">talkliketv.click/tltv/internal/mock/audiofile/audiofile.go (100.0%)</option>
 				
-				<option value="file6">talkliketv.click/tltv/internal/mock/translates/translates.go (81.8%)</option>
+				<option value="file6">talkliketv.click/tltv/internal/mock/models/models.go (16.7%)</option>
 				
-				<option value="file7">talkliketv.click/tltv/internal/models/models.go (89.7%)</option>
+				<option value="file7">talkliketv.click/tltv/internal/mock/translates/amazonclients.go (56.7%)</option>
 				
-				<option value="file8">talkliketv.click/tltv/internal/oapi/tltv.gen.go (69.8%)</option>
+				<option value="file8">talkliketv.click/tltv/internal/mock/translates/googleclients.go (96.2%)</option>
 				
-				<option value="file9">talkliketv.click/tltv/internal/test/test_util.go (81.0%)</option>
+				<option value="file9">talkliketv.click/tltv/internal/mock/translates/translates.go (61.1%)</option>
 				
-				<option value="file10">talkliketv.click/tltv/internal/translates/translates.go (42.6%)</option>
+				<option value="file10">talkliketv.click/tltv/internal/models/models.go (45.6%)</option>
 				
-				<option value="file11">talkliketv.click/tltv/internal/util/errors.go (100.0%)</option>
+				<option value="file11">talkliketv.click/tltv/internal/oapi/tltv.gen.go (69.8%)</option>
 				
-				<option value="file12">talkliketv.click/tltv/internal/util/helpers.go (30.0%)</option>
+				<option value="file12">talkliketv.click/tltv/internal/test/test_util.go (81.8%)</option>
 				
-				<option value="file13">talkliketv.click/tltv/main.go (0.0%)</option>
+				<option value="file13">talkliketv.click/tltv/internal/translates/amazonclients.go (26.9%)</option>
+				
+				<option value="file14">talkliketv.click/tltv/internal/translates/googleclients.go (37.8%)</option>
+				
+				<option value="file15">talkliketv.click/tltv/internal/translates/translates.go (39.2%)</option>
+				
+				<option value="file16">talkliketv.click/tltv/internal/util/errors.go (100.0%)</option>
+				
+				<option value="file17">talkliketv.click/tltv/internal/util/helpers.go (50.0%)</option>
+				
+				<option value="file18">talkliketv.click/tltv/main.go (0.0%)</option>
 				
 				</select>
 			</div>
@@ -116,7 +126,8 @@ import (
 // AudioFromFile accepts a file in srt, phrase per line, or paragraph form and
 // sends a zip file of mp3 audio tracks for learning a language that you choose
 func (s *Server) AudioFromFile(e echo.Context) error <span class="cov8" title="1">{
-        // TODO add more oapi validation
+        languagesCount := models.GetLanguagesLength() - 1
+        voicesCount := models.GetVoicesLength() - 1
         // get values from multipart form
         titleName := e.FormValue("titleName")
         // convert strings from multipart form to int
@@ -125,24 +136,24 @@ func (s *Server) AudioFromFile(e echo.Context) error <span class="cov8" title="1
                 return e.String(http.StatusBadRequest, fmt.Sprintf("error converting fileLanguageId to int: %s", err.Error()))
         }</span>
         // validate fileLangId
-        <span class="cov8" title="1">if fileLangId &lt; 0 || fileLangId &gt; len(models.Languages)-1 </span><span class="cov8" title="1">{
-                return e.String(http.StatusBadRequest, fmt.Sprintf("fileLangId must be between 0 and %d", len(models.Languages)-1))
+        <span class="cov8" title="1">if fileLangId &lt; 0 || fileLangId &gt; languagesCount </span><span class="cov8" title="1">{
+                return e.String(http.StatusBadRequest, fmt.Sprintf("fileLangId must be between 0 and %d", languagesCount))
         }</span>
         <span class="cov8" title="1">toVoiceId, err := strconv.Atoi(e.FormValue("toVoiceId"))
         if err != nil </span><span class="cov8" title="1">{
                 return e.String(http.StatusBadRequest, fmt.Sprintf("error converting toVoiceId to int: %s", err.Error()))
         }</span>
         // validate voiceId
-        <span class="cov8" title="1">if toVoiceId &lt; 0 || toVoiceId &gt; len(models.Voices)-1 </span><span class="cov8" title="1">{
-                return e.String(http.StatusBadRequest, fmt.Sprintf("toVoiceId must be between 0 and %d", len(models.Languages)-1))
+        <span class="cov8" title="1">if toVoiceId &lt; 0 || toVoiceId &gt; voicesCount </span><span class="cov8" title="1">{
+                return e.String(http.StatusBadRequest, fmt.Sprintf("toVoiceId must be between 0 and %d", voicesCount))
         }</span>
         <span class="cov8" title="1">fromVoiceId, err := strconv.Atoi(e.FormValue("fromVoiceId"))
         if err != nil </span><span class="cov8" title="1">{
                 return e.String(http.StatusBadRequest, fmt.Sprintf("error converting fromVoiceId to int: %s", err.Error()))
         }</span>
         // validate voiceId
-        <span class="cov8" title="1">if fromVoiceId &lt; 0 || fromVoiceId &gt; len(models.Voices)-1 </span><span class="cov8" title="1">{
-                return e.String(http.StatusBadRequest, fmt.Sprintf("fromVoiceId must be between 0 and %d", len(models.Languages)-1))
+        <span class="cov8" title="1">if fromVoiceId &lt; 0 || fromVoiceId &gt; voicesCount </span><span class="cov8" title="1">{
+                return e.String(http.StatusBadRequest, fmt.Sprintf("fromVoiceId must be between 0 and %d", voicesCount))
         }</span>
 
         <span class="cov8" title="1">pause := s.config.PhrasePause
@@ -159,6 +170,7 @@ func (s *Server) AudioFromFile(e echo.Context) error <span class="cov8" title="1
                 <span class="cov8" title="1">pause = pauseInt</span>
         }
 
+        // pattern is the pattern used to build the audio files at /internal/pattern
         <span class="cov8" title="1">pattern := s.config.AudioPattern
         patternForm := e.FormValue("pattern")
         if patternForm != "" </span><span class="cov8" title="1">{
@@ -184,13 +196,13 @@ func (s *Server) AudioFromFile(e echo.Context) error <span class="cov8" title="1
         }
 
         <span class="cov8" title="1">title := models.Title{
-                Name:        titleName,
-                TitleLangId: fileLangId,
-                ToVoiceId:   toVoiceId,
-                FromVoiceId: fromVoiceId,
-                Pause:       pause,
-                Phrases:     phrases,
-                Pattern:     pattern,
+                Name:         titleName,
+                TitleLangId:  fileLangId,
+                ToVoiceId:    toVoiceId,
+                FromVoiceId:  fromVoiceId,
+                Pause:        pause,
+                TitlePhrases: phrases,
+                Pattern:      pattern,
         }
         zipFile, err := s.createAudioFromTitle(e, title)
         if err != nil </span><span class="cov0" title="0">{
@@ -205,7 +217,9 @@ func (s *Server) AudioFromFile(e echo.Context) error <span class="cov8" title="1
                 }</span>
                 <span class="cov0" title="0">return e.String(http.StatusInternalServerError, err.Error())</span>
         }
-        <span class="cov8" title="1">return e.Attachment(zipFile.Name(), titleName+".zip")</span>
+
+        <span class="cov8" title="1">titleName = titleName + "." + strconv.Itoa(title.FromVoiceId) + "-" + strconv.Itoa(title.ToVoiceId) + ".zip"
+        return e.Attachment(zipFile.Name(), titleName)</span>
 }
 
 func (s *Server) processFile(e echo.Context, titleName string) ([]models.Phrase, *os.File, error) <span class="cov8" title="1">{
@@ -246,6 +260,7 @@ func (s *Server) processFile(e echo.Context, titleName string) ([]models.Phrase,
                 <span class="cov8" title="1">return nil, zipFile, util.ErrTooManyPhrases</span>
         }
 
+        // make an array of phrases with id so we can match all the translates and text-to-speech
         <span class="cov8" title="1">phrases := make([]models.Phrase, len(stringsSlice))
         for i := range stringsSlice </span><span class="cov8" title="1">{
                 phrases[i] = models.Phrase{
@@ -265,7 +280,8 @@ func (s *Server) createAudioFromTitle(e echo.Context, title models.Title) (*os.F
         fromAudioBasePath := fmt.Sprintf("%s/%d/", audioBasePath, title.FromVoiceId)
         toAudioBasePath := fmt.Sprintf("%s/%d/", audioBasePath, title.ToVoiceId)
 
-        if _, err := s.translates.CreateTTS(e, title, title.FromVoiceId, fromAudioBasePath); err != nil </span><span class="cov0" title="0">{
+        _, err := s.translate.CreateTTS(e, title, title.FromVoiceId, fromAudioBasePath)
+        if err != nil </span><span class="cov0" title="0">{
                 e.Logger().Error(err)
                 // if error remove all the text-to-speech created up to that point
                 osErr := os.RemoveAll(audioBasePath)
@@ -275,7 +291,7 @@ func (s *Server) createAudioFromTitle(e echo.Context, title models.Title) (*os.F
                 <span class="cov0" title="0">return nil, err</span>
         }
 
-        <span class="cov8" title="1">tr, err := s.translates.CreateTTS(e, title, title.ToVoiceId, toAudioBasePath)
+        <span class="cov8" title="1">toPhrases, err := s.translate.CreateTTS(e, title, title.ToVoiceId, toAudioBasePath)
         if err != nil </span><span class="cov0" title="0">{
                 e.Logger().Error(err)
                 osErr := os.RemoveAll(audioBasePath)
@@ -284,15 +300,17 @@ func (s *Server) createAudioFromTitle(e echo.Context, title models.Title) (*os.F
                 }</span>
                 <span class="cov0" title="0">return nil, err</span>
         }
+        <span class="cov8" title="1">title.ToPhrases = toPhrases
 
-        <span class="cov8" title="1">title.Translates = tr
+        // get pause path string to build the full pause file path
         pausePath, ok := audiofile.AudioPauseFilePath[title.Pause]
         if !ok </span><span class="cov0" title="0">{
-                e.Logger().Error(errors.New("audio pause file not found"))
-                return nil, err
+                e.Logger().Error(util.ErrPauseNotFound)
+                return nil, util.ErrPauseNotFound
         }</span>
         <span class="cov8" title="1">fullPausePath := s.config.TTSBasePath + pausePath
 
+        // create a temporary directory for building all the files
         tmpDirPath := fmt.Sprintf("%s%s-%s/", s.config.TTSBasePath, title.Name, test.RandomString(4))
         err = os.MkdirAll(tmpDirPath, 0777)
         if err != nil </span><span class="cov0" title="0">{
@@ -311,9 +329,6 @@ func (s *Server) createAudioFromTitle(e echo.Context, title models.Title) (*os.F
 		<pre class="file" id="file1" style="display: none">package api
 
 import (
-        texttospeech "cloud.google.com/go/texttospeech/apiv1"
-        "cloud.google.com/go/translate"
-        "context"
         "fmt"
         echomw "github.com/labstack/echo/v4/middleware"
         middleware "github.com/oapi-codegen/echo-middleware"
@@ -334,9 +349,9 @@ import (
 
 type Server struct {
         sync.RWMutex
-        translates translates.TranslateX
-        config     config.Config
-        af         audiofile.AudioFileX
+        translate translates.TranslateX
+        config    config.Config
+        af        audiofile.AudioFileX
 }
 
 // NewServer creates a new HTTP server and sets up routing.
@@ -345,10 +360,14 @@ func NewServer(cfg config.Config, t translates.TranslateX, af audiofile.AudioFil
         // make sure silence mp3s exist in your base path
         initSilence(cfg)
 
-        // create maps of voices and languages we will use instead of database
-        models.MakeMaps()
+        // create maps of voices and languages depending on platform
+        if translates.GlobalPlatform == translates.Google </span><span class="cov8" title="1">{
+                models.MakeGoogleMaps()
+        }</span> else<span class="cov0" title="0"> {
+                models.MakeAmazonMaps()
+        }</span>
 
-        spec, err := oapi.GetSwagger()
+        <span class="cov8" title="1">spec, err := oapi.GetSwagger()
         if err != nil </span><span class="cov0" title="0">{
                 log.Fatalln("loading spec: %w", err)
         }</span>
@@ -364,9 +383,9 @@ func NewServer(cfg config.Config, t translates.TranslateX, af audiofile.AudioFil
         e.Use(middleware.OapiRequestValidator(spec))
 
         srv := &amp;Server{
-                translates: t,
-                config:     cfg,
-                af:         af,
+                translate: t,
+                config:    cfg,
+                af:        af,
         }
         oapi.RegisterHandlers(e, srv)
         return e</span>
@@ -414,27 +433,6 @@ func initSilence(cfg config.Config) <span class="cov8" title="1">{
                 }
         }
 }
-
-// CreateDependencies creates a new google translate and text-to-speech clients; constructs
-// the translates and audiofile dependencies and returns them
-func CreateDependencies() (*translates.Translate, *audiofile.AudioFile) <span class="cov0" title="0">{
-        // create google translate and text-to-speech clients
-        ctx := context.Background()
-        transClient, err := translate.NewClient(ctx)
-        if err != nil </span><span class="cov0" title="0">{
-                log.Fatalf("Error creating google api translate client\n: %s", err)
-        }</span>
-        <span class="cov0" title="0">ttsClient, err := texttospeech.NewClient(ctx)
-        if err != nil </span><span class="cov0" title="0">{
-                log.Fatalf("Error creating google api translate client\n: %s", err)
-        }</span>
-        <span class="cov0" title="0">t := translates.New(transClient, ttsClient)
-
-        //initialize audiofile with the real command runner
-        af := audiofile.New(&amp;audiofile.RealCmdRunner{})
-
-        return t, af</span>
-}
 </pre>
 		
 		<pre class="file" id="file2" style="display: none">package audiofile
@@ -475,6 +473,7 @@ var AudioPauseFilePath = map[int]string{
 }
 
 // endSentenceMap is a map to find the ending punctuation of a sentence
+// TODO change this to work for any language
 var (
         endSentenceMap = map[rune]bool{
                 '!': true,
@@ -803,7 +802,8 @@ func (a *AudioFile) CreateMp3Zip(e echo.Context, t models.Title, tmpDir string) 
                 }</span>
         }
 
-        <span class="cov8" title="1">if t.Translates != nil </span><span class="cov0" title="0">{
+        // add a text files of the translated phrases, this is useful studying
+        <span class="cov8" title="1">if t.ToPhrases != nil </span><span class="cov0" title="0">{
                 // Create file to write all the translated phrases to
                 f, err := os.Create(outDirPath + "/" + t.Name + "-translates.txt")
                 if err != nil </span><span class="cov0" title="0">{
@@ -811,7 +811,7 @@ func (a *AudioFile) CreateMp3Zip(e echo.Context, t models.Title, tmpDir string) 
                         return nil, err
                 }</span>
                 <span class="cov0" title="0">defer f.Close()
-                for _, text := range t.Translates </span><span class="cov0" title="0">{
+                for _, text := range t.ToPhrases </span><span class="cov0" title="0">{
                         _, err = f.WriteString(text.Text + "\n")
                         if err != nil </span><span class="cov0" title="0">{
                                 e.Logger().Error(err)
@@ -862,13 +862,7 @@ func addFileToZip(e echo.Context, zipWriter *zip.Writer, filename string) error 
 // BuildAudioInputFiles creates a file with the filepaths of the mp3's used to construct
 // the output files with ffmpeg in CreateMp3Zip
 func (a *AudioFile) BuildAudioInputFiles(e echo.Context, t models.Title, pause, from, to, tmpDir string) error <span class="cov8" title="1">{
-        // map phrase ids to zero through len(phrase ids) to map correctly to pattern.Pattern
-        //pMap := make(map[int]int)
-        //for i, phrase := range t.Phrases {
-        //        pMap[i] = phrase.ID
-        //}
-        // maxP is the highest phrase id and determines the last block of mp3's that will be built
-        maxP := len(t.Phrases) - 1
+        maxP := len(t.TitlePhrases) - 1
 
         pattern := audio.GetPattern(t.Pattern)
         if pattern == nil </span><span class="cov0" title="0">{
@@ -1060,6 +1054,7 @@ import (
         "errors"
         "flag"
         _ "github.com/lib/pq"
+        "talkliketv.click/tltv/internal/translates"
 )
 
 // Config Update the config struct to hold the SMTP server settings.
@@ -1088,6 +1083,16 @@ func SetConfigs(config *Config) error <span class="cov8" title="1">{
 
         if !isValidPause(config.PhrasePause) </span><span class="cov0" title="0">{
                 return errors.New("invalid pause value (must be between 3 and 10)")
+        }</span>
+
+        <span class="cov8" title="1">var platform string
+        flag.StringVar(&amp;platform, "platform", "google", "which platform you are using [google|amazon]")
+        if platform == "google" </span><span class="cov8" title="1">{
+                translates.GlobalPlatform = translates.Google
+        }</span> else<span class="cov0" title="0"> if platform == "amazon" </span><span class="cov0" title="0">{
+                translates.GlobalPlatform = translates.Amazon
+        }</span> else<span class="cov0" title="0"> {
+                return errors.New("invalid platform (must be google|amazon)")
         }</span>
 
         <span class="cov8" title="1">return nil</span>
@@ -1245,11 +1250,193 @@ func (mr *MockcmdRunnerXMockRecorder) CombinedOutput(cmd any) *gomock.Call <span
 </pre>
 		
 		<pre class="file" id="file6" style="display: none">// Code generated by MockGen. DO NOT EDIT.
-// Source: internal/translates/translates.go
+// Source: internal/models/models.go
 //
 // Generated by this command:
 //
-//        mockgen -package mockt -destination=internal/mock/translates/translates.go -source=internal/translates/translates.go
+//        mockgen -package mockm -destination=internal/mock/models/models.go -source=internal/models/models.go
+//
+
+// Package mockm is a generated GoMock package.
+package mockm
+
+import (
+        reflect "reflect"
+
+        gomock "go.uber.org/mock/gomock"
+        models "talkliketv.click/tltv/internal/models"
+)
+
+// MockModelsX is a mock of ModelsX interface.
+type MockModelsX struct {
+        ctrl     *gomock.Controller
+        recorder *MockModelsXMockRecorder
+        isgomock struct{}
+}
+
+// MockModelsXMockRecorder is the mock recorder for MockModelsX.
+type MockModelsXMockRecorder struct {
+        mock *MockModelsX
+}
+
+// NewMockModelsX creates a new mock instance.
+func NewMockModelsX(ctrl *gomock.Controller) *MockModelsX <span class="cov8" title="1">{
+        mock := &amp;MockModelsX{ctrl: ctrl}
+        mock.recorder = &amp;MockModelsXMockRecorder{mock}
+        return mock
+}</span>
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockModelsX) EXPECT() *MockModelsXMockRecorder <span class="cov0" title="0">{
+        return m.recorder
+}</span>
+
+// GetLanguage mocks base method.
+func (m *MockModelsX) GetLanguage(arg0 int) (models.Language, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "GetLanguage", arg0)
+        ret0, _ := ret[0].(models.Language)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// GetLanguage indicates an expected call of GetLanguage.
+func (mr *MockModelsXMockRecorder) GetLanguage(arg0 any) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLanguage", reflect.TypeOf((*MockModelsX)(nil).GetLanguage), arg0)
+}</span>
+
+// GetVoice mocks base method.
+func (m *MockModelsX) GetVoice(arg0 int) (models.Voice, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "GetVoice", arg0)
+        ret0, _ := ret[0].(models.Voice)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// GetVoice indicates an expected call of GetVoice.
+func (mr *MockModelsXMockRecorder) GetVoice(arg0 any) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVoice", reflect.TypeOf((*MockModelsX)(nil).GetVoice), arg0)
+}</span>
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">// Code generated by MockGen. DO NOT EDIT.
+// Source: internal/translates/amazonclients.go
+//
+// Generated by this command:
+//
+//        mockgen -package mockt -destination=internal/mock/translates/amazonclients.go -source=internal/translates/amazonclients.go
+//
+
+// Package mockt is a generated GoMock package.
+package mockt
+
+import (
+        context "context"
+        reflect "reflect"
+
+        polly "github.com/aws/aws-sdk-go-v2/service/polly"
+        translate "github.com/aws/aws-sdk-go-v2/service/translate"
+        gomock "go.uber.org/mock/gomock"
+)
+
+// MockAmazonTranslateClientX is a mock of AmazonTranslateClientX interface.
+type MockAmazonTranslateClientX struct {
+        ctrl     *gomock.Controller
+        recorder *MockAmazonTranslateClientXMockRecorder
+        isgomock struct{}
+}
+
+// MockAmazonTranslateClientXMockRecorder is the mock recorder for MockAmazonTranslateClientX.
+type MockAmazonTranslateClientXMockRecorder struct {
+        mock *MockAmazonTranslateClientX
+}
+
+// NewMockAmazonTranslateClientX creates a new mock instance.
+func NewMockAmazonTranslateClientX(ctrl *gomock.Controller) *MockAmazonTranslateClientX <span class="cov8" title="1">{
+        mock := &amp;MockAmazonTranslateClientX{ctrl: ctrl}
+        mock.recorder = &amp;MockAmazonTranslateClientXMockRecorder{mock}
+        return mock
+}</span>
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockAmazonTranslateClientX) EXPECT() *MockAmazonTranslateClientXMockRecorder <span class="cov0" title="0">{
+        return m.recorder
+}</span>
+
+// TranslateText mocks base method.
+func (m *MockAmazonTranslateClientX) TranslateText(arg0 context.Context, arg1 *translate.TranslateTextInput, arg2 ...func(*translate.Options)) (*translate.TranslateTextOutput, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        varargs := []any{arg0, arg1}
+        for _, a := range arg2 </span><span class="cov0" title="0">{
+                varargs = append(varargs, a)
+        }</span>
+        <span class="cov0" title="0">ret := m.ctrl.Call(m, "TranslateText", varargs...)
+        ret0, _ := ret[0].(*translate.TranslateTextOutput)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1</span>
+}
+
+// TranslateText indicates an expected call of TranslateText.
+func (mr *MockAmazonTranslateClientXMockRecorder) TranslateText(arg0, arg1 any, arg2 ...any) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        varargs := append([]any{arg0, arg1}, arg2...)
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TranslateText", reflect.TypeOf((*MockAmazonTranslateClientX)(nil).TranslateText), varargs...)
+}</span>
+
+// MockAmazonTTSClientX is a mock of AmazonTTSClientX interface.
+type MockAmazonTTSClientX struct {
+        ctrl     *gomock.Controller
+        recorder *MockAmazonTTSClientXMockRecorder
+        isgomock struct{}
+}
+
+// MockAmazonTTSClientXMockRecorder is the mock recorder for MockAmazonTTSClientX.
+type MockAmazonTTSClientXMockRecorder struct {
+        mock *MockAmazonTTSClientX
+}
+
+// NewMockAmazonTTSClientX creates a new mock instance.
+func NewMockAmazonTTSClientX(ctrl *gomock.Controller) *MockAmazonTTSClientX <span class="cov8" title="1">{
+        mock := &amp;MockAmazonTTSClientX{ctrl: ctrl}
+        mock.recorder = &amp;MockAmazonTTSClientXMockRecorder{mock}
+        return mock
+}</span>
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockAmazonTTSClientX) EXPECT() *MockAmazonTTSClientXMockRecorder <span class="cov8" title="1">{
+        return m.recorder
+}</span>
+
+// SynthesizeSpeech mocks base method.
+func (m *MockAmazonTTSClientX) SynthesizeSpeech(arg0 context.Context, arg1 *polly.SynthesizeSpeechInput, arg2 ...func(*polly.Options)) (*polly.SynthesizeSpeechOutput, error) <span class="cov8" title="1">{
+        m.ctrl.T.Helper()
+        varargs := []any{arg0, arg1}
+        for _, a := range arg2 </span><span class="cov0" title="0">{
+                varargs = append(varargs, a)
+        }</span>
+        <span class="cov8" title="1">ret := m.ctrl.Call(m, "SynthesizeSpeech", varargs...)
+        ret0, _ := ret[0].(*polly.SynthesizeSpeechOutput)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1</span>
+}
+
+// SynthesizeSpeech indicates an expected call of SynthesizeSpeech.
+func (mr *MockAmazonTTSClientXMockRecorder) SynthesizeSpeech(arg0, arg1 any, arg2 ...any) *gomock.Call <span class="cov8" title="1">{
+        mr.mock.ctrl.T.Helper()
+        varargs := append([]any{arg0, arg1}, arg2...)
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SynthesizeSpeech", reflect.TypeOf((*MockAmazonTTSClientX)(nil).SynthesizeSpeech), varargs...)
+}</span>
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">// Code generated by MockGen. DO NOT EDIT.
+// Source: internal/translates/googleclients.go
+//
+// Generated by this command:
+//
+//        mockgen -package mockt -destination=internal/mock/translates/googleclients.go -source=internal/translates/googleclients.go
 //
 
 // Package mockt is a generated GoMock package.
@@ -1262,38 +1449,36 @@ import (
         texttospeechpb "cloud.google.com/go/texttospeech/apiv1/texttospeechpb"
         translate "cloud.google.com/go/translate"
         gax "github.com/googleapis/gax-go/v2"
-        echo "github.com/labstack/echo/v4"
         gomock "go.uber.org/mock/gomock"
         language "golang.org/x/text/language"
-        models "talkliketv.click/tltv/internal/models"
 )
 
-// MockTranslateClientX is a mock of TranslateClientX interface.
-type MockTranslateClientX struct {
+// MockGoogleTranslateClientX is a mock of GoogleTranslateClientX interface.
+type MockGoogleTranslateClientX struct {
         ctrl     *gomock.Controller
-        recorder *MockTranslateClientXMockRecorder
+        recorder *MockGoogleTranslateClientXMockRecorder
         isgomock struct{}
 }
 
-// MockTranslateClientXMockRecorder is the mock recorder for MockTranslateClientX.
-type MockTranslateClientXMockRecorder struct {
-        mock *MockTranslateClientX
+// MockGoogleTranslateClientXMockRecorder is the mock recorder for MockGoogleTranslateClientX.
+type MockGoogleTranslateClientXMockRecorder struct {
+        mock *MockGoogleTranslateClientX
 }
 
-// NewMockTranslateClientX creates a new mock instance.
-func NewMockTranslateClientX(ctrl *gomock.Controller) *MockTranslateClientX <span class="cov8" title="1">{
-        mock := &amp;MockTranslateClientX{ctrl: ctrl}
-        mock.recorder = &amp;MockTranslateClientXMockRecorder{mock}
+// NewMockGoogleTranslateClientX creates a new mock instance.
+func NewMockGoogleTranslateClientX(ctrl *gomock.Controller) *MockGoogleTranslateClientX <span class="cov8" title="1">{
+        mock := &amp;MockGoogleTranslateClientX{ctrl: ctrl}
+        mock.recorder = &amp;MockGoogleTranslateClientXMockRecorder{mock}
         return mock
 }</span>
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockTranslateClientX) EXPECT() *MockTranslateClientXMockRecorder <span class="cov8" title="1">{
+func (m *MockGoogleTranslateClientX) EXPECT() *MockGoogleTranslateClientXMockRecorder <span class="cov8" title="1">{
         return m.recorder
 }</span>
 
 // Translate mocks base method.
-func (m *MockTranslateClientX) Translate(arg0 context.Context, arg1 []string, arg2 language.Tag, arg3 *translate.Options) ([]translate.Translation, error) <span class="cov8" title="1">{
+func (m *MockGoogleTranslateClientX) Translate(arg0 context.Context, arg1 []string, arg2 language.Tag, arg3 *translate.Options) ([]translate.Translation, error) <span class="cov8" title="1">{
         m.ctrl.T.Helper()
         ret := m.ctrl.Call(m, "Translate", arg0, arg1, arg2, arg3)
         ret0, _ := ret[0].([]translate.Translation)
@@ -1302,37 +1487,37 @@ func (m *MockTranslateClientX) Translate(arg0 context.Context, arg1 []string, ar
 }</span>
 
 // Translate indicates an expected call of Translate.
-func (mr *MockTranslateClientXMockRecorder) Translate(arg0, arg1, arg2, arg3 any) *gomock.Call <span class="cov8" title="1">{
+func (mr *MockGoogleTranslateClientXMockRecorder) Translate(arg0, arg1, arg2, arg3 any) *gomock.Call <span class="cov8" title="1">{
         mr.mock.ctrl.T.Helper()
-        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Translate", reflect.TypeOf((*MockTranslateClientX)(nil).Translate), arg0, arg1, arg2, arg3)
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Translate", reflect.TypeOf((*MockGoogleTranslateClientX)(nil).Translate), arg0, arg1, arg2, arg3)
 }</span>
 
-// MockTTSClientX is a mock of TTSClientX interface.
-type MockTTSClientX struct {
+// MockGoogleTTSClientX is a mock of GoogleTTSClientX interface.
+type MockGoogleTTSClientX struct {
         ctrl     *gomock.Controller
-        recorder *MockTTSClientXMockRecorder
+        recorder *MockGoogleTTSClientXMockRecorder
         isgomock struct{}
 }
 
-// MockTTSClientXMockRecorder is the mock recorder for MockTTSClientX.
-type MockTTSClientXMockRecorder struct {
-        mock *MockTTSClientX
+// MockGoogleTTSClientXMockRecorder is the mock recorder for MockGoogleTTSClientX.
+type MockGoogleTTSClientXMockRecorder struct {
+        mock *MockGoogleTTSClientX
 }
 
-// NewMockTTSClientX creates a new mock instance.
-func NewMockTTSClientX(ctrl *gomock.Controller) *MockTTSClientX <span class="cov8" title="1">{
-        mock := &amp;MockTTSClientX{ctrl: ctrl}
-        mock.recorder = &amp;MockTTSClientXMockRecorder{mock}
+// NewMockGoogleTTSClientX creates a new mock instance.
+func NewMockGoogleTTSClientX(ctrl *gomock.Controller) *MockGoogleTTSClientX <span class="cov8" title="1">{
+        mock := &amp;MockGoogleTTSClientX{ctrl: ctrl}
+        mock.recorder = &amp;MockGoogleTTSClientXMockRecorder{mock}
         return mock
 }</span>
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockTTSClientX) EXPECT() *MockTTSClientXMockRecorder <span class="cov8" title="1">{
+func (m *MockGoogleTTSClientX) EXPECT() *MockGoogleTTSClientXMockRecorder <span class="cov8" title="1">{
         return m.recorder
 }</span>
 
 // SynthesizeSpeech mocks base method.
-func (m *MockTTSClientX) SynthesizeSpeech(arg0 context.Context, arg1 *texttospeechpb.SynthesizeSpeechRequest, arg2 ...gax.CallOption) (*texttospeechpb.SynthesizeSpeechResponse, error) <span class="cov8" title="1">{
+func (m *MockGoogleTTSClientX) SynthesizeSpeech(arg0 context.Context, arg1 *texttospeechpb.SynthesizeSpeechRequest, arg2 ...gax.CallOption) (*texttospeechpb.SynthesizeSpeechResponse, error) <span class="cov8" title="1">{
         m.ctrl.T.Helper()
         varargs := []any{arg0, arg1}
         for _, a := range arg2 </span><span class="cov0" title="0">{
@@ -1345,11 +1530,31 @@ func (m *MockTTSClientX) SynthesizeSpeech(arg0 context.Context, arg1 *texttospee
 }
 
 // SynthesizeSpeech indicates an expected call of SynthesizeSpeech.
-func (mr *MockTTSClientXMockRecorder) SynthesizeSpeech(arg0, arg1 any, arg2 ...any) *gomock.Call <span class="cov8" title="1">{
+func (mr *MockGoogleTTSClientXMockRecorder) SynthesizeSpeech(arg0, arg1 any, arg2 ...any) *gomock.Call <span class="cov8" title="1">{
         mr.mock.ctrl.T.Helper()
         varargs := append([]any{arg0, arg1}, arg2...)
-        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SynthesizeSpeech", reflect.TypeOf((*MockTTSClientX)(nil).SynthesizeSpeech), varargs...)
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SynthesizeSpeech", reflect.TypeOf((*MockGoogleTTSClientX)(nil).SynthesizeSpeech), varargs...)
 }</span>
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">// Code generated by MockGen. DO NOT EDIT.
+// Source: internal/translates/translates.go
+//
+// Generated by this command:
+//
+//        mockgen -package mockt -destination=internal/mock/translates/translates.go -source=internal/translates/translates.go
+//
+
+// Package mockt is a generated GoMock package.
+package mockt
+
+import (
+        reflect "reflect"
+
+        echo "github.com/labstack/echo/v4"
+        gomock "go.uber.org/mock/gomock"
+        models "talkliketv.click/tltv/internal/models"
+)
 
 // MockTranslateX is a mock of TranslateX interface.
 type MockTranslateX struct {
@@ -1391,7 +1596,7 @@ func (mr *MockTranslateXMockRecorder) CreateTTS(arg0, arg1, arg2, arg3 any) *gom
 }</span>
 
 // TranslatePhrases mocks base method.
-func (m *MockTranslateX) TranslatePhrases(arg0 echo.Context, arg1 []models.Phrase, arg2 models.Language) ([]models.Phrase, error) <span class="cov0" title="0">{
+func (m *MockTranslateX) TranslatePhrases(arg0 echo.Context, arg1 models.Title, arg2 models.Language) ([]models.Phrase, error) <span class="cov0" title="0">{
         m.ctrl.T.Helper()
         ret := m.ctrl.Call(m, "TranslatePhrases", arg0, arg1, arg2)
         ret0, _ := ret[0].([]models.Phrase)
@@ -1406,23 +1611,29 @@ func (mr *MockTranslateXMockRecorder) TranslatePhrases(arg0, arg1, arg2 any) *go
 }</span>
 </pre>
 		
-		<pre class="file" id="file7" style="display: none">package models
+		<pre class="file" id="file10" style="display: none">package models
 
 import (
         "encoding/json"
         "log"
         "strings"
+        "talkliketv.click/tltv/internal/util"
 )
 
+// aws_languages =&gt; aws translate list-languages &gt; aws_languages.json
+// aws_voices =&gt; aws polly describe-voices &gt; aws_voices.json
+// google_languages =&gt; /scripts/python/supported_languages.json
+// google_voices =&gt; /scripts/python/voices_api.json
+
 type Title struct {
-        Name        string
-        TitleLangId int
-        ToVoiceId   int
-        FromVoiceId int
-        Pause       int
-        Phrases     []Phrase
-        Translates  []Phrase
-        Pattern     int
+        Name         string
+        TitleLangId  int
+        ToVoiceId    int
+        FromVoiceId  int
+        Pause        int
+        TitlePhrases []Phrase
+        ToPhrases    []Phrase
+        Pattern      int
 }
 
 type Phrase struct {
@@ -1430,54 +1641,101 @@ type Phrase struct {
         Text string
 }
 
-type JsonVoice struct {
+type GoogleJsonVoice struct {
         LanguageCodes          []string
         SsmlGender             string
         Name                   string
         NaturalSampleRateHertz int
 }
 
-type Voice struct {
-        LanguageCodes          []string
-        SsmlGender             string
-        Name                   string
-        NaturalSampleRateHertz int
-        LangId                 int
-}
-
-type JsonLanguage struct {
+type GoogleJsonLanguage struct {
         Language string
         Name     string
+}
+
+type AmazonJsonLanguage struct {
+        LanguageCode string
+        LanguageName string
+}
+
+type AmazonJsonVoice struct {
+        Gender           string
+        Id               string
+        LanguageCode     string
+        LanguageName     string
+        Name             string
+        SupportedEngines []string
 }
 
 type Language struct {
-        ID       int
-        Language string
-        Name     string
+        ID   int
+        Code string
+        Name string
 }
 
-var Languages = make(map[int]Language)
-var Voices = make(map[int]Voice)
-var VoicesByLangId = make(map[int][]JsonVoice)
+type Voice struct {
+        ID                     int
+        LanguageCodes          []string
+        Gender                 string
+        VoiceName              string
+        LanguageName           string
+        NaturalSampleRateHertz int
+        Engine                 string
+        LangId                 int
+}
 
-func MakeMaps() <span class="cov8" title="1">{
+var languages = make(map[int]Language)
+var voices = make(map[int]Voice)
+
+type ModelsX interface {
+        GetLanguage(int) (Language, error)
+        GetVoice(int) (Voice, error)
+}
+
+type Models struct{}
+
+func (m *Models) GetLanguage(id int) (Language, error) <span class="cov0" title="0">{
+        lang, ok := languages[id]
+        if !ok </span><span class="cov0" title="0">{
+                return Language{}, util.ErrLanguageIdInvalid
+        }</span>
+        <span class="cov0" title="0">return lang, nil</span>
+}
+
+func (m *Models) GetVoice(id int) (Voice, error) <span class="cov0" title="0">{
+        voice, ok := voices[id]
+        if !ok </span><span class="cov0" title="0">{
+                return Voice{}, util.ErrVoiceIdInvalid
+        }</span>
+        <span class="cov0" title="0">return voice, nil</span>
+}
+
+func GetLanguagesLength() int <span class="cov8" title="1">{
+        return len(languages)
+}</span>
+
+func GetVoicesLength() int <span class="cov8" title="1">{
+        return len(voices)
+}</span>
+
+func MakeGoogleMaps() <span class="cov8" title="1">{
         languageFile, err := JsonModels.Open("jsonmodels/google_languages.json")
         if err != nil </span><span class="cov0" title="0">{
                 log.Fatal(err)
         }</span>
         // Decode the JSON data into a struct
-        <span class="cov8" title="1">var languages []JsonLanguage
+        <span class="cov8" title="1">var glangs []GoogleJsonLanguage
         decoder := json.NewDecoder(languageFile)
-        err = decoder.Decode(&amp;languages)
+        err = decoder.Decode(&amp;glangs)
         if err != nil </span><span class="cov0" title="0">{
                 log.Fatal("Error decoding JSON:", err)
         }</span>
         // add each voice to the Languages map using key for the id
-        <span class="cov8" title="1">for i, lang := range languages </span><span class="cov8" title="1">{
-                Languages[i] = Language{
-                        ID:       i,
-                        Language: lang.Language,
-                        Name:     lang.Name,
+        <span class="cov8" title="1">for i, lang := range glangs </span><span class="cov8" title="1">{
+                languages[i] = Language{
+                        ID:   i,
+                        Code: lang.Language,
+                        Name: lang.Name,
                 }
         }</span>
 
@@ -1486,21 +1744,21 @@ func MakeMaps() <span class="cov8" title="1">{
                 log.Fatal(err)
         }</span>
         // Decode the JSON data into a struct
-        <span class="cov8" title="1">var voices []JsonVoice
+        <span class="cov8" title="1">var gvoices []GoogleJsonVoice
         decoder = json.NewDecoder(voiceFile)
-        err = decoder.Decode(&amp;voices)
+        err = decoder.Decode(&amp;gvoices)
         if err != nil </span><span class="cov0" title="0">{
                 log.Fatal("Error decoding JSON:", err)
         }</span>
 
-        <span class="cov8" title="1">for i, voice := range voices </span><span class="cov8" title="1">{
+        <span class="cov8" title="1">for i, voice := range gvoices </span><span class="cov8" title="1">{
                 langCode := voice.LanguageCodes[0]
                 // get the language id for the voice from the language tag
                 langTag := strings.Split(langCode, "-")
                 found := false
                 langId := -1
                 // find the language id (key) for the language that corresponds to the voice
-                for j, lang := range languages </span><span class="cov8" title="1">{
+                for j, lang := range glangs </span><span class="cov8" title="1">{
                         // filipino voice langTag does not match language tag
                         if langTag[0] == "fil" &amp;&amp; lang.Language == "tl" </span><span class="cov8" title="1">{
                                 found = true
@@ -1519,23 +1777,88 @@ func MakeMaps() <span class="cov8" title="1">{
                                 break</span>
                         }
                 }
-                <span class="cov8" title="1">if !found </span><span class="cov8" title="1">{
-                        log.Println("langId not found for " + voice.Name + voice.LanguageCodes[0])
+                <span class="cov8" title="1">if !found </span>{<span class="cov8" title="1">
+                        //log.Println("langId not found for " + voice.Name + " : " + voice.LanguageCodes[0])
                 }</span> else<span class="cov8" title="1"> {
                         // add to VoiceLangId map
-                        Voices[i] = Voice{
+                        voices[i] = Voice{
+                                ID:                     i,
                                 LanguageCodes:          voice.LanguageCodes,
-                                SsmlGender:             voice.SsmlGender,
-                                Name:                   voice.Name,
+                                Gender:                 voice.SsmlGender,
+                                VoiceName:              voice.Name,
                                 NaturalSampleRateHertz: voice.NaturalSampleRateHertz,
                                 LangId:                 langId,
                         }
                 }</span>
         }
 }
+
+func MakeAmazonMaps() <span class="cov0" title="0">{
+        languageFile, err := JsonModels.Open("jsonmodels/aws_languages.json")
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal(err)
+        }</span>
+        // Decode the JSON data into a struct
+        <span class="cov0" title="0">var alangs []AmazonJsonLanguage
+        decoder := json.NewDecoder(languageFile)
+        err = decoder.Decode(&amp;alangs)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal("Error decoding JSON:", err)
+        }</span>
+        // add each voice to the Languages map using key for the id
+        <span class="cov0" title="0">for i, lang := range alangs </span><span class="cov0" title="0">{
+                languages[i] = Language{
+                        ID:   i,
+                        Code: lang.LanguageCode,
+                        Name: lang.LanguageName,
+                }
+        }</span>
+
+        <span class="cov0" title="0">voiceFile, err := JsonModels.Open("jsonmodels/aws_voices.json")
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal(err)
+        }</span>
+        // Decode the JSON data into a struct
+        <span class="cov0" title="0">var avoices []AmazonJsonVoice
+        decoder = json.NewDecoder(voiceFile)
+        err = decoder.Decode(&amp;avoices)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal("Error decoding JSON:", err)
+        }</span>
+
+        <span class="cov0" title="0">for i, voice := range avoices </span><span class="cov0" title="0">{
+                langCode := voice.LanguageCode
+                // get the language id for the voice from the language tag
+                langTag := strings.Split(langCode, "-")
+                found := false
+                langId := -1
+                // find the language id (key) for the language that corresponds to the voice
+                for j, lang := range alangs </span><span class="cov0" title="0">{
+                        if lang.LanguageCode == langTag[0] </span><span class="cov0" title="0">{
+                                found = true
+                                langId = j
+                                break</span>
+                        }
+                }
+                <span class="cov0" title="0">if !found </span><span class="cov0" title="0">{
+                        log.Println("langId not found for " + voice.Name + voice.LanguageCode)
+                }</span> else<span class="cov0" title="0"> {
+                        // add to VoiceLangId map
+                        voices[i] = Voice{
+                                ID:            i,
+                                LanguageCodes: []string{voice.LanguageCode},
+                                Gender:        voice.Gender,
+                                VoiceName:     voice.Name,
+                                LanguageName:  voice.LanguageName,
+                                LangId:        langId,
+                                Engine:        voice.SupportedEngines[0],
+                        }
+                }</span>
+        }
+}
 </pre>
 		
-		<pre class="file" id="file8" style="display: none">// Package oapi provides primitives to interact with the openapi HTTP API.
+		<pre class="file" id="file11" style="display: none">// Package oapi provides primitives to interact with the openapi HTTP API.
 //
 // Code generated by github.com/oapi-codegen/oapi-codegen/v2 version v2.4.1 DO NOT EDIT.
 package oapi
@@ -1584,10 +1907,10 @@ type AudioFromFileMultipartBody struct {
         // 1 is beginner and repeats closer together --
         // 2 is intermediate --
         // 3 is advanced and repeats phrases less often and should only be used if you are at an advanced level --
-        // 4 is review and only repeats each phrase one time and can be used to review already learned phrases
+        // 4 is review and repeats each phrase one time and can be used to review already learned phrases
         Pattern *string `json:"pattern,omitempty"`
 
-        // Pause the pause in seconds between phrases in the audiofile (default is 4)
+        // Pause the pause in seconds between phrases in the audiofile (default is 5)
         Pause *string `json:"pause,omitempty"`
 
         // TitleName choose a descriptive title that includes to and from languages
@@ -1656,30 +1979,30 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-        "H4sIAAAAAAAC/5RXXW8cuw39K4TahxYYz64/ELT71LR1WgNJYDRugKKbB1rDmVGsoaYSZ9ebYP97Qc3O",
-        "ftib3Huf7BEp8uiQPNJ+NzZ0fWBiSWbx3STbUof539sYQ9R/+hh6iuIoL9tQkf6tKNnoenGBzWJ0hmwr",
-        "TB1ih2IWxrFcX5nCyKan8ZMaimZbmI5SwuaHgSbzfmuS6Lgx221hIv1vcJEqs/iv2SWc3L9sC/MQkZNH",
-        "GdGeYvfIzYAN3VX6dQzz8s1ZmH0bMWWUL3BMpn86lp+YXyd6c3Mm0YtT7fcWx4j3aE5yf9nqbsd1GIvD",
-        "gjYjog6dNwtTDUk2a9ww/cWGzmKSkklMYRg7BfF3tcMnfBpPfFqNB/RP790TPXwGlwBhggOeMLLjBrDv",
-        "vbOo/lBRcg1TBRKgJd/DkCgmCCuKNnQE0hL0WhocYMmhFmIgtmFgoUgVrJ20EKSleEiEfZ9KuBMIda3B",
-        "EHqKKTB6942qAw567ik6Ykuw5McNoPdhrYYRgwSwbQhpBJF6sq52FkYiky5uYI0s6lgHOyQIXMK/816L",
-        "DEPvA1awZAShZ4HaeRrxTiEcQ48Rm4h9C1rxAgLTzqygwTumAkIEWhEDMnz610MOVACyxlZox3yunffQ",
-        "EFNEIUBIpDTAh/trwKFyIW/OZ6vROu9E3faMSBvD0LTgXRLSlRKWvOT/hCGfyEbKUfkoFiSJ6JpWoI6h",
-        "y1TlZRS4D0lgll1natT1Eu7q7CROPEGLCZbchUhHvCJnjw6fM3wUsIFr15Qf8Pnj0N1P7Ml42kgyRAaE",
-        "b67vqRrTh/pAeoLUeyfgWMIUeck8dI8U1XGXuYQ7iGRD1xFXkASjjJy4BGvcQAqwmYhoyT4piR0+EaQh",
-        "ao+gqD3mlEteY9LiJqrAhhjJit+US9b5dJZ4VIjdPL3t0bYEV+XcFGaIOoKtSJ8Ws9l6vS4xm8sQm9lu",
-        "b5q9v/vb7cdPtxdX5bxspfM6h5nS4wlcmcKsKKZxMC/LeTlXv9ATY+/MwlznpcL0KG1Wu7FaWQVDktdS",
-        "O3XAuak+tETuhLH9dbKfRTs4xbEaZV7IfkrlI52MQVLXM0OQmVNdzm2uGmneasJ3MXTvnFeFUzmkJH8N",
-        "1WbSNRqVthu8uB6jzHTILioUPFxcryVfsb0/kf1TErSFQnSNY/QHIkJ9aH7tE4y040DlvTD0jF2f63Pz",
-        "59eXVJGz3qO0J+r/6Bjj5qx7DN3n4OwPEe6BKZgnDusTDJdvrs5F7VGEIr+OuDOopGdJ3n0OaZRuGzhJ",
-        "HKxk65HSlKDi0eKK4Frl1FlKC1jypUZ6pMYxU8xaFqknlATWh0QRJDSUZf3iApZ8pe5698WOKqctmJev",
-        "8xVTrZAtVSdRJjXxlBKM14aaUxsGX0Fgv9HOy/Bdva8XSha3KaCnFfkx041mirRytM6BcoQpGaGdRD33",
-        "rriOsteuwSeWpv0+ElabcXSomrDmFj+q0Pn6DInO1zubdJYS2cCVsitrIj6+bfbFyV36h4pqHLzo0W7+",
-        "eNqi+kLCZ9cNnVlczgvTOR4/rs+gysLzMWvZK8EYb1CE/fJq0v6smI6tH6rxRlLGsnRMrZvOUSDh17f9",
-        "dD1npk8OeDX/0y++FA/HKl5qwun8HYM6GuQv+wTh8StZMfnddQpZwxziaiXyHcI4EhW4GVQxw6nPzw9a",
-        "gr5C4B+3DzDbU6nvC9Vtl/KDYL/bVWm8lg4nlzhQpiL1QS8bJfpqPn8hqkevjtnXFPhUUZ1Qlzf+PlJt",
-        "FuZ3s8OPhtnuF8Ps6N293XOFMeLmHFU7VdEGye074RufoLmTfxPEnyEbf8icATGwvhqtUAU0+Wy32/8H",
-        "AAD//605mdQUDQAA",
+        "H4sIAAAAAAAC/5RXUXPjuA3+Kxi2D+2MIjvJ3k7rp17bXJuZvZ1MN72ZTr0PCAVJvFCgSkJ2fDv+7x1Q",
+        "lm0l3m3vKREBAh8/AB/pL8aGrg9MLMmsvphkW+ow/3sXY4j6Tx9DT1Ec5WUbKtK/FSUbXS8usFmNzpBt",
+        "halD7FDMyjiW2xtTGNn1NH5SQ9HsC9NRSth8NdBkPm5NEh03Zr8vTKT/DC5SZVb/NoeEk/vnfWEeI3Ly",
+        "KCPaOXaP3AzY0H2lX+cwr99fhNm3EVNG+QrHZPq7Y/mG+W2i9+8uJHp1quPe4hzxEc0s9+e97nZch7E4",
+        "LGgzIurQebMy1ZBkt8Ud059s6CwmKZnEFIaxUxB/VTt8wufxxPNqPKJ//uCe6fEncAkQJjjgCSM7bgD7",
+        "3juL6g8VJdcwVSABWvI9DIligrChaENHIC1Br6XBAdYcaiEGYhsGFopUwdZJC0FaiqdE2PephHuBUNca",
+        "DKGnmAKjd79QdcJBLz1FR2wJ1vy0A/Q+bNUwYpAAtg0hjSBST9bVzsJIZNLFHWyRRR3rYIcEgUv4Z95r",
+        "kWHofcAK1owg9CJQO08j3imEY+gxYhOxb0ErXkBgOpgVNHjHVECIQBtiQIZP/3jMgQpA1tgK7ZzPrfMe",
+        "GmKKKAQIiZQG+PHhFnCoXMib89lqtM47UbcjI9LGMDQteJeEdKWENa/5X2HIJ7KRclQ+iwVJIrqmFahj",
+        "6DJVeRkFHkISWGTXhRp1vYT7OjuJE0/QYoI1dyHSGa/I2aPDlwwfBWzg2jXlj/jycegeJvZkPG0kGSID",
+        "wi+u76ka04f6RHqC1Hsn4FjCFHnNPHRPFNXxkLmEe4hkQ9cRV5AEo4ycuARb3EEKsJuIaMk+K4kdPhOk",
+        "IWqPoKg95pRr3mLS4iaqwIYYyYrflWvW+XSWeFSIwzx936NtCW7KpSnMEHUEW5E+rRaL7XZbYjaXITaL",
+        "w960+HD/l7uPn+6ubspl2UrndQ4zpecTuDGF2VBM42Bel8tyqX6hJ8bemZW5zUuF6VHarHZjtbIKhiRv",
+        "pXbqgEtTfWqJ3Alj++tkv4h2cIpjNcq8kP2UyieajUFS1wtDkJlTXc5trhppvteEP8TQ/eC8KpzKISX5",
+        "c6h2k67RqLTd4MX1GGWhQ3ZVoeDp4nor+Yrtw0z25yRoC4XoGsfoT0SE+tT82icY6cCBynth6AW7Ptfn",
+        "3R/fXlJFzvqA0s7U/8kxxt1F9xi6n4KzX0V4BKZgnjlsZxiu399citqjCEV+G/FgUEnPknz4HNIo3TZw",
+        "kjhYydYzpSlBxaPFDcGtyqmzlFaw5muN9ESNY6aYtSxSTygJrA+JIkhoKMv61RWs+Ubd9e6LHVVOWzAv",
+        "3+YrptogW6pmUSY18ZQSjNeGmlMbBl9BYL/TzsvwXX2sF0oWtymgpw35MdM7zRRp42g7y0NoJz3PbSuu",
+        "o+xw6O2JoGmrj4TVbpwaqiaYubvPinO5NEOiy6XOJh2jRDZwpcTKlojPL5pjXXKD/q6iGgcveqrvfj9L",
+        "/p0+jvDFdUNnVtfLwnSOx4/bC6iy5nzMMvZGK8bLE+G4vJlkP4ulY+uHaryMlLGsGlPXpksUSPj/O366",
+        "mTPTswPeLP/wPx+Jp2MVr+VgPnrnoM5m+PMxQXj6mayY/OSaQ9Ywp7haiXx9MI5EBW4GFcsw9/n2QUvQ",
+        "Bwj87e4RFkcq9Wmhku1Sfgscd7sqjTfS6eQSB8pUpD7oPaNE3yyXr/T07MGx+DkFnoupE+ryxt9Gqs3K",
+        "/GZx+r2wOPxYWJw9ufdHrjBG3F2i6iAo2iC5fSd84+szd/KvgvgtZONvmAsgBtYHoxWqgCaf/X7/3wAA",
+        "AP//HWM8yg8NAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
@@ -1755,13 +2078,17 @@ func GetSwagger() (swagger *openapi3.T, err error) <span class="cov8" title="1">
 }
 </pre>
 		
-		<pre class="file" id="file9" style="display: none">package test
+		<pre class="file" id="file12" style="display: none">package test
 
 import (
+        "go.uber.org/mock/gomock"
         "math/rand"
         "reflect"
         "slices"
         "strings"
+        mocka "talkliketv.click/tltv/internal/mock/audiofile"
+        mockm "talkliketv.click/tltv/internal/mock/models"
+        mockt "talkliketv.click/tltv/internal/mock/translates"
         "talkliketv.click/tltv/internal/models"
         "testing"
 
@@ -1805,6 +2132,23 @@ const (
         alphabet       = "abcdefghijklmnopqrstuvwxyz"
 )
 
+var (
+        ValidGoogleVoice = models.Voice{
+                LanguageCodes:          []string{"en-US"},
+                Gender:                 "MALE",
+                VoiceName:              "en-US-Casual-K",
+                LanguageName:           "",
+                NaturalSampleRateHertz: 24000,
+                Engine:                 "",
+                LangId:                 0,
+        }
+        ValidLangauge = models.Language{
+                ID:   0,
+                Code: "en",
+                Name: "English",
+        }
+)
+
 // RandomString generates a random string of length n
 func RandomString(n int) string <span class="cov8" title="1">{
         var sb strings.Builder
@@ -1830,8 +2174,8 @@ func RandomVoice() models.Voice <span class="cov8" title="1">{
         return models.Voice{
                 LangId:                 rand.Intn(100), //nolint:gosec
                 LanguageCodes:          []string{RandomString(8), RandomString(8)},
-                SsmlGender:             "FEMALE",
-                Name:                   RandomString(8),
+                Gender:                 "FEMALE",
+                VoiceName:              RandomString(8),
                 NaturalSampleRateHertz: 24000,
         }
 }</span>
@@ -1843,16 +2187,212 @@ func RandomTitle() (title models.Title) <span class="cov8" title="1">{
                 ToVoiceId:   rand.Intn(100), //nolint:gosec
                 FromVoiceId: rand.Intn(100), //nolint:gosec
                 Pause:       DefaultPause,
-                Phrases:     nil,
-                Translates:  nil,
                 Pattern:     DefaultPattern,
+        }
+}</span>
+
+type MockStubs struct {
+        TranslateX             *mockt.MockTranslateX
+        GoogleTranslateClientX *mockt.MockGoogleTranslateClientX
+        GoogleTTsClientX       *mockt.MockGoogleTTSClientX
+        AmazonTranslateClientX *mockt.MockAmazonTranslateClientX
+        AmazonTTsClientX       *mockt.MockAmazonTTSClientX
+        AudioFileX             *mocka.MockAudioFileX
+        ModelsX                *mockm.MockModelsX
+}
+
+// NewMockStubs creates instantiates new instances of all the mock interfaces for testing
+func NewMockStubs(ctrl *gomock.Controller) MockStubs <span class="cov8" title="1">{
+        return MockStubs{
+                TranslateX:             mockt.NewMockTranslateX(ctrl),
+                GoogleTranslateClientX: mockt.NewMockGoogleTranslateClientX(ctrl),
+                GoogleTTsClientX:       mockt.NewMockGoogleTTSClientX(ctrl),
+                AudioFileX:             mocka.NewMockAudioFileX(ctrl),
+                ModelsX:                mockm.NewMockModelsX(ctrl),
+                AmazonTranslateClientX: mockt.NewMockAmazonTranslateClientX(ctrl),
+                AmazonTTsClientX:       mockt.NewMockAmazonTTSClientX(ctrl),
         }
 }</span>
 </pre>
 		
-		<pre class="file" id="file10" style="display: none">package translates
+		<pre class="file" id="file13" style="display: none">package translates
 
 import (
+        "context"
+        "errors"
+        "fmt"
+        "github.com/aws/aws-sdk-go-v2/config"
+        "github.com/aws/aws-sdk-go-v2/service/polly"
+        "github.com/aws/aws-sdk-go-v2/service/polly/types"
+        "github.com/aws/aws-sdk-go-v2/service/translate"
+        "github.com/labstack/echo/v4"
+        "log"
+        "os"
+        "strconv"
+        "sync"
+        "talkliketv.click/tltv/internal/models"
+)
+
+// AmazonTranslateClientX creates an interface for amazon translate so it can be mocked for testing
+type AmazonTranslateClientX interface {
+        TranslateText(context.Context, *translate.TranslateTextInput, ...func(*translate.Options)) (*translate.TranslateTextOutput, error)
+}
+
+// AmazonTTSClientX creates an interface for amazon texttospeechpb so it can be mocked for testing
+type AmazonTTSClientX interface {
+        SynthesizeSpeech(context.Context, *polly.SynthesizeSpeechInput, ...func(*polly.Options)) (*polly.SynthesizeSpeechOutput, error)
+}
+
+type AmazonClients struct {
+        atc  AmazonTranslateClientX
+        atts AmazonTTSClientX
+}
+
+// NewAmazonClients creates new amazon translate and text-to-speech clients; constructs
+// the dependencies and returns them
+func NewAmazonClients() *AmazonClients <span class="cov0" title="0">{
+        // create amazon translate and text-to-speech clients
+        ctx := context.Background()
+        // Initialize AWS configuration
+        cfg, err := config.LoadDefaultConfig(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("unable to load SDK config, %v", err)
+        }</span>
+
+        // Create an AWS Translate client
+        <span class="cov0" title="0">translateClient := translate.NewFromConfig(cfg)
+
+        // Create a Polly client
+        ttsClient := polly.NewFromConfig(cfg)
+
+        // Input text to translate
+        text := "Hello, how are you?"
+        sourceLanguage := "en" // Source language code (e.g., "en" for English)
+        targetLanguage := "es" // Target language code (e.g., "es" for Spanish)
+
+        // Call the TranslateText API
+        output, err := translateClient.TranslateText(context.TODO(), &amp;translate.TranslateTextInput{
+                Text:               &amp;text,
+                SourceLanguageCode: &amp;sourceLanguage,
+                TargetLanguageCode: &amp;targetLanguage,
+        })
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Failed to translate text: %v", err)
+        }</span>
+
+        // Print the translated text
+        <span class="cov0" title="0">fmt.Printf("Original text: %s\n", text)
+        fmt.Printf("Translated text: %s\n", *output.TranslatedText)
+        return &amp;AmazonClients{atc: translateClient, atts: ttsClient}</span>
+}
+
+// GetTranslate is a helper function for TranslatePhrases that allows concurrent calls to
+// google translate.Translate.
+// It receives a context.CancelFunc that is invoked on an error so all subsequent calls to
+// google translate.Translate can be aborted
+func (g *AmazonClients) GetTranslate(e echo.Context,
+        ctx context.Context,
+        cancel context.CancelFunc,
+        phrase models.Phrase,
+        wg *sync.WaitGroup,
+        toLang string,
+        fromLang string,
+        responses []models.Phrase,
+        i int,
+) <span class="cov0" title="0">{
+        defer wg.Done()
+        select </span>{
+        case &lt;-ctx.Done():<span class="cov0" title="0">
+                return</span> // Error somewhere, terminate
+        default:<span class="cov0" title="0"> // Default to avoid blocking
+
+                resp, err := g.atc.TranslateText(ctx, &amp;translate.TranslateTextInput{
+                        Text:               &amp;phrase.Text,
+                        SourceLanguageCode: &amp;fromLang,
+                        TargetLanguageCode: &amp;toLang,
+                })
+                if err != nil </span><span class="cov0" title="0">{
+                        switch </span>{
+                        case errors.Is(err, context.Canceled):<span class="cov0" title="0">
+                                return</span>
+                        default:<span class="cov0" title="0">
+                                e.Logger().Error(fmt.Errorf("error translating text: %s", err))
+                                cancel()
+                                return</span>
+                        }
+                }
+
+                <span class="cov0" title="0">responses[i] = models.Phrase{
+                        ID:   phrase.ID,
+                        Text: *resp.TranslatedText,
+                }</span>
+        }
+}
+
+// GetSpeech is a helper function for TextToSpeech that is run concurrently.
+// it is passed a cancel context, so if one routine fails, the following routines can
+// be canceled
+
+func (g *AmazonClients) GetSpeech(
+        e echo.Context,
+        ctx context.Context,
+        cancel context.CancelFunc,
+        translate models.Phrase,
+        voice models.Voice,
+        wg *sync.WaitGroup,
+        basePath string) <span class="cov8" title="1">{
+        defer wg.Done()
+        select </span>{
+        case &lt;-ctx.Done():<span class="cov0" title="0">
+                return</span> // Error somewhere, terminate
+        default:<span class="cov8" title="1">
+                resp, err := g.atts.SynthesizeSpeech(ctx, &amp;polly.SynthesizeSpeechInput{
+                        Text:         &amp;translate.Text,
+                        VoiceId:      types.VoiceId(voice.VoiceName), // voice.Name
+                        OutputFormat: "mp3",
+                        Engine:       types.Engine(voice.Engine),
+                })
+                if err != nil </span><span class="cov0" title="0">{
+                        switch </span>{
+                        case errors.Is(err, context.Canceled):<span class="cov0" title="0">
+                                return</span>
+                        default:<span class="cov0" title="0">
+                                e.Logger().Error(fmt.Errorf("error creating Synthesize Speech client: %s", err))
+                                cancel()
+                                return</span>
+                        }
+                }
+
+                // Save the output to an MP3 file
+                <span class="cov8" title="1">outputFile := basePath + strconv.Itoa(translate.ID)
+                file, err := os.Create(outputFile)
+                if err != nil </span><span class="cov0" title="0">{
+                        e.Logger().Error(fmt.Errorf("error creating output file: %s", err))
+                        cancel()
+                        return
+                }</span>
+                <span class="cov8" title="1">defer file.Close()
+
+                if resp.AudioStream == nil </span><span class="cov8" title="1">{
+                        e.Logger().Error(fmt.Errorf("error synthesizing speech amazon: %s", err))
+                        cancel()
+                        return
+                }</span>
+                // Write the audio stream to the file
+                <span class="cov8" title="1">_, err = file.ReadFrom(resp.AudioStream)
+                if err != nil </span><span class="cov0" title="0">{
+                        e.Logger().Error(fmt.Errorf("failed to write audio stream to file, %v", err))
+                        cancel()
+                        return
+                }</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file14" style="display: none">package translates
+
+import (
+        tts "cloud.google.com/go/texttospeech/apiv1"
         "cloud.google.com/go/texttospeech/apiv1/texttospeechpb"
         "cloud.google.com/go/translate"
         "context"
@@ -1861,86 +2401,54 @@ import (
         "github.com/googleapis/gax-go/v2"
         "github.com/labstack/echo/v4"
         "golang.org/x/text/language"
+        "log"
         "os"
         "strconv"
         "sync"
         "talkliketv.click/tltv/internal/models"
-        "talkliketv.click/tltv/internal/util"
-        "time"
 )
 
-// TranslateClientX creates an interface for google translate.Translate so it can
+// GoogleTranslateClientX creates an interface for google translate.Translate so it can
 // be mocked for testing
-type TranslateClientX interface {
+type GoogleTranslateClientX interface {
         Translate(context.Context, []string, language.Tag, *translate.Options) ([]translate.Translation, error)
 }
 
-// TTSClientX creates an interface for google texttospeechpb.SynthesizeSpeech so
+// GoogleTTSClientX creates an interface for google texttospeechpb.SynthesizeSpeech so
 // it can be mocked for testing
-type TTSClientX interface {
+type GoogleTTSClientX interface {
         SynthesizeSpeech(context.Context, *texttospeechpb.SynthesizeSpeechRequest, ...gax.CallOption) (*texttospeechpb.SynthesizeSpeechResponse, error)
 }
 
-// TranslateX creates an interface for Translate methods that deal with creating/inserting
-// translates and phrases
-type TranslateX interface {
-        CreateTTS(echo.Context, models.Title, int, string) ([]models.Phrase, error)
-        TranslatePhrases(echo.Context, []models.Phrase, models.Language) ([]models.Phrase, error)
+type GoogleClients struct {
+        gtc  GoogleTranslateClientX
+        gtts GoogleTTSClientX
 }
 
-type Translate struct {
-        translateClient TranslateClientX
-        ttsClient       TTSClientX
-}
-
-func New(trc TranslateClientX, ttsc TTSClientX) *Translate <span class="cov8" title="1">{
-        return &amp;Translate{
-                translateClient: trc,
-                ttsClient:       ttsc,
-        }
-}</span>
-
-// TranslatePhrases takes a slice of db.Translate{} and a db.Language and returns a slice
-// of util.TranslatesReturn to be inserted into the db
-func (t *Translate) TranslatePhrases(e echo.Context, phrases []models.Phrase, lang models.Language) ([]models.Phrase, error) <span class="cov8" title="1">{
-        // get language tag to translate to
-        langTag, err := language.Parse(lang.Language)
+// NewGoogleClients creates a new google translate and text-to-speech clients; constructs
+// the translate and audiofile dependencies and returns them
+func NewGoogleClients() *GoogleClients <span class="cov0" title="0">{
+        // create google translate and text-to-speech clients
+        ctx := context.Background()
+        transClient, err := translate.NewClient(ctx)
         if err != nil </span><span class="cov0" title="0">{
-                e.Logger().Error(err)
-                return nil, err
+                log.Fatalf("Error creating google api translate client\n: %s", err)
         }</span>
-
-        // concurrently get all the responses from Google Translate
-        <span class="cov8" title="1">var wg sync.WaitGroup
-        responses := make([]models.Phrase, len(phrases)) // create string slice to hold all the responses
-        // create context with cancel, so you can cancel all other requests after any error
-        newCtx, cancel := context.WithCancel(context.Background())
-        defer cancel() // Make sure it's called to release resources even if no errors
-
-        for i, nextTranslate := range phrases </span><span class="cov8" title="1">{
-                // added intermittent sleep to fix TLS handshake errors on the client side
-                if i%50 == 0 &amp;&amp; i != 0 </span><span class="cov0" title="0">{
-                        time.Sleep(2 * time.Second)
-                }</span>
-                <span class="cov8" title="1">wg.Add(1)
-                //get responses concurrently with go routines
-                go t.GetTranslate(e, newCtx, cancel, nextTranslate, &amp;wg, langTag, responses, i)</span>
-        }
-        <span class="cov8" title="1">wg.Wait()
-
-        if newCtx.Err() != nil </span><span class="cov0" title="0">{
-                e.Logger().Error(newCtx.Err())
-                return nil, newCtx.Err()
+        <span class="cov0" title="0">ttsClient, err := tts.NewClient(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Error creating google api translate client\n: %s", err)
         }</span>
-
-        <span class="cov8" title="1">return responses, nil</span>
+        <span class="cov0" title="0">return &amp;GoogleClients{
+                gtc:  transClient,
+                gtts: ttsClient,
+        }</span>
 }
 
 // GetTranslate is a helper function for TranslatePhrases that allows concurrent calls to
 // google translate.Translate.
 // It receives a context.CancelFunc that is invoked on an error so all subsequent calls to
 // google translate.Translate can be aborted
-func (t *Translate) GetTranslate(e echo.Context,
+func (g *GoogleClients) GetTranslate(e echo.Context,
         ctx context.Context,
         cancel context.CancelFunc,
         phrase models.Phrase,
@@ -1954,8 +2462,7 @@ func (t *Translate) GetTranslate(e echo.Context,
         case &lt;-ctx.Done():<span class="cov0" title="0">
                 return</span> // Error somewhere, terminate
         default:<span class="cov8" title="1"> // Default to avoid blocking
-
-                resp, err := t.translateClient.Translate(ctx, []string{phrase.Text}, lang, nil)
+                resp, err := g.gtc.Translate(ctx, []string{phrase.Text}, lang, nil)
                 if err != nil </span><span class="cov0" title="0">{
                         switch </span>{
                         case errors.Is(err, context.Canceled):<span class="cov0" title="0">
@@ -1979,19 +2486,160 @@ func (t *Translate) GetTranslate(e echo.Context,
         }
 }
 
+// GetSpeech is a helper function for TextToSpeech that is run concurrently.
+// it is passed a cancel context, so if one routine fails, the following routines can
+// be canceled
+func (g *GoogleClients) GetSpeech(
+        e echo.Context,
+        ctx context.Context,
+        cancel context.CancelFunc,
+        translate models.Phrase,
+        wg *sync.WaitGroup,
+        params *texttospeechpb.VoiceSelectionParams,
+        basePath string) <span class="cov8" title="1">{
+        defer wg.Done()
+        select </span>{
+        case &lt;-ctx.Done():<span class="cov0" title="0">
+                return</span> // Error somewhere, terminate
+        default:<span class="cov8" title="1">
+                // Perform the text-to-speech request on the text input with the selected
+                // voice parameters and audio file type.
+                req := texttospeechpb.SynthesizeSpeechRequest{
+                        // Set the text input to be synthesized.
+                        Input: &amp;texttospeechpb.SynthesisInput{
+                                InputSource: &amp;texttospeechpb.SynthesisInput_Text{Text: translate.Text},
+                        },
+                        // Build the voice request, select the language code ("en-US") and the SSML
+                        // voice gender ("neutral").
+                        Voice: params,
+                        // Select the type of audio file you want returned.
+                        AudioConfig: &amp;texttospeechpb.AudioConfig{
+                                AudioEncoding: texttospeechpb.AudioEncoding_MP3,
+                        },
+                }
+
+                resp, err := g.gtts.SynthesizeSpeech(ctx, &amp;req)
+                if err != nil </span><span class="cov0" title="0">{
+                        e.Logger().Error(fmt.Errorf("error creating Synthesize Speech client: %s", err))
+                        cancel()
+                        return
+                }</span>
+
+                // The resp AudioContent is binary.
+                <span class="cov8" title="1">filename := basePath + strconv.Itoa(translate.ID)
+                err = os.WriteFile(filename, resp.AudioContent, 0600)
+                if err != nil </span><span class="cov0" title="0">{
+                        e.Logger().Error(fmt.Errorf("error creating translate client: %s", err))
+                        cancel()
+                        return
+                }</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file15" style="display: none">package translates
+
+import (
+        "cloud.google.com/go/texttospeech/apiv1/texttospeechpb"
+        "context"
+        "github.com/labstack/echo/v4"
+        "golang.org/x/text/language"
+        "os"
+        "sync"
+        "talkliketv.click/tltv/internal/models"
+        "talkliketv.click/tltv/internal/util"
+        "time"
+)
+
+type Platform int
+
+const (
+        Google Platform = iota
+        Amazon
+)
+
+var GlobalPlatform Platform
+
+type Translate struct {
+        googleClients GoogleClients
+        amazonClients AmazonClients
+        m             models.ModelsX
+}
+
+func New(gc GoogleClients, ac AmazonClients, m models.ModelsX) *Translate <span class="cov8" title="1">{
+        return &amp;Translate{
+                googleClients: gc,
+                amazonClients: ac,
+                m:             m,
+        }
+}</span>
+
+// TranslateX creates an interface for Translates
+type TranslateX interface {
+        CreateTTS(echo.Context, models.Title, int, string) ([]models.Phrase, error)
+        TranslatePhrases(echo.Context, models.Title, models.Language) ([]models.Phrase, error)
+}
+
+// TranslatePhrases takes a slice of db.Translate{} and a db.Language and returns a slice
+// of util.TranslatesReturn to be inserted into the db
+func (t *Translate) TranslatePhrases(e echo.Context, title models.Title, lang models.Language) ([]models.Phrase, error) <span class="cov8" title="1">{
+        // concurrently get all the responses from Google Translate
+        var wg sync.WaitGroup
+        responses := make([]models.Phrase, len(title.TitlePhrases)) // create string slice to hold all the responses
+        // create context with cancel, so you can cancel all other requests after any error
+        newCtx, cancel := context.WithCancel(context.Background())
+        defer cancel() // Make sure it's called to release resources even if no errors
+
+        // this is needed fro googleClients translate
+        langTag, err := language.Parse(lang.Code)
+        if err != nil </span><span class="cov0" title="0">{
+                e.Logger().Error(err)
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">for i, nextTranslate := range title.TitlePhrases </span><span class="cov8" title="1">{
+                // added intermittent sleep to fix TLS handshake errors on the client side
+                if i%50 == 0 &amp;&amp; i != 0 </span><span class="cov0" title="0">{
+                        time.Sleep(2 * time.Second)
+                }</span>
+                <span class="cov8" title="1">wg.Add(1)
+                // get responses concurrently with go routines depending on platform
+                if GlobalPlatform == Google </span><span class="cov8" title="1">{
+                        go t.googleClients.GetTranslate(e, newCtx, cancel, nextTranslate, &amp;wg, langTag, responses, i)
+                }</span> else<span class="cov0" title="0"> {
+                        titleLang, err := t.m.GetLanguage(title.TitleLangId)
+                        if err != nil </span><span class="cov0" title="0">{
+                                e.Logger().Error(err)
+                                return nil, err
+                        }</span>
+                        <span class="cov0" title="0">go t.amazonClients.GetTranslate(e, newCtx, cancel, nextTranslate, &amp;wg, lang.Code, titleLang.Code, responses, i)</span>
+                }
+        }
+        <span class="cov8" title="1">wg.Wait()
+
+        if newCtx.Err() != nil </span><span class="cov0" title="0">{
+                e.Logger().Error(newCtx.Err())
+                return nil, newCtx.Err()
+        }</span>
+
+        <span class="cov8" title="1">return responses, nil</span>
+}
+
 // CreateTTS is called from api.createAudioFromTitle.
 // It checks if the mp3 audio files exist and if not it creates them.
 func (t *Translate) CreateTTS(e echo.Context, title models.Title, voiceId int, basePath string) ([]models.Phrase, error) <span class="cov0" title="0">{
-        voice, ok := models.Voices[voiceId]
-        if !ok </span><span class="cov0" title="0">{
-                return nil, util.ErrVoiceIdInvalid
+        voice, err := t.m.GetVoice(voiceId)
+        if err != nil </span><span class="cov0" title="0">{
+                e.Logger().Error(err)
+                return nil, err
         }</span>
-        <span class="cov0" title="0">lang, ok := models.Languages[voice.LangId]
-        if !ok </span><span class="cov0" title="0">{
-                return nil, errors.New("invalid language id")
+        <span class="cov0" title="0">lang, err := t.m.GetLanguage(voice.LangId)
+        if err != nil </span><span class="cov0" title="0">{
+                e.Logger().Error(err)
+                return nil, err
         }</span>
 
-        // if the audio files already exist no need to request them again
+        // if the audio files already exist, no need to request them again
         <span class="cov0" title="0">skip, err := util.PathExists(basePath)
         if err != nil </span><span class="cov0" title="0">{
                 e.Logger().Error(err)
@@ -2024,33 +2672,38 @@ func (t *Translate) CreateTTS(e echo.Context, title models.Title, voiceId int, b
 // TextToSpeech takes a slice of db.Translate and get the speech mp3's adding them
 // to the machines local file system
 func (t *Translate) TextToSpeech(e echo.Context, ts []models.Phrase, voice models.Voice, bp string) error <span class="cov8" title="1">{
-        // set the texttospeec params from the db voice sent in the request
-        voiceSelectionParams := &amp;texttospeechpb.VoiceSelectionParams{
-                LanguageCode: voice.LanguageCodes[0],
-                SsmlGender:   texttospeechpb.SsmlVoiceGender_MALE,
-                Name:         voice.Name,
-        }
-        if voice.SsmlGender == "FEMALE" </span><span class="cov0" title="0">{
-                voiceSelectionParams.SsmlGender = texttospeechpb.SsmlVoiceGender_FEMALE
-        }</span>
         // concurrently get all the audio content from Google text-to-speech
-        <span class="cov8" title="1">var wg sync.WaitGroup
+        var wg sync.WaitGroup
         // create context with cancel, so you can cancel all other requests after any error
         newCtx, cancel := context.WithCancel(context.Background())
         defer cancel() // Make sure it's called to release resources even if no errors
 
-        for i, nextText := range ts </span><span class="cov8" title="1">{
+        // set the texttospeec params from the db voice sent in the request
+        voiceSelectionParams := &amp;texttospeechpb.VoiceSelectionParams{
+                LanguageCode: voice.LanguageCodes[0],
+                SsmlGender:   texttospeechpb.SsmlVoiceGender_MALE,
+                Name:         voice.VoiceName,
+        }
+        if voice.Gender == "FEMALE" </span><span class="cov0" title="0">{
+                voiceSelectionParams.SsmlGender = texttospeechpb.SsmlVoiceGender_FEMALE
+        }</span>
+
+        <span class="cov8" title="1">for i, nextText := range ts </span><span class="cov8" title="1">{
                 // added intermittent sleep to fix TLS handshake errors on the client side
                 if i%50 == 0 &amp;&amp; i != 0 </span><span class="cov0" title="0">{
                         time.Sleep(2 * time.Second)
                 }</span>
                 <span class="cov8" title="1">wg.Add(1)
-                //get responses concurrently with go routines
-                go t.GetSpeech(e, newCtx, cancel, nextText, &amp;wg, voiceSelectionParams, bp)</span>
+                //get responses concurrently with go routines depending on the platform
+                if GlobalPlatform == Google </span><span class="cov8" title="1">{
+                        go t.googleClients.GetSpeech(e, newCtx, cancel, nextText, &amp;wg, voiceSelectionParams, bp)
+                }</span> else<span class="cov8" title="1"> {
+                        go t.amazonClients.GetSpeech(e, newCtx, cancel, nextText, voice, &amp;wg, bp)
+                }</span>
         }
         <span class="cov8" title="1">wg.Wait()
 
-        if newCtx.Err() != nil </span><span class="cov0" title="0">{
+        if newCtx.Err() != nil </span><span class="cov8" title="1">{
                 e.Logger().Error(newCtx.Err())
                 return newCtx.Err()
         }</span>
@@ -2058,75 +2711,31 @@ func (t *Translate) TextToSpeech(e echo.Context, ts []models.Phrase, voice model
         <span class="cov8" title="1">return nil</span>
 }
 
-// GetSpeech is a helper function for TextToSpeech that is run concurrently.
-// it is passed a cancel context, so if one routine fails, the following routines can
-// be canceled
-func (t *Translate) GetSpeech(
-        e echo.Context,
-        ctx context.Context,
-        cancel context.CancelFunc,
-        translate models.Phrase,
-        wg *sync.WaitGroup,
-        params *texttospeechpb.VoiceSelectionParams,
-        basePath string) <span class="cov8" title="1">{
-        defer wg.Done()
-        select </span>{
-        case &lt;-ctx.Done():<span class="cov0" title="0">
-                return</span> // Error somewhere, terminate
-        default:<span class="cov8" title="1">
-                // Perform the text-to-speech request on the text input with the selected
-                // voice parameters and audio file type.
-                req := texttospeechpb.SynthesizeSpeechRequest{
-                        // Set the text input to be synthesized.
-                        Input: &amp;texttospeechpb.SynthesisInput{
-                                InputSource: &amp;texttospeechpb.SynthesisInput_Text{Text: translate.Text},
-                        },
-                        // Build the voice request, select the language code ("en-US") and the SSML
-                        // voice gender ("neutral").
-                        Voice: params,
-                        // Select the type of audio file you want returned.
-                        AudioConfig: &amp;texttospeechpb.AudioConfig{
-                                AudioEncoding: texttospeechpb.AudioEncoding_MP3,
-                        },
-                }
-
-                resp, err := t.ttsClient.SynthesizeSpeech(ctx, &amp;req)
-                if err != nil </span><span class="cov0" title="0">{
-                        e.Logger().Error(fmt.Errorf("error creating Synthesize Speech client: %s", err))
-                        cancel()
-                        return
-                }</span>
-
-                // The resp AudioContent is binary.
-                <span class="cov8" title="1">filename := basePath + strconv.Itoa(translate.ID)
-                err = os.WriteFile(filename, resp.AudioContent, 0600)
-                if err != nil </span><span class="cov0" title="0">{
-                        e.Logger().Error(fmt.Errorf("error creating translate client: %s", err))
-                        cancel()
-                        return
-                }</span>
-        }
-}
-
 // CreateTranslates creates the translates in the language
 func (t *Translate) CreateTranslates(e echo.Context, title models.Title, lang models.Language) ([]models.Phrase, error) <span class="cov0" title="0">{
-        // if the original language of file matches the language you desire translates for return original phrases
-        if title.TitleLangId == lang.ID </span><span class="cov0" title="0">{
-                return title.Phrases, nil
-        }</span>
-
-        // create translates for title and to language and return
-        <span class="cov0" title="0">translatesReturn, err := t.TranslatePhrases(e, title.Phrases, lang)
+        titleLang, err := t.m.GetLanguage(title.TitleLangId)
         if err != nil </span><span class="cov0" title="0">{
                 e.Logger().Error(err)
                 return nil, err
         }</span>
 
-        <span class="cov0" title="0">return translatesReturn, nil</span>
+        // if the original language of file matches the language you desire translates for return original phrases
+        <span class="cov0" title="0">if titleLang.ID == lang.ID </span><span class="cov0" title="0">{
+                return title.TitlePhrases, nil
+        }</span>
+
+        // create translates for title and to language and return
+        <span class="cov0" title="0">translated, err := t.TranslatePhrases(e, title, lang)
+        if err != nil </span><span class="cov0" title="0">{
+                e.Logger().Error(err)
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return translated, nil</span>
 }
 </pre>
 		
-		<pre class="file" id="file11" style="display: none">package util
+		<pre class="file" id="file16" style="display: none">package util
 
 import (
         "errors"
@@ -2139,17 +2748,17 @@ var (
         ErrUnableToParseFile  = func(err error) error <span class="cov8" title="1">{
                 return fmt.Errorf("unable to parse file: %s", err)
         }</span>
-        ErrTooManyPhrases = errors.New("too many phrases")
-        ErrIntConversion  = errors.New("conversion failed: The interface does not hold an int")
-        ErrVoiceIdInvalid = errors.New("voice id invalid")
+        ErrTooManyPhrases    = errors.New("too many phrases")
+        ErrVoiceIdInvalid    = errors.New("voice id invalid")
+        ErrPauseNotFound     = errors.New("audio pause file not found")
+        ErrLanguageIdInvalid = errors.New("language id invalid")
 )
 </pre>
 		
-		<pre class="file" id="file12" style="display: none">package util
+		<pre class="file" id="file17" style="display: none">package util
 
 import (
         "os"
-        "strconv"
 )
 
 var (
@@ -2167,17 +2776,9 @@ func PathExists(path string) (bool, error) <span class="cov8" title="1">{
         }</span>
         <span class="cov0" title="0">return false, err</span>
 }
-
-func ConvertStringInt32(s string) (int32, error) <span class="cov0" title="0">{
-        i, err := strconv.ParseInt(s, 10, 32)
-        if err != nil </span><span class="cov0" title="0">{
-                return -1, err
-        }</span>
-        <span class="cov0" title="0">return int32(i), nil</span>
-}
 </pre>
 		
-		<pre class="file" id="file13" style="display: none">//go:build go1.22
+		<pre class="file" id="file18" style="display: none">//go:build go1.22
 
 package main
 
@@ -2188,7 +2789,10 @@ import (
         "os/exec"
         "strings"
         "talkliketv.click/tltv/api"
+        "talkliketv.click/tltv/internal/audio/audiofile"
         "talkliketv.click/tltv/internal/config"
+        "talkliketv.click/tltv/internal/models"
+        "talkliketv.click/tltv/internal/translates"
 )
 
 func main() <span class="cov0" title="0">{
@@ -2209,10 +2813,17 @@ func main() <span class="cov0" title="0">{
                 log.Fatalf("Please make sure ffmep is installed and in PATH\n: %s", string(output))
         }</span>
 
-        <span class="cov0" title="0">t, af := api.CreateDependencies()
+        //initialize audiofile with the real command runner
+        <span class="cov0" title="0">af := audiofile.New(&amp;audiofile.RealCmdRunner{})
+        // create translates with google or amazon clients depending on the flag set in conifg
+        // I also set a global platform since this will not be changed during execution
+        t := translates.New(*translates.NewGoogleClients(), translates.AmazonClients{}, &amp;models.Models{})
+        if translates.GlobalPlatform == translates.Amazon </span><span class="cov0" title="0">{
+                t = translates.New(translates.GoogleClients{}, *translates.NewAmazonClients(), &amp;models.Models{})
+        }</span>
 
         // create new server
-        e := api.NewServer(cfg, t, af)
+        <span class="cov0" title="0">e := api.NewServer(cfg, t, af)
 
         e.Logger.Fatal(e.Start(net.JoinHostPort("0.0.0.0", cfg.Port)))</span>
 }

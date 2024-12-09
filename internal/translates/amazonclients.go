@@ -48,24 +48,24 @@ func NewAmazonClients() *AmazonClients {
 	// Create a Polly client
 	ttsClient := polly.NewFromConfig(cfg)
 
-	// Input text to translate
-	text := "Hello, how are you?"
-	sourceLanguage := "en" // Source language code (e.g., "en" for English)
-	targetLanguage := "es" // Target language code (e.g., "es" for Spanish)
+	//// Input text to translate
+	//text := "Hello, how are you?"
+	//sourceLanguage := "en" // Source language code (e.g., "en" for English)
+	//targetLanguage := "es" // Target language code (e.g., "es" for Spanish)
 
 	// Call the TranslateText API
-	output, err := translateClient.TranslateText(context.TODO(), &translate.TranslateTextInput{
-		Text:               &text,
-		SourceLanguageCode: &sourceLanguage,
-		TargetLanguageCode: &targetLanguage,
-	})
-	if err != nil {
-		log.Fatalf("Failed to translate text: %v", err)
-	}
-
-	// Print the translated text
-	fmt.Printf("Original text: %s\n", text)
-	fmt.Printf("Translated text: %s\n", *output.TranslatedText)
+	//output, err := translateClient.TranslateText(context.TODO(), &translate.TranslateTextInput{
+	//	Text:               &text,
+	//	SourceLanguageCode: &sourceLanguage,
+	//	TargetLanguageCode: &targetLanguage,
+	//})
+	//if err != nil {
+	//	log.Fatalf("Failed to translate text: %v", err)
+	//}
+	//
+	//// Print the translated text
+	//fmt.Printf("Original text: %s\n", text)
+	//fmt.Printf("Translated text: %s\n", *output.TranslatedText)
 	return &AmazonClients{atc: translateClient, atts: ttsClient}
 }
 
@@ -150,14 +150,23 @@ func (g *AmazonClients) GetSpeech(
 		outputFile := basePath + strconv.Itoa(translate.ID)
 		file, err := os.Create(outputFile)
 		if err != nil {
-			log.Fatalf("failed to create file, %v", err)
+			e.Logger().Error(fmt.Errorf("error creating output file: %s", err))
+			cancel()
+			return
 		}
 		defer file.Close()
 
+		if resp.AudioStream == nil {
+			e.Logger().Error(fmt.Errorf("error synthesizing speech amazon: %s", err))
+			cancel()
+			return
+		}
 		// Write the audio stream to the file
 		_, err = file.ReadFrom(resp.AudioStream)
 		if err != nil {
-			log.Fatalf("failed to write audio stream to file, %v", err)
+			e.Logger().Error(fmt.Errorf("failed to write audio stream to file, %v", err))
+			cancel()
+			return
 		}
 	}
 }

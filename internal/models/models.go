@@ -40,9 +40,16 @@ type GoogleJsonLanguage struct {
 	Name     string
 }
 
+type AmazonLanguageArray struct {
+	Languages []AmazonJsonLanguage
+}
 type AmazonJsonLanguage struct {
 	LanguageCode string
 	LanguageName string
+}
+
+type AmazonVoiceArray struct {
+	Voices []AmazonJsonVoice
 }
 
 type AmazonJsonVoice struct {
@@ -186,14 +193,14 @@ func MakeAmazonMaps() {
 		log.Fatal(err)
 	}
 	// Decode the JSON data into a struct
-	var alangs []AmazonJsonLanguage
+	var array AmazonLanguageArray
 	decoder := json.NewDecoder(languageFile)
-	err = decoder.Decode(&alangs)
+	err = decoder.Decode(&array)
 	if err != nil {
 		log.Fatal("Error decoding JSON:", err)
 	}
 	// add each voice to the Languages map using key for the id
-	for i, lang := range alangs {
+	for i, lang := range array.Languages {
 		languages[i] = Language{
 			ID:   i,
 			Code: lang.LanguageCode,
@@ -206,21 +213,21 @@ func MakeAmazonMaps() {
 		log.Fatal(err)
 	}
 	// Decode the JSON data into a struct
-	var avoices []AmazonJsonVoice
+	var avoices AmazonVoiceArray
 	decoder = json.NewDecoder(voiceFile)
 	err = decoder.Decode(&avoices)
 	if err != nil {
 		log.Fatal("Error decoding JSON:", err)
 	}
 
-	for i, voice := range avoices {
+	for i, voice := range avoices.Voices {
 		langCode := voice.LanguageCode
 		// get the language id for the voice from the language tag
 		langTag := strings.Split(langCode, "-")
 		found := false
 		langId := -1
 		// find the language id (key) for the language that corresponds to the voice
-		for j, lang := range alangs {
+		for j, lang := range array.Languages {
 			if lang.LanguageCode == langTag[0] {
 				found = true
 				langId = j

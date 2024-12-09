@@ -92,12 +92,12 @@ func TestAudioFromFile(t *testing.T) {
 					CreateMp3Zip(gomock.Any(), titleWithTranslates, gomock.Any()).
 					Return(file, nil)
 			},
-			checkResponse: func(res *http.Response) {
-				require.Equal(t, http.StatusOK, res.StatusCode)
-			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
 				return createMultiPartBody(t, data, filename, okFormMap)
+			},
+			checkResponse: func(res *http.Response) {
+				require.Equal(t, http.StatusOK, res.StatusCode)
 			},
 		},
 		{
@@ -128,9 +128,6 @@ func TestAudioFromFile(t *testing.T) {
 					CreateMp3Zip(gomock.Any(), titleWithTranslates, gomock.Any()).
 					Return(file, nil)
 			},
-			checkResponse: func(res *http.Response) {
-				require.Equal(t, http.StatusOK, res.StatusCode)
-			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
 
@@ -143,15 +140,13 @@ func TestAudioFromFile(t *testing.T) {
 				}
 				return createMultiPartBody(t, data, filename, formMap)
 			},
+			checkResponse: func(res *http.Response) {
+				require.Equal(t, http.StatusOK, res.StatusCode)
+			},
 		},
 		{
 			name: "Pause out of range",
 			buildStubs: func(stubs test.MockStubs) {
-			},
-			checkResponse: func(res *http.Response) {
-				require.Equal(t, http.StatusBadRequest, res.StatusCode)
-				resBody := readBody(t, res)
-				require.Contains(t, resBody, "pause must be between 3 and 10: 11")
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
@@ -163,6 +158,11 @@ func TestAudioFromFile(t *testing.T) {
 					"pause":          "11",
 				}
 				return createMultiPartBody(t, data, filename, formMap)
+			},
+			checkResponse: func(res *http.Response) {
+				require.Equal(t, http.StatusBadRequest, res.StatusCode)
+				resBody := readBody(t, res)
+				require.Contains(t, resBody, "pause must be between 3 and 10: 11")
 			},
 		},
 		{
@@ -478,7 +478,13 @@ func TestGoogleIntegration(t *testing.T) {
 
 	//initialize audiofile with the real command runner
 	af := audiofile.New(&audiofile.RealCmdRunner{})
+	// create translates with google or amazon clients depending on the flag set in conifg
+	// I also set a global platform since this will not be changed during execution
 	tr := translates.New(*translates.NewGoogleClients(), translates.AmazonClients{}, &models.Models{})
+	if translates.GlobalPlatform == translates.Amazon {
+		tr = translates.New(translates.GoogleClients{}, *translates.NewAmazonClients(), &models.Models{})
+	}
+
 	e := NewServer(testCfg.Config, tr, af)
 
 	title := test.RandomTitle()
@@ -518,8 +524,84 @@ func TestGoogleIntegration(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
+			//ctrl := gomock.NewController(t)
+			//defer ctrl.Finish()
+
+			ts := httptest.NewServer(e)
+
+			multiBody, multiWriter := tc.multipartBody(t)
+			req, err := http.NewRequest(http.MethodPost, ts.URL+audioBasePath, multiBody)
+			require.NoError(t, err)
+
+			req.Header.Set("Content-Type", multiWriter.FormDataContentType())
+			res, err := ts.Client().Do(req)
+			require.NoError(t, err)
+			defer res.Body.Close()
+
+			tc.checkResponse(res)
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestAmazonIntegration(t *testing.T) {
+	if !util.Integration {
+		t.Skip("skipping integration test")
+	}
+
+	t.Parallel()
+
+	translates.GlobalPlatform = translates.Amazon
+	//initialize audiofile with the real command runner
+	af := audiofile.New(&audiofile.RealCmdRunner{})
+	// create translates with google or amazon clients depending on the flag set in conifg
+	// I also set a global platform since this will not be changed during execution
+	tr := translates.New(*translates.NewGoogleClients(), translates.AmazonClients{}, &models.Models{})
+	if translates.GlobalPlatform == translates.Amazon {
+		tr = translates.New(translates.GoogleClients{}, *translates.NewAmazonClients(), &models.Models{})
+	}
+
+	e := NewServer(testCfg.Config, tr, af)
+
+	title := test.RandomTitle()
+
+	//create a base path for storing mp3 audio files
+	tmpAudioBasePath := test.AudioBasePath + title.Name + "/"
+	err := os.MkdirAll(tmpAudioBasePath, 0777)
+	require.NoError(t, err)
+
+	// remove directory after tests run
+	defer os.RemoveAll(tmpAudioBasePath)
+
+	filename := tmpAudioBasePath + "TestAudioFromFile.txt"
+
+	okFormMap := map[string]string{
+		"fileLanguageId": strconv.Itoa(rand.IntN(test.MaxLanguages)), //nolint:gosec
+		"titleName":      title.Name,
+		"fromVoiceId":    strconv.Itoa(rand.IntN(test.MaxVoices)),
+		"toVoiceId":      strconv.Itoa(rand.IntN(test.MaxVoices)),
+	}
+
+	testCases := []testCase{
+
+		{
+			name: "OK",
+			checkResponse: func(res *http.Response) {
+				require.Equal(t, http.StatusOK, res.StatusCode)
+			},
+			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
+				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
+
+				formMap := okFormMap
+				return createMultiPartBody(t, data, filename, formMap)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			//ctrl := gomock.NewController(t)
+			//defer ctrl.Finish()
 
 			ts := httptest.NewServer(e)
 
