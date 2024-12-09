@@ -155,8 +155,8 @@ func TestBuildAudioInputFiles(t *testing.T) {
 	title := test.RandomTitle()
 	phrase1 := test.RandomPhrase()
 	phrase2 := test.RandomPhrase()
-	title.Phrases = []models.Phrase{phrase1, phrase2}
-	title.Translates = []models.Phrase{phrase1, phrase2}
+	title.TitlePhrases = []models.Phrase{phrase1, phrase2}
+	title.ToPhrases = []models.Phrase{phrase1, phrase2}
 	pause := test.RandomString(4)
 	from := test.RandomString(4)
 	to := test.RandomString(4)

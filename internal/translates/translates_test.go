@@ -2,10 +2,13 @@ package translates
 
 import (
 	"flag"
+	"github.com/aws/aws-sdk-go-v2/service/polly"
+	"github.com/aws/aws-sdk-go-v2/service/polly/types"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"talkliketv.click/tltv/internal/models"
 	"testing"
 
@@ -15,18 +18,17 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"golang.org/x/text/language"
-	mockt "talkliketv.click/tltv/internal/mock/translates"
 	"talkliketv.click/tltv/internal/test"
 	"talkliketv.click/tltv/internal/util"
 )
 
 type translatesTestCase struct {
 	name           string
-	buildStubs     func(*mockt.MockTranslateX, *mockt.MockTranslateClientX, *mockt.MockTTSClientX)
+	buildStubs     func(stubs test.MockStubs)
 	checkTranslate func([]models.Phrase, error)
 }
 
-func TestTextToSpeech(t *testing.T) {
+func TestGoogleTTS(t *testing.T) {
 	if util.Integration {
 		t.Skip("skipping unit test")
 	}
@@ -40,24 +42,23 @@ func TestTextToSpeech(t *testing.T) {
 	defer os.RemoveAll(basepath)
 
 	voice := test.RandomVoice()
-	voice.SsmlGender = "MALE"
+	voice.Gender = "MALE"
 	text1 := "This is sentence one."
 
 	testCases := []translatesTestCase{
 		{
 			name: "No error",
-			buildStubs: func(t *mockt.MockTranslateX, tc *mockt.MockTranslateClientX, tts *mockt.MockTTSClientX) {
+			buildStubs: func(stubs test.MockStubs) {
 				req := texttospeechpb.SynthesizeSpeechRequest{
 					// Set the text input to be synthesized.
 					Input: &texttospeechpb.SynthesisInput{
 						InputSource: &texttospeechpb.SynthesisInput_Text{Text: text1},
 					},
 					// Build the voice request, select the language code ("en-US") and the SSML
-					// voice gender ("neutral").
 					Voice: &texttospeechpb.VoiceSelectionParams{
 						LanguageCode: voice.LanguageCodes[0],
 						SsmlGender:   texttospeechpb.SsmlVoiceGender_MALE,
-						Name:         voice.Name,
+						Name:         voice.VoiceName,
 					},
 					// Select the type of audio file you want returned.
 					AudioConfig: &texttospeechpb.AudioConfig{
@@ -65,7 +66,7 @@ func TestTextToSpeech(t *testing.T) {
 					},
 				}
 				resp := texttospeechpb.SynthesizeSpeechResponse{}
-				tts.EXPECT().SynthesizeSpeech(gomock.Any(), &req).Return(&resp, nil)
+				stubs.GoogleTTsClientX.EXPECT().SynthesizeSpeech(gomock.Any(), &req).Return(&resp, nil)
 			},
 			checkTranslate: func(translates []models.Phrase, err error) {
 				require.NoError(t, err)
@@ -80,42 +81,131 @@ func TestTextToSpeech(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-
-			text := mockt.NewMockTranslateX(ctrl)
-			trc := mockt.NewMockTranslateClientX(ctrl)
-			tts := mockt.NewMockTTSClientX(ctrl)
-			tc.buildStubs(text, trc, tts)
+			stubs := test.NewMockStubs(ctrl)
+			tc.buildStubs(stubs)
 
 			e := echo.New()
 			req := httptest.NewRequest(http.MethodPost, "/any", nil)
 			rec := httptest.NewRecorder()
 			newE := e.NewContext(req, rec)
 
-			translates := New(trc, tts)
-
+			clients := GoogleClients{
+				gtc:  stubs.GoogleTranslateClientX,
+				gtts: stubs.GoogleTTsClientX,
+			}
+			translates := New(clients, AmazonClients{}, stubs.ModelsX)
 			err = translates.TextToSpeech(newE, []models.Phrase{{ID: 0, Text: text1}}, voice, basepath)
 			tc.checkTranslate(nil, err)
 		})
 	}
 }
 
-func TestTranslatePhrases(t *testing.T) {
+func TestAmazonTTS(t *testing.T) {
 	if util.Integration {
 		t.Skip("skipping unit test")
 	}
 	t.Parallel()
 
-	modelsLang := models.Language{ID: 0, Language: "es", Name: "Spanish"}
+	title := test.RandomTitle()
+
+	basepath := test.AudioBasePath + title.Name + "/"
+	err := os.MkdirAll(basepath, 0777)
+	require.NoError(t, err)
+	defer os.RemoveAll(basepath)
+
+	voice := test.RandomVoice()
+	voice.Gender = "MALE"
+	text1 := "This is sentence one."
+
+	testCases := []translatesTestCase{
+		{
+			name: "Nil response",
+			buildStubs: func(stubs test.MockStubs) {
+				ssi := polly.SynthesizeSpeechInput{
+					Text:         &text1,
+					VoiceId:      types.VoiceId(voice.VoiceName), // voice.Name
+					OutputFormat: "mp3",
+					Engine:       types.Engine(voice.Engine),
+				}
+				resp := polly.SynthesizeSpeechOutput{}
+				//SynthesizeSpeech(context.Context, *polly.SynthesizeSpeechInput, ...func(*polly.Options)) (*polly.SynthesizeSpeechOutput, error)
+				stubs.AmazonTTsClientX.EXPECT().SynthesizeSpeech(gomock.Any(), &ssi).Return(&resp, nil)
+			},
+			checkTranslate: func(translates []models.Phrase, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "context canceled")
+			},
+		},
+		{
+			name: "No error",
+			buildStubs: func(stubs test.MockStubs) {
+				ssi := polly.SynthesizeSpeechInput{
+					Text:         &text1,
+					VoiceId:      types.VoiceId(voice.VoiceName), // voice.Name
+					OutputFormat: "mp3",
+					Engine:       types.Engine(voice.Engine),
+				}
+				stringReader := strings.NewReader("shiny!")
+				stringReadCloser := io.NopCloser(stringReader)
+				resp := polly.SynthesizeSpeechOutput{
+					AudioStream: stringReadCloser,
+				}
+				//SynthesizeSpeech(context.Context, *polly.SynthesizeSpeechInput, ...func(*polly.Options)) (*polly.SynthesizeSpeechOutput, error)
+				stubs.AmazonTTsClientX.EXPECT().SynthesizeSpeech(gomock.Any(), &ssi).Return(&resp, nil)
+			},
+			checkTranslate: func(translates []models.Phrase, err error) {
+				require.NoError(t, err)
+				isEmpty, err := IsDirectoryEmpty(basepath)
+				require.NoError(t, err)
+				require.False(t, isEmpty)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			stubs := test.NewMockStubs(ctrl)
+			tc.buildStubs(stubs)
+
+			e := echo.New()
+			req := httptest.NewRequest(http.MethodPost, "/any", nil)
+			rec := httptest.NewRecorder()
+			newE := e.NewContext(req, rec)
+
+			GlobalPlatform = Amazon
+			clients := AmazonClients{
+				atc:  stubs.AmazonTranslateClientX,
+				atts: stubs.AmazonTTsClientX,
+			}
+			translates := New(GoogleClients{}, clients, stubs.ModelsX)
+			err = translates.TextToSpeech(newE, []models.Phrase{{ID: 0, Text: text1}}, voice, basepath)
+			tc.checkTranslate(nil, err)
+		})
+	}
+}
+
+func TestGoogleTranslate(t *testing.T) {
+	if util.Integration {
+		t.Skip("skipping unit test")
+	}
+	t.Parallel()
+
+	modelsLang := models.Language{ID: 0, Code: "es", Name: "Spanish"}
 	text1 := "This is sentence one."
 	translate1 := models.Phrase{ID: 0, Text: text1}
 	translateText := "Esta es la primera oración."
 	returnedPhrase := []models.Phrase{{ID: 0, Text: translateText}, translate1}
 	translation := translate.Translation{Text: "Esta es la primera oración."}
+	title := test.RandomTitle()
+	title.TitlePhrases = []models.Phrase{{ID: 0, Text: text1}}
+
 	testCases := []translatesTestCase{
 		{
 			name: "No error",
-			buildStubs: func(t *mockt.MockTranslateX, tr *mockt.MockTranslateClientX, ts *mockt.MockTTSClientX) {
-				tr.EXPECT().Translate(gomock.Any(), []string{text1}, language.Spanish, nil).
+			buildStubs: func(stubs test.MockStubs) {
+				stubs.GoogleTranslateClientX.EXPECT().Translate(gomock.Any(), []string{text1}, language.Spanish, nil).
 					Return([]translate.Translation{translation}, nil)
 			},
 			checkTranslate: func(translates []models.Phrase, err error) {
@@ -130,18 +220,20 @@ func TestTranslatePhrases(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			text := mockt.NewMockTranslateX(ctrl)
-			trc := mockt.NewMockTranslateClientX(ctrl)
-			tts := mockt.NewMockTTSClientX(ctrl)
-			tc.buildStubs(text, trc, tts)
+			stubs := test.NewMockStubs(ctrl)
+			tc.buildStubs(stubs)
 
 			e := echo.New()
 			req := httptest.NewRequest(http.MethodPost, "/titles/translates", nil)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
 
-			translateX := New(trc, tts)
-			translatesRow, err := translateX.TranslatePhrases(c, []models.Phrase{translate1}, modelsLang)
+			clients := GoogleClients{
+				gtc:  stubs.GoogleTranslateClientX,
+				gtts: stubs.GoogleTTsClientX,
+			}
+			translates := New(clients, AmazonClients{}, stubs.ModelsX)
+			translatesRow, err := translates.TranslatePhrases(c, title, modelsLang)
 			tc.checkTranslate(translatesRow, err)
 		})
 	}

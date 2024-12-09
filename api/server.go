@@ -1,9 +1,6 @@
 package api
 
 import (
-	texttospeech "cloud.google.com/go/texttospeech/apiv1"
-	"cloud.google.com/go/translate"
-	"context"
 	"fmt"
 	echomw "github.com/labstack/echo/v4/middleware"
 	middleware "github.com/oapi-codegen/echo-middleware"
@@ -24,9 +21,9 @@ import (
 
 type Server struct {
 	sync.RWMutex
-	translates translates.TranslateX
-	config     config.Config
-	af         audiofile.AudioFileX
+	translate translates.TranslateX
+	config    config.Config
+	af        audiofile.AudioFileX
 }
 
 // NewServer creates a new HTTP server and sets up routing.
@@ -35,8 +32,12 @@ func NewServer(cfg config.Config, t translates.TranslateX, af audiofile.AudioFil
 	// make sure silence mp3s exist in your base path
 	initSilence(cfg)
 
-	// create maps of voices and languages we will use instead of database
-	models.MakeMaps()
+	// create maps of voices and languages depending on platform
+	if translates.GlobalPlatform == translates.Google {
+		models.MakeGoogleMaps()
+	} else {
+		models.MakeAmazonMaps()
+	}
 
 	spec, err := oapi.GetSwagger()
 	if err != nil {
@@ -54,9 +55,9 @@ func NewServer(cfg config.Config, t translates.TranslateX, af audiofile.AudioFil
 	e.Use(middleware.OapiRequestValidator(spec))
 
 	srv := &Server{
-		translates: t,
-		config:     cfg,
-		af:         af,
+		translate: t,
+		config:    cfg,
+		af:        af,
 	}
 	oapi.RegisterHandlers(e, srv)
 	return e
@@ -103,25 +104,4 @@ func initSilence(cfg config.Config) {
 			}
 		}
 	}
-}
-
-// CreateDependencies creates a new google translate and text-to-speech clients; constructs
-// the translates and audiofile dependencies and returns them
-func CreateDependencies() (*translates.Translate, *audiofile.AudioFile) {
-	// create google translate and text-to-speech clients
-	ctx := context.Background()
-	transClient, err := translate.NewClient(ctx)
-	if err != nil {
-		log.Fatalf("Error creating google api translate client\n: %s", err)
-	}
-	ttsClient, err := texttospeech.NewClient(ctx)
-	if err != nil {
-		log.Fatalf("Error creating google api translate client\n: %s", err)
-	}
-	t := translates.New(transClient, ttsClient)
-
-	//initialize audiofile with the real command runner
-	af := audiofile.New(&audiofile.RealCmdRunner{})
-
-	return t, af
 }

@@ -19,33 +19,40 @@ import (
 // AudioFromFile accepts a file in srt, phrase per line, or paragraph form and
 // sends a zip file of mp3 audio tracks for learning a language that you choose
 func (s *Server) AudioFromFile(e echo.Context) error {
-	// TODO add more oapi validation
+	languagesCount := models.GetLanguagesLength() - 1
+	voicesCount := models.GetVoicesLength() - 1
 	// get values from multipart form
 	titleName := e.FormValue("titleName")
 	// convert strings from multipart form to int
 	fileLangId, err := strconv.Atoi(e.FormValue("fileLanguageId"))
 	if err != nil {
+		e.Logger().Error(util.ErrLanguageIdInvalid)
 		return e.String(http.StatusBadRequest, fmt.Sprintf("error converting fileLanguageId to int: %s", err.Error()))
 	}
 	// validate fileLangId
-	if fileLangId < 0 || fileLangId > len(models.Languages)-1 {
-		return e.String(http.StatusBadRequest, fmt.Sprintf("fileLangId must be between 0 and %d", len(models.Languages)-1))
+	if fileLangId < 0 || fileLangId > languagesCount {
+		e.Logger().Error(util.ErrLanguageIdInvalid)
+		return e.String(http.StatusBadRequest, fmt.Sprintf("fileLangId must be between 0 and %d", languagesCount))
 	}
 	toVoiceId, err := strconv.Atoi(e.FormValue("toVoiceId"))
 	if err != nil {
+		e.Logger().Error(util.ErrVoiceIdInvalid)
 		return e.String(http.StatusBadRequest, fmt.Sprintf("error converting toVoiceId to int: %s", err.Error()))
 	}
 	// validate voiceId
-	if toVoiceId < 0 || toVoiceId > len(models.Voices)-1 {
-		return e.String(http.StatusBadRequest, fmt.Sprintf("toVoiceId must be between 0 and %d", len(models.Languages)-1))
+	if toVoiceId < 0 || toVoiceId > voicesCount {
+		e.Logger().Error(util.ErrVoiceIdInvalid)
+		return e.String(http.StatusBadRequest, fmt.Sprintf("toVoiceId must be between 0 and %d", voicesCount))
 	}
 	fromVoiceId, err := strconv.Atoi(e.FormValue("fromVoiceId"))
 	if err != nil {
+		e.Logger().Error(util.ErrVoiceIdInvalid)
 		return e.String(http.StatusBadRequest, fmt.Sprintf("error converting fromVoiceId to int: %s", err.Error()))
 	}
 	// validate voiceId
-	if fromVoiceId < 0 || fromVoiceId > len(models.Voices)-1 {
-		return e.String(http.StatusBadRequest, fmt.Sprintf("fromVoiceId must be between 0 and %d", len(models.Languages)-1))
+	if fromVoiceId < 0 || fromVoiceId > voicesCount {
+		e.Logger().Error(util.ErrVoiceIdInvalid)
+		return e.String(http.StatusBadRequest, fmt.Sprintf("fromVoiceId must be between 0 and %d", voicesCount))
 	}
 
 	pause := s.config.PhrasePause
@@ -62,6 +69,7 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 		pause = pauseInt
 	}
 
+	// pattern is the pattern used to build the audio files at /internal/pattern
 	pattern := s.config.AudioPattern
 	patternForm := e.FormValue("pattern")
 	if patternForm != "" {
@@ -87,13 +95,13 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 	}
 
 	title := models.Title{
-		Name:        titleName,
-		TitleLangId: fileLangId,
-		ToVoiceId:   toVoiceId,
-		FromVoiceId: fromVoiceId,
-		Pause:       pause,
-		Phrases:     phrases,
-		Pattern:     pattern,
+		Name:         titleName,
+		TitleLangId:  fileLangId,
+		ToVoiceId:    toVoiceId,
+		FromVoiceId:  fromVoiceId,
+		Pause:        pause,
+		TitlePhrases: phrases,
+		Pattern:      pattern,
 	}
 	zipFile, err := s.createAudioFromTitle(e, title)
 	if err != nil {
@@ -108,7 +116,9 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 		}
 		return e.String(http.StatusInternalServerError, err.Error())
 	}
-	return e.Attachment(zipFile.Name(), titleName+".zip")
+
+	titleName = titleName + "." + strconv.Itoa(title.FromVoiceId) + "-" + strconv.Itoa(title.ToVoiceId) + ".zip"
+	return e.Attachment(zipFile.Name(), titleName)
 }
 
 func (s *Server) processFile(e echo.Context, titleName string) ([]models.Phrase, *os.File, error) {
@@ -149,6 +159,7 @@ func (s *Server) processFile(e echo.Context, titleName string) ([]models.Phrase,
 		return nil, zipFile, util.ErrTooManyPhrases
 	}
 
+	// make an array of phrases with id so we can match all the translates and text-to-speech
 	phrases := make([]models.Phrase, len(stringsSlice))
 	for i := range stringsSlice {
 		phrases[i] = models.Phrase{
@@ -168,7 +179,8 @@ func (s *Server) createAudioFromTitle(e echo.Context, title models.Title) (*os.F
 	fromAudioBasePath := fmt.Sprintf("%s/%d/", audioBasePath, title.FromVoiceId)
 	toAudioBasePath := fmt.Sprintf("%s/%d/", audioBasePath, title.ToVoiceId)
 
-	if _, err := s.translates.CreateTTS(e, title, title.FromVoiceId, fromAudioBasePath); err != nil {
+	_, err := s.translate.CreateTTS(e, title, title.FromVoiceId, fromAudioBasePath)
+	if err != nil {
 		e.Logger().Error(err)
 		// if error remove all the text-to-speech created up to that point
 		osErr := os.RemoveAll(audioBasePath)
@@ -178,7 +190,7 @@ func (s *Server) createAudioFromTitle(e echo.Context, title models.Title) (*os.F
 		return nil, err
 	}
 
-	tr, err := s.translates.CreateTTS(e, title, title.ToVoiceId, toAudioBasePath)
+	toPhrases, err := s.translate.CreateTTS(e, title, title.ToVoiceId, toAudioBasePath)
 	if err != nil {
 		e.Logger().Error(err)
 		osErr := os.RemoveAll(audioBasePath)
@@ -187,15 +199,17 @@ func (s *Server) createAudioFromTitle(e echo.Context, title models.Title) (*os.F
 		}
 		return nil, err
 	}
+	title.ToPhrases = toPhrases
 
-	title.Translates = tr
+	// get pause path string to build the full pause file path
 	pausePath, ok := audiofile.AudioPauseFilePath[title.Pause]
 	if !ok {
-		e.Logger().Error(errors.New("audio pause file not found"))
-		return nil, err
+		e.Logger().Error(util.ErrPauseNotFound)
+		return nil, util.ErrPauseNotFound
 	}
 	fullPausePath := s.config.TTSBasePath + pausePath
 
+	// create a temporary directory for building all the files
 	tmpDirPath := fmt.Sprintf("%s%s-%s/", s.config.TTSBasePath, title.Name, test.RandomString(4))
 	err = os.MkdirAll(tmpDirPath, 0777)
 	if err != nil {

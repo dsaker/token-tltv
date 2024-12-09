@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	_ "github.com/lib/pq"
+	"talkliketv.click/tltv/internal/translates"
 )
 
 // Config Update the config struct to hold the SMTP server settings.
@@ -32,6 +33,16 @@ func SetConfigs(config *Config) error {
 
 	if !isValidPause(config.PhrasePause) {
 		return errors.New("invalid pause value (must be between 3 and 10)")
+	}
+
+	var platform string
+	flag.StringVar(&platform, "platform", "google", "which platform you are using [google|amazon]")
+	if platform == "google" {
+		translates.GlobalPlatform = translates.Google
+	} else if platform == "amazon" {
+		translates.GlobalPlatform = translates.Amazon
+	} else {
+		return errors.New("invalid platform (must be google|amazon)")
 	}
 
 	return nil

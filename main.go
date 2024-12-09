@@ -9,7 +9,10 @@ import (
 	"os/exec"
 	"strings"
 	"talkliketv.click/tltv/api"
+	"talkliketv.click/tltv/internal/audio/audiofile"
 	"talkliketv.click/tltv/internal/config"
+	"talkliketv.click/tltv/internal/models"
+	"talkliketv.click/tltv/internal/translates"
 )
 
 func main() {
@@ -30,7 +33,14 @@ func main() {
 		log.Fatalf("Please make sure ffmep is installed and in PATH\n: %s", string(output))
 	}
 
-	t, af := api.CreateDependencies()
+	//initialize audiofile with the real command runner
+	af := audiofile.New(&audiofile.RealCmdRunner{})
+	// create translates with google or amazon clients depending on the flag set in conifg
+	// I also set a global platform since this will not be changed during execution
+	t := translates.New(*translates.NewGoogleClients(), translates.AmazonClients{}, &models.Models{})
+	if translates.GlobalPlatform == translates.Amazon {
+		t = translates.New(translates.GoogleClients{}, *translates.NewAmazonClients(), &models.Models{})
+	}
 
 	// create new server
 	e := api.NewServer(cfg, t, af)

@@ -57,9 +57,9 @@ audit/pipeline:
 ## audit/local: tidy dependencies and format, vet and test all code (race off)
 audit/local:
 	make audit
+	make report
 	make ci-lint
 	make vuln
-	make report
 
 ## staticcheck:  detect bugs, suggest code simplifications, and point out dead code
 staticcheck:
