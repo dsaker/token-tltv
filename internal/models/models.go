@@ -1,10 +1,15 @@
 package models
 
 import (
+	"crypto/sha256"
 	"encoding/json"
+	"errors"
+	"io/fs"
 	"log"
+	"os"
 	"strings"
 	"talkliketv.click/tltv/internal/util"
+	"time"
 )
 
 // aws_languages => aws translate list-languages > aws_languages.json
@@ -78,8 +83,26 @@ type Voice struct {
 	LangId                 int
 }
 
+type Token struct {
+	Status  Status
+	Created time.Time
+	Hash    []byte
+}
+
+type TokenValue struct {
+	Created time.Time
+	Status  Status
+}
+type Status int
+
+const (
+	New Status = iota
+	Used
+)
+
 var languages = make(map[int]Language)
 var voices = make(map[int]Voice)
+var tokens = make(map[string]TokenValue)
 
 type ModelsX interface {
 	GetLanguage(int) (Language, error)
@@ -249,4 +272,62 @@ func MakeAmazonMaps() {
 			}
 		}
 	}
+}
+
+func LoadTokens(filePath string) {
+	var tokenFile fs.File
+	var err error
+	if filePath == "" {
+		tokenFile, err = JsonModels.Open("jsonmodels/tokens.json")
+		if err != nil {
+			log.Fatalf("add tokens.json file to /internal/models/jsonmodels/ : %s", err)
+		}
+	} else {
+		tokenFile, err = os.Open(filePath)
+		if err != nil {
+			log.Fatalf("Error opening file to load tokens: %s", err)
+			return
+		}
+	}
+	// Decode the JSON data into a struct
+	var array []Token
+	decoder := json.NewDecoder(tokenFile)
+	err = decoder.Decode(&array)
+	if err != nil {
+		log.Fatal("Error decoding JSON:", err)
+	}
+	// add each token to the tokens map
+	for _, tok := range array {
+		tokens[string(tok.Hash)] = TokenValue{
+			Created: tok.Created,
+			Status:  tok.Status,
+		}
+	}
+}
+
+func GetTokensLength() int {
+	return len(tokens)
+}
+
+func CheckToken(token string) error {
+	tokenHash := sha256.Sum256([]byte(token))
+	tok, ok := tokens[string(tokenHash[:])]
+	if !ok {
+		return errors.New("token not found")
+	}
+	if tok.Status == Used {
+		return errors.New("token already used")
+	}
+	return nil
+}
+
+func SetTokenStatus(token string, status Status) error {
+	tokenHash := sha256.Sum256([]byte(token))
+	tok, ok := tokens[string(tokenHash[:])]
+	if !ok {
+		return errors.New("something went wrong")
+	}
+	tok.Status = status
+	tokens[string(tokenHash[:])] = tok
+	return nil
 }

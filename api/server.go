@@ -39,6 +39,12 @@ func NewServer(cfg config.Config, t translates.TranslateX, af audiofile.AudioFil
 		models.MakeAmazonMaps()
 	}
 
+	// create token map
+	models.LoadTokens("")
+	if models.GetTokensLength() == 0 {
+		log.Fatal("token map length can not be 0")
+	}
+
 	spec, err := oapi.GetSwagger()
 	if err != nil {
 		log.Fatalln("loading spec: %w", err)
@@ -50,8 +56,7 @@ func NewServer(cfg config.Config, t translates.TranslateX, af audiofile.AudioFil
 	e.Use(echomw.Logger())
 	e.Use(echomw.Recover())
 
-	// Use our validation middleware to check all requests against the
-	// OpenAPI schema.
+	// Use our validation middleware to check all requests against the OpenAPI schema.
 	e.Use(middleware.OapiRequestValidator(spec))
 
 	srv := &Server{

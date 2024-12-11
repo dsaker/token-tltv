@@ -35,6 +35,7 @@ func SetConfigs(config *Config) error {
 		return errors.New("invalid pause value (must be between 3 and 10)")
 	}
 
+	// set the global variable GlobalPlatform to google or amazon
 	var platform string
 	flag.StringVar(&platform, "platform", "google", "which platform you are using [google|amazon]")
 	if platform == "google" {
@@ -44,7 +45,6 @@ func SetConfigs(config *Config) error {
 	} else {
 		return errors.New("invalid platform (must be google|amazon)")
 	}
-
 	return nil
 }
 
