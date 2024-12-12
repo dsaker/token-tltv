@@ -40,6 +40,7 @@ paths:
                 - fromVoiceId
                 - toVoiceId
                 - filePath
+                - token
               properties:
                 titleName:
                   type: string
@@ -74,6 +75,9 @@ paths:
                 filePath:
                   type: string
                   format: binary
+                token:
+                  type: string
+                  description: tokens are required to be able to successfully request an audio file
       responses:
         '200':
           description: audio from file response

@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"flag"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"sync"
 
 	"testing"
 
@@ -26,11 +28,18 @@ var (
 
 const (
 	audioBasePath = "/audio"
+	tokenFilePath = "/tokens.json" //nolint:gosec
 )
 
 type TestConfig struct {
 	config.Config
 }
+
+var (
+	tokenStrings []string
+	tokenCount   int
+	mu           sync.RWMutex
+)
 
 // testCase struct groups together the fields necessary for running most of the test cases
 type testCase struct {
@@ -45,7 +54,12 @@ func TestMain(m *testing.M) {
 	flag.BoolVar(&util.Integration, "integration", false, "Run integration tests")
 	flag.Parse()
 	testCfg.TTSBasePath = test.AudioBasePath
-
+	plaintext, err := test.CreateTokensFile(test.AudioBasePath+tokenFilePath, 100)
+	if err != nil {
+		log.Fatal(err)
+	}
+	tokenStrings = plaintext
+	testCfg.TokenFilePath = test.AudioBasePath + tokenFilePath
 	os.Exit(m.Run())
 }
 

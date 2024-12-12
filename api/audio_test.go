@@ -32,11 +32,11 @@ func TestAudioFromFile(t *testing.T) {
 
 	title := test.RandomTitle()
 
-	//create a base path for storing mp3 audio files
+	// create a base path for storing mp3 audio files
 	tmpAudioBasePath := test.AudioBasePath + title.Name + "/"
+	err := os.MkdirAll(tmpAudioBasePath, 0777)
 	// remove directory after tests run
 	defer os.RemoveAll(tmpAudioBasePath)
-	err := os.MkdirAll(tmpAudioBasePath, 0777)
 	require.NoError(t, err)
 
 	filename := tmpAudioBasePath + "TestAudioFromFile.txt"
@@ -94,6 +94,11 @@ func TestAudioFromFile(t *testing.T) {
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
+				mu.Lock()
+				token := tokenStrings[tokenCount]
+				tokenCount++
+				mu.Unlock()
+				okFormMap["token"] = token
 				return createMultiPartBody(t, data, filename, okFormMap)
 			},
 			checkResponse: func(res *http.Response) {
@@ -138,6 +143,11 @@ func TestAudioFromFile(t *testing.T) {
 					"toVoiceId":      strconv.Itoa(title.ToVoiceId),
 					"pause":          "3",
 				}
+				mu.Lock()
+				token := tokenStrings[tokenCount]
+				tokenCount++
+				mu.Unlock()
+				formMap["token"] = token
 				return createMultiPartBody(t, data, filename, formMap)
 			},
 			checkResponse: func(res *http.Response) {
@@ -157,6 +167,11 @@ func TestAudioFromFile(t *testing.T) {
 					"toVoiceId":      strconv.Itoa(title.ToVoiceId),
 					"pause":          "11",
 				}
+				mu.Lock()
+				token := tokenStrings[tokenCount]
+				tokenCount++
+				mu.Unlock()
+				formMap["token"] = token
 				return createMultiPartBody(t, data, filename, formMap)
 			},
 			checkResponse: func(res *http.Response) {
@@ -178,6 +193,11 @@ func TestAudioFromFile(t *testing.T) {
 					"toVoiceId":      strconv.Itoa(title.ToVoiceId),
 					"pause":          "10",
 				}
+				mu.Lock()
+				token := tokenStrings[tokenCount]
+				tokenCount++
+				mu.Unlock()
+				formMap["token"] = token
 				return createMultiPartBody(t, data, filename, formMap)
 			},
 			checkResponse: func(res *http.Response) {
@@ -199,6 +219,11 @@ func TestAudioFromFile(t *testing.T) {
 					"toVoiceId":      strconv.Itoa(title.ToVoiceId),
 					"pause":          "10",
 				}
+				mu.Lock()
+				token := tokenStrings[tokenCount]
+				tokenCount++
+				mu.Unlock()
+				formMap["token"] = token
 				return createMultiPartBody(t, data, filename, formMap)
 			},
 			checkResponse: func(res *http.Response) {
@@ -220,6 +245,11 @@ func TestAudioFromFile(t *testing.T) {
 					"toVoiceId":      "9999",
 					"pause":          "10",
 				}
+				mu.Lock()
+				token := tokenStrings[tokenCount]
+				tokenCount++
+				mu.Unlock()
+				formMap["token"] = token
 				return createMultiPartBody(t, data, filename, formMap)
 			},
 			checkResponse: func(res *http.Response) {
@@ -241,6 +271,11 @@ func TestAudioFromFile(t *testing.T) {
 					"toVoiceId":      "a",
 					"pause":          "10",
 				}
+				mu.Lock()
+				token := tokenStrings[tokenCount]
+				tokenCount++
+				mu.Unlock()
+				formMap["token"] = token
 				return createMultiPartBody(t, data, filename, formMap)
 			},
 			checkResponse: func(res *http.Response) {
@@ -262,6 +297,11 @@ func TestAudioFromFile(t *testing.T) {
 					"toVoiceId":      strconv.Itoa(title.ToVoiceId),
 					"pause":          "a",
 				}
+				mu.Lock()
+				token := tokenStrings[tokenCount]
+				tokenCount++
+				mu.Unlock()
+				formMap["token"] = token
 				return createMultiPartBody(t, data, filename, formMap)
 			},
 			checkResponse: func(res *http.Response) {
@@ -283,6 +323,11 @@ func TestAudioFromFile(t *testing.T) {
 					"toVoiceId":      strconv.Itoa(title.FromVoiceId),
 					"pause":          "10",
 				}
+				mu.Lock()
+				token := tokenStrings[tokenCount]
+				tokenCount++
+				mu.Unlock()
+				formMap["token"] = token
 				return createMultiPartBody(t, data, filename, formMap)
 			},
 			checkResponse: func(res *http.Response) {
@@ -305,6 +350,11 @@ func TestAudioFromFile(t *testing.T) {
 					"toVoiceId":      strconv.Itoa(title.FromVoiceId),
 					"pause":          "10",
 				}
+				mu.Lock()
+				token := tokenStrings[tokenCount]
+				tokenCount++
+				mu.Unlock()
+				formMap["token"] = token
 				return createMultiPartBody(t, data, filename, formMap)
 			},
 			checkResponse: func(res *http.Response) {
@@ -327,6 +377,11 @@ func TestAudioFromFile(t *testing.T) {
 					"pause":          "10",
 					"pattern":        "5",
 				}
+				mu.Lock()
+				token := tokenStrings[tokenCount]
+				tokenCount++
+				mu.Unlock()
+				formMap["token"] = token
 				return createMultiPartBody(t, data, filename, formMap)
 			},
 			checkResponse: func(res *http.Response) {
@@ -349,6 +404,11 @@ func TestAudioFromFile(t *testing.T) {
 					"pause":          "10",
 					"pattern":        "a",
 				}
+				mu.Lock()
+				token := tokenStrings[tokenCount]
+				tokenCount++
+				mu.Unlock()
+				formMap["token"] = token
 				return createMultiPartBody(t, data, filename, formMap)
 			},
 			checkResponse: func(res *http.Response) {
@@ -367,6 +427,11 @@ func TestAudioFromFile(t *testing.T) {
 					"toVoiceId":      strconv.Itoa(title.ToVoiceId),
 					"pause":          "11",
 				}
+				mu.Lock()
+				token := tokenStrings[tokenCount]
+				tokenCount++
+				mu.Unlock()
+				formMap["token"] = token
 				return createMultiPartBody(t, data, filename, formMap)
 			},
 			buildStubs: func(stubs test.MockStubs) {
@@ -401,6 +466,11 @@ func TestAudioFromFile(t *testing.T) {
 				require.NoError(t, err)
 				_, err = io.Copy(part, multiFile)
 				require.NoError(t, err)
+				mu.Lock()
+				token := tokenStrings[tokenCount]
+				tokenCount++
+				mu.Unlock()
+				okFormMap["token"] = token
 				fieldMap := okFormMap
 				for field, value := range fieldMap {
 					err = multiWriter.WriteField(field, value)
@@ -443,7 +513,33 @@ func TestAudioFromFile(t *testing.T) {
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
+				mu.Lock()
+				token := tokenStrings[tokenCount]
+				tokenCount++
+				mu.Unlock()
+				okFormMap["token"] = token
 				return createMultiPartBody(t, data, filename, okFormMap)
+			},
+		},
+		{
+			name: "Used Token",
+			buildStubs: func(stubs test.MockStubs) {
+			},
+			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
+				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
+				mu.Lock()
+				token := tokenStrings[tokenCount]
+				tokenCount++
+				mu.Unlock()
+				okFormMap["token"] = token
+				err = models.SetTokenStatus(token, models.Used)
+				require.NoError(t, err)
+				return createMultiPartBody(t, data, filename, okFormMap)
+			},
+			checkResponse: func(res *http.Response) {
+				require.Equal(t, http.StatusForbidden, res.StatusCode)
+				resBody := readBody(t, res)
+				require.Contains(t, resBody, "token already used")
 			},
 		},
 	}
@@ -517,6 +613,11 @@ func TestGoogleIntegration(t *testing.T) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
 
 				formMap := okFormMap
+				mu.Lock()
+				token := tokenStrings[tokenCount]
+				tokenCount++
+				mu.Unlock()
+				formMap["token"] = token
 				return createMultiPartBody(t, data, filename, formMap)
 			},
 		},
@@ -578,8 +679,8 @@ func TestAmazonIntegration(t *testing.T) {
 	okFormMap := map[string]string{
 		"fileLanguageId": strconv.Itoa(rand.IntN(test.MaxLanguages)), //nolint:gosec
 		"titleName":      title.Name,
-		"fromVoiceId":    strconv.Itoa(rand.IntN(test.MaxVoices)),
-		"toVoiceId":      strconv.Itoa(rand.IntN(test.MaxVoices)),
+		"fromVoiceId":    strconv.Itoa(rand.IntN(test.MaxVoices)), //nolint:gosec
+		"toVoiceId":      strconv.Itoa(rand.IntN(test.MaxVoices)), //nolint:gosec
 	}
 
 	testCases := []testCase{
@@ -592,8 +693,12 @@ func TestAmazonIntegration(t *testing.T) {
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
 
-				formMap := okFormMap
-				return createMultiPartBody(t, data, filename, formMap)
+				mu.Lock()
+				token := tokenStrings[tokenCount]
+				tokenCount++
+				mu.Unlock()
+				okFormMap["token"] = token
+				return createMultiPartBody(t, data, filename, okFormMap)
 			},
 		},
 	}

@@ -1,8 +1,15 @@
 package test
 
 import (
+	crypto "crypto/rand"
+	"crypto/sha256"
+	"encoding/base32"
+	"encoding/json"
 	"go.uber.org/mock/gomock"
+	"log"
 	"math/rand"
+	"os"
+	"path/filepath"
 	"reflect"
 	"slices"
 	"strings"
@@ -11,6 +18,7 @@ import (
 	mockt "talkliketv.click/tltv/internal/mock/translates"
 	"talkliketv.click/tltv/internal/models"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -134,4 +142,64 @@ func NewMockStubs(ctrl *gomock.Controller) MockStubs {
 		AmazonTranslateClientX: mockt.NewMockAmazonTranslateClientX(ctrl),
 		AmazonTTsClientX:       mockt.NewMockAmazonTTSClientX(ctrl),
 	}
+}
+
+func generateToken() (*models.Token, string, error) {
+	// Initialize a zero-valued byte slice with a length of 16 bytes.
+	randomBytes := make([]byte, 16)
+
+	// Use the Read() function from the crypto/rand package to fill the byte slice with
+	// random bytes from your operating system's CSPRNG. This will return an error if
+	// the CSPRNG fails to function correctly.
+	_, err := crypto.Read(randomBytes)
+	if err != nil {
+		return nil, "", err
+	}
+
+	token := &models.Token{
+		Created: time.Now(),
+		Status:  0,
+	}
+	plaintext := base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(randomBytes)
+	// Generate a SHA-256 hash of the plaintext token string. This will be the value
+	// that we store in the `hash` field of our database table. Note that the
+	// sha256.Sum256() function returns an *array* of length 32, so to make it easier to
+	// work with we convert it to a slice using the [:] operator before storing it.
+	hash := sha256.Sum256([]byte(plaintext))
+	token.Hash = hash[:]
+
+	return token, plaintext, nil
+}
+
+func CreateTokensFile(filePath string, numTokens int) ([]string, error) {
+	var tokens []*models.Token
+	var plaintexts []string
+	for i := 0; i < numTokens; i++ {
+		token, plaintext, err := generateToken()
+		if err != nil {
+			log.Fatal(err)
+		}
+		tokens = append(tokens, token)
+		plaintexts = append(plaintexts, plaintext)
+	}
+
+	// Marshal the data to JSON
+	jsonData, err := json.Marshal(tokens)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Open the file for writing
+	file, err := os.Create(filepath.Clean(filePath))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	// Write the JSON data to the file
+	_, err = file.Write(jsonData)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return plaintexts, nil
 }

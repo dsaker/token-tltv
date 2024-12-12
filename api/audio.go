@@ -19,71 +19,19 @@ import (
 // AudioFromFile accepts a file in srt, phrase per line, or paragraph form and
 // sends a zip file of mp3 audio tracks for learning a language that you choose
 func (s *Server) AudioFromFile(e echo.Context) error {
-	languagesCount := models.GetLanguagesLength() - 1
-	voicesCount := models.GetVoicesLength() - 1
-	// get values from multipart form
-	titleName := e.FormValue("titleName")
-	// convert strings from multipart form to int
-	fileLangId, err := strconv.Atoi(e.FormValue("fileLanguageId"))
-	if err != nil {
-		e.Logger().Error(util.ErrLanguageIdInvalid)
-		return e.String(http.StatusBadRequest, fmt.Sprintf("error converting fileLanguageId to int: %s", err.Error()))
-	}
-	// validate fileLangId
-	if fileLangId < 0 || fileLangId > languagesCount {
-		e.Logger().Error(util.ErrLanguageIdInvalid)
-		return e.String(http.StatusBadRequest, fmt.Sprintf("fileLangId must be between 0 and %d", languagesCount))
-	}
-	toVoiceId, err := strconv.Atoi(e.FormValue("toVoiceId"))
-	if err != nil {
-		e.Logger().Error(util.ErrVoiceIdInvalid)
-		return e.String(http.StatusBadRequest, fmt.Sprintf("error converting toVoiceId to int: %s", err.Error()))
-	}
-	// validate voiceId
-	if toVoiceId < 0 || toVoiceId > voicesCount {
-		e.Logger().Error(util.ErrVoiceIdInvalid)
-		return e.String(http.StatusBadRequest, fmt.Sprintf("toVoiceId must be between 0 and %d", voicesCount))
-	}
-	fromVoiceId, err := strconv.Atoi(e.FormValue("fromVoiceId"))
-	if err != nil {
-		e.Logger().Error(util.ErrVoiceIdInvalid)
-		return e.String(http.StatusBadRequest, fmt.Sprintf("error converting fromVoiceId to int: %s", err.Error()))
-	}
-	// validate voiceId
-	if fromVoiceId < 0 || fromVoiceId > voicesCount {
-		e.Logger().Error(util.ErrVoiceIdInvalid)
-		return e.String(http.StatusBadRequest, fmt.Sprintf("fromVoiceId must be between 0 and %d", voicesCount))
+	// check token
+	token := e.FormValue("token")
+	if err := models.CheckToken(token); err != nil {
+		return e.String(http.StatusForbidden, err.Error())
 	}
 
-	pause := s.config.PhrasePause
-	// check if user sent 'pause' in the request and update config if they did
-	pauseForm := e.FormValue("pause")
-	if pauseForm != "" {
-		pauseInt, err := strconv.Atoi(pauseForm)
-		if err != nil {
-			return e.String(http.StatusBadRequest, fmt.Sprintf("error converting pause to int: %s", err.Error()))
-		}
-		if pauseInt > 10 || pauseInt < 3 {
-			return e.String(http.StatusBadRequest, fmt.Sprintf("pause must be between 3 and 10: %d", pauseInt))
-		}
-		pause = pauseInt
+	title, err := validateAudioRequest(e, s.config.PhrasePause, s.config.AudioPattern)
+	if err != nil {
+		return e.String(http.StatusBadRequest, err.Error())
 	}
 
-	// pattern is the pattern used to build the audio files at /internal/pattern
-	pattern := s.config.AudioPattern
-	patternForm := e.FormValue("pattern")
-	if patternForm != "" {
-		patternInt, err := strconv.Atoi(patternForm)
-		if err != nil {
-			return e.String(http.StatusBadRequest, fmt.Sprintf("error converting pattern to int: %s", err.Error()))
-		}
-		if patternInt > 4 || patternInt < 1 {
-			return e.String(http.StatusBadRequest, fmt.Sprintf("pattern must be between 1 and 4: %d", patternInt))
-		}
-		pattern = patternInt
-	}
-
-	phrases, phraseZipFile, err := s.processFile(e, titleName)
+	// TODO put limit on characters
+	phrases, phraseZipFile, err := s.processFile(e, title.Name)
 	if err != nil {
 		if errors.Is(err, util.ErrTooManyPhrases) {
 			return e.Attachment(phraseZipFile.Name(), "TooManyPhrasesUseTheseFiles.zip")
@@ -94,30 +42,23 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 		return e.String(http.StatusInternalServerError, err.Error())
 	}
 
-	title := models.Title{
-		Name:         titleName,
-		TitleLangId:  fileLangId,
-		ToVoiceId:    toVoiceId,
-		FromVoiceId:  fromVoiceId,
-		Pause:        pause,
-		TitlePhrases: phrases,
-		Pattern:      pattern,
-	}
+	// TODO add to and from languages to titleName
+	titleName := title.Name + "." + strconv.Itoa(title.FromVoiceId) + "-" + strconv.Itoa(title.ToVoiceId) + ".zip"
+
+	title.TitlePhrases = phrases
+
 	zipFile, err := s.createAudioFromTitle(e, title)
 	if err != nil {
-		if errors.Is(err, util.ErrVoiceLangIdNoMatch) {
-			return e.String(http.StatusBadRequest, err.Error())
-		}
-		if errors.Is(err, util.ErrVoiceIdInvalid) {
-			return e.String(http.StatusBadRequest, err.Error())
-		}
-		if errors.Is(err, util.ErrOneFile) {
-			return e.Attachment(zipFile.Name(), titleName+".mp3")
-		}
 		return e.String(http.StatusInternalServerError, err.Error())
 	}
 
 	titleName = titleName + "." + strconv.Itoa(title.FromVoiceId) + "-" + strconv.Itoa(title.ToVoiceId) + ".zip"
+
+	// change token status to Used
+	err = models.SetTokenStatus(token, models.Used)
+	if err != nil {
+		return e.String(http.StatusInternalServerError, err.Error())
+	}
 	return e.Attachment(zipFile.Name(), titleName)
 }
 
@@ -222,4 +163,83 @@ func (s *Server) createAudioFromTitle(e echo.Context, title models.Title) (*os.F
 	}
 
 	return s.af.CreateMp3Zip(e, title, tmpDirPath)
+}
+
+func validateAudioRequest(e echo.Context, pause, pattern int) (models.Title, error) {
+	languagesCount := models.GetLanguagesLength() - 1
+	voicesCount := models.GetVoicesLength() - 1
+	// get values from multipart form
+	titleName := e.FormValue("titleName")
+	// convert strings from multipart form to int
+	fileLangId, err := strconv.Atoi(e.FormValue("fileLanguageId"))
+	if err != nil {
+		e.Logger().Error(err)
+		return models.Title{}, fmt.Errorf("error converting fileLanguageId to int: %s", err.Error())
+	}
+	// validate fileLangId
+	if fileLangId < 0 || fileLangId > languagesCount {
+		e.Logger().Error(util.ErrLanguageIdInvalid)
+		return models.Title{}, fmt.Errorf("fileLangId must be between 0 and %d", languagesCount)
+	}
+	toVoiceId, err := strconv.Atoi(e.FormValue("toVoiceId"))
+	if err != nil {
+		e.Logger().Error(err)
+		return models.Title{}, fmt.Errorf("error converting toVoiceId to int: %s", err.Error())
+	}
+	// validate voiceId
+	if toVoiceId < 0 || toVoiceId > voicesCount {
+		e.Logger().Error(util.ErrVoiceIdInvalid)
+		return models.Title{}, fmt.Errorf("toVoiceId must be between 0 and %d", voicesCount)
+	}
+	fromVoiceId, err := strconv.Atoi(e.FormValue("fromVoiceId"))
+	if err != nil {
+		e.Logger().Error(err)
+		return models.Title{}, fmt.Errorf("error converting fromVoiceId to int: %s", err.Error())
+	}
+	// validate voiceId
+	if fromVoiceId < 0 || fromVoiceId > voicesCount {
+		e.Logger().Error(util.ErrVoiceIdInvalid)
+		return models.Title{}, fmt.Errorf("fromVoiceId must be between 0 and %d", voicesCount)
+	}
+
+	// check if user sent 'pause' in the request and update config if they did
+	pauseForm := e.FormValue("pause")
+	if pauseForm != "" {
+		pauseInt, err := strconv.Atoi(pauseForm)
+		if err != nil {
+			e.Logger().Error(err)
+			return models.Title{}, fmt.Errorf("error converting pause to int: %s", err.Error())
+		}
+		if pauseInt > 10 || pauseInt < 3 {
+			e.Logger().Error(err)
+			return models.Title{}, fmt.Errorf("pause must be between 3 and 10: %d", pauseInt)
+		}
+		pause = pauseInt
+	}
+
+	// pattern is the pattern used to build the audio files at /internal/pattern
+	patternForm := e.FormValue("pattern")
+	if patternForm != "" {
+		patternInt, err := strconv.Atoi(patternForm)
+		if err != nil {
+			e.Logger().Error(err)
+			return models.Title{}, fmt.Errorf("error converting pattern to int: %s", err.Error())
+		}
+		if patternInt > 4 || patternInt < 1 {
+			e.Logger().Error(fmt.Sprintf("pattern must be between 1 and 4: %d", patternInt))
+			return models.Title{}, fmt.Errorf("pattern must be between 1 and 4: %d", patternInt)
+		}
+		pattern = patternInt
+	}
+
+	return models.Title{
+		Name:         titleName,
+		TitleLangId:  fileLangId,
+		ToVoiceId:    toVoiceId,
+		FromVoiceId:  fromVoiceId,
+		Pause:        pause,
+		TitlePhrases: nil,
+		ToPhrases:    nil,
+		Pattern:      pattern,
+	}, nil
 }

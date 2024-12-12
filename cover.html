@@ -55,15 +55,15 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">talkliketv.click/tltv/api/audio.go (72.6%)</option>
+				<option value="file0">talkliketv.click/tltv/api/audio.go (79.4%)</option>
 				
-				<option value="file1">talkliketv.click/tltv/api/server.go (46.2%)</option>
+				<option value="file1">talkliketv.click/tltv/api/server.go (47.6%)</option>
 				
 				<option value="file2">talkliketv.click/tltv/internal/audio/audiofile/audiofile.go (78.3%)</option>
 				
 				<option value="file3">talkliketv.click/tltv/internal/audio/pattern/pattern.go (33.3%)</option>
 				
-				<option value="file4">talkliketv.click/tltv/internal/config/config.go (77.8%)</option>
+				<option value="file4">talkliketv.click/tltv/internal/config/config.go (80.0%)</option>
 				
 				<option value="file5">talkliketv.click/tltv/internal/mock/audiofile/audiofile.go (100.0%)</option>
 				
@@ -75,13 +75,13 @@
 				
 				<option value="file9">talkliketv.click/tltv/internal/mock/translates/translates.go (61.1%)</option>
 				
-				<option value="file10">talkliketv.click/tltv/internal/models/models.go (45.6%)</option>
+				<option value="file10">talkliketv.click/tltv/internal/models/models.go (54.1%)</option>
 				
 				<option value="file11">talkliketv.click/tltv/internal/oapi/tltv.gen.go (69.8%)</option>
 				
-				<option value="file12">talkliketv.click/tltv/internal/test/test_util.go (81.8%)</option>
+				<option value="file12">talkliketv.click/tltv/internal/test/test_util.go (82.0%)</option>
 				
-				<option value="file13">talkliketv.click/tltv/internal/translates/amazonclients.go (26.9%)</option>
+				<option value="file13">talkliketv.click/tltv/internal/translates/amazonclients.go (31.8%)</option>
 				
 				<option value="file14">talkliketv.click/tltv/internal/translates/googleclients.go (37.8%)</option>
 				
@@ -92,6 +92,8 @@
 				<option value="file17">talkliketv.click/tltv/internal/util/helpers.go (50.0%)</option>
 				
 				<option value="file18">talkliketv.click/tltv/main.go (0.0%)</option>
+				
+				<option value="file19">talkliketv.click/tltv/scripts/go/generatecoins.go (0.0%)</option>
 				
 				</select>
 			</div>
@@ -126,65 +128,19 @@ import (
 // AudioFromFile accepts a file in srt, phrase per line, or paragraph form and
 // sends a zip file of mp3 audio tracks for learning a language that you choose
 func (s *Server) AudioFromFile(e echo.Context) error <span class="cov8" title="1">{
-        languagesCount := models.GetLanguagesLength() - 1
-        voicesCount := models.GetVoicesLength() - 1
-        // get values from multipart form
-        titleName := e.FormValue("titleName")
-        // convert strings from multipart form to int
-        fileLangId, err := strconv.Atoi(e.FormValue("fileLanguageId"))
-        if err != nil </span><span class="cov8" title="1">{
-                return e.String(http.StatusBadRequest, fmt.Sprintf("error converting fileLanguageId to int: %s", err.Error()))
-        }</span>
-        // validate fileLangId
-        <span class="cov8" title="1">if fileLangId &lt; 0 || fileLangId &gt; languagesCount </span><span class="cov8" title="1">{
-                return e.String(http.StatusBadRequest, fmt.Sprintf("fileLangId must be between 0 and %d", languagesCount))
-        }</span>
-        <span class="cov8" title="1">toVoiceId, err := strconv.Atoi(e.FormValue("toVoiceId"))
-        if err != nil </span><span class="cov8" title="1">{
-                return e.String(http.StatusBadRequest, fmt.Sprintf("error converting toVoiceId to int: %s", err.Error()))
-        }</span>
-        // validate voiceId
-        <span class="cov8" title="1">if toVoiceId &lt; 0 || toVoiceId &gt; voicesCount </span><span class="cov8" title="1">{
-                return e.String(http.StatusBadRequest, fmt.Sprintf("toVoiceId must be between 0 and %d", voicesCount))
-        }</span>
-        <span class="cov8" title="1">fromVoiceId, err := strconv.Atoi(e.FormValue("fromVoiceId"))
-        if err != nil </span><span class="cov8" title="1">{
-                return e.String(http.StatusBadRequest, fmt.Sprintf("error converting fromVoiceId to int: %s", err.Error()))
-        }</span>
-        // validate voiceId
-        <span class="cov8" title="1">if fromVoiceId &lt; 0 || fromVoiceId &gt; voicesCount </span><span class="cov8" title="1">{
-                return e.String(http.StatusBadRequest, fmt.Sprintf("fromVoiceId must be between 0 and %d", voicesCount))
+        // check token
+        token := e.FormValue("token")
+        if err := models.CheckToken(token); err != nil </span><span class="cov8" title="1">{
+                return e.String(http.StatusForbidden, err.Error())
         }</span>
 
-        <span class="cov8" title="1">pause := s.config.PhrasePause
-        // check if user sent 'pause' in the request and update config if they did
-        pauseForm := e.FormValue("pause")
-        if pauseForm != "" </span><span class="cov8" title="1">{
-                pauseInt, err := strconv.Atoi(pauseForm)
-                if err != nil </span><span class="cov8" title="1">{
-                        return e.String(http.StatusBadRequest, fmt.Sprintf("error converting pause to int: %s", err.Error()))
-                }</span>
-                <span class="cov8" title="1">if pauseInt &gt; 10 || pauseInt &lt; 3 </span><span class="cov8" title="1">{
-                        return e.String(http.StatusBadRequest, fmt.Sprintf("pause must be between 3 and 10: %d", pauseInt))
-                }</span>
-                <span class="cov8" title="1">pause = pauseInt</span>
-        }
+        <span class="cov8" title="1">title, err := validateAudioRequest(e, s.config.PhrasePause, s.config.AudioPattern)
+        if err != nil </span><span class="cov8" title="1">{
+                return e.String(http.StatusBadRequest, err.Error())
+        }</span>
 
-        // pattern is the pattern used to build the audio files at /internal/pattern
-        <span class="cov8" title="1">pattern := s.config.AudioPattern
-        patternForm := e.FormValue("pattern")
-        if patternForm != "" </span><span class="cov8" title="1">{
-                patternInt, err := strconv.Atoi(patternForm)
-                if err != nil </span><span class="cov8" title="1">{
-                        return e.String(http.StatusBadRequest, fmt.Sprintf("error converting pattern to int: %s", err.Error()))
-                }</span>
-                <span class="cov8" title="1">if patternInt &gt; 4 || patternInt &lt; 1 </span><span class="cov8" title="1">{
-                        return e.String(http.StatusBadRequest, fmt.Sprintf("pattern must be between 1 and 4: %d", patternInt))
-                }</span>
-                <span class="cov0" title="0">pattern = patternInt</span>
-        }
-
-        <span class="cov8" title="1">phrases, phraseZipFile, err := s.processFile(e, titleName)
+        // TODO put limit on characters
+        <span class="cov8" title="1">phrases, phraseZipFile, err := s.processFile(e, title.Name)
         if err != nil </span><span class="cov8" title="1">{
                 if errors.Is(err, util.ErrTooManyPhrases) </span><span class="cov8" title="1">{
                         return e.Attachment(phraseZipFile.Name(), "TooManyPhrasesUseTheseFiles.zip")
@@ -195,31 +151,24 @@ func (s *Server) AudioFromFile(e echo.Context) error <span class="cov8" title="1
                 <span class="cov0" title="0">return e.String(http.StatusInternalServerError, err.Error())</span>
         }
 
-        <span class="cov8" title="1">title := models.Title{
-                Name:         titleName,
-                TitleLangId:  fileLangId,
-                ToVoiceId:    toVoiceId,
-                FromVoiceId:  fromVoiceId,
-                Pause:        pause,
-                TitlePhrases: phrases,
-                Pattern:      pattern,
-        }
+        // TODO add to and from languages to titleName
+        <span class="cov8" title="1">titleName := title.Name + "." + strconv.Itoa(title.FromVoiceId) + "-" + strconv.Itoa(title.ToVoiceId) + ".zip"
+
+        title.TitlePhrases = phrases
+
         zipFile, err := s.createAudioFromTitle(e, title)
         if err != nil </span><span class="cov0" title="0">{
-                if errors.Is(err, util.ErrVoiceLangIdNoMatch) </span><span class="cov0" title="0">{
-                        return e.String(http.StatusBadRequest, err.Error())
-                }</span>
-                <span class="cov0" title="0">if errors.Is(err, util.ErrVoiceIdInvalid) </span><span class="cov0" title="0">{
-                        return e.String(http.StatusBadRequest, err.Error())
-                }</span>
-                <span class="cov0" title="0">if errors.Is(err, util.ErrOneFile) </span><span class="cov0" title="0">{
-                        return e.Attachment(zipFile.Name(), titleName+".mp3")
-                }</span>
-                <span class="cov0" title="0">return e.String(http.StatusInternalServerError, err.Error())</span>
-        }
+                return e.String(http.StatusInternalServerError, err.Error())
+        }</span>
 
         <span class="cov8" title="1">titleName = titleName + "." + strconv.Itoa(title.FromVoiceId) + "-" + strconv.Itoa(title.ToVoiceId) + ".zip"
-        return e.Attachment(zipFile.Name(), titleName)</span>
+
+        // change token status to Used
+        err = models.SetTokenStatus(token, models.Used)
+        if err != nil </span><span class="cov0" title="0">{
+                return e.String(http.StatusInternalServerError, err.Error())
+        }</span>
+        <span class="cov8" title="1">return e.Attachment(zipFile.Name(), titleName)</span>
 }
 
 func (s *Server) processFile(e echo.Context, titleName string) ([]models.Phrase, *os.File, error) <span class="cov8" title="1">{
@@ -324,6 +273,85 @@ func (s *Server) createAudioFromTitle(e echo.Context, title models.Title) (*os.F
 
         <span class="cov8" title="1">return s.af.CreateMp3Zip(e, title, tmpDirPath)</span>
 }
+
+func validateAudioRequest(e echo.Context, pause, pattern int) (models.Title, error) <span class="cov8" title="1">{
+        languagesCount := models.GetLanguagesLength() - 1
+        voicesCount := models.GetVoicesLength() - 1
+        // get values from multipart form
+        titleName := e.FormValue("titleName")
+        // convert strings from multipart form to int
+        fileLangId, err := strconv.Atoi(e.FormValue("fileLanguageId"))
+        if err != nil </span><span class="cov8" title="1">{
+                e.Logger().Error(err)
+                return models.Title{}, fmt.Errorf("error converting fileLanguageId to int: %s", err.Error())
+        }</span>
+        // validate fileLangId
+        <span class="cov8" title="1">if fileLangId &lt; 0 || fileLangId &gt; languagesCount </span><span class="cov8" title="1">{
+                e.Logger().Error(util.ErrLanguageIdInvalid)
+                return models.Title{}, fmt.Errorf("fileLangId must be between 0 and %d", languagesCount)
+        }</span>
+        <span class="cov8" title="1">toVoiceId, err := strconv.Atoi(e.FormValue("toVoiceId"))
+        if err != nil </span><span class="cov8" title="1">{
+                e.Logger().Error(err)
+                return models.Title{}, fmt.Errorf("error converting toVoiceId to int: %s", err.Error())
+        }</span>
+        // validate voiceId
+        <span class="cov8" title="1">if toVoiceId &lt; 0 || toVoiceId &gt; voicesCount </span><span class="cov8" title="1">{
+                e.Logger().Error(util.ErrVoiceIdInvalid)
+                return models.Title{}, fmt.Errorf("toVoiceId must be between 0 and %d", voicesCount)
+        }</span>
+        <span class="cov8" title="1">fromVoiceId, err := strconv.Atoi(e.FormValue("fromVoiceId"))
+        if err != nil </span><span class="cov8" title="1">{
+                e.Logger().Error(err)
+                return models.Title{}, fmt.Errorf("error converting fromVoiceId to int: %s", err.Error())
+        }</span>
+        // validate voiceId
+        <span class="cov8" title="1">if fromVoiceId &lt; 0 || fromVoiceId &gt; voicesCount </span><span class="cov8" title="1">{
+                e.Logger().Error(util.ErrVoiceIdInvalid)
+                return models.Title{}, fmt.Errorf("fromVoiceId must be between 0 and %d", voicesCount)
+        }</span>
+
+        // check if user sent 'pause' in the request and update config if they did
+        <span class="cov8" title="1">pauseForm := e.FormValue("pause")
+        if pauseForm != "" </span><span class="cov8" title="1">{
+                pauseInt, err := strconv.Atoi(pauseForm)
+                if err != nil </span><span class="cov8" title="1">{
+                        e.Logger().Error(err)
+                        return models.Title{}, fmt.Errorf("error converting pause to int: %s", err.Error())
+                }</span>
+                <span class="cov8" title="1">if pauseInt &gt; 10 || pauseInt &lt; 3 </span><span class="cov8" title="1">{
+                        e.Logger().Error(err)
+                        return models.Title{}, fmt.Errorf("pause must be between 3 and 10: %d", pauseInt)
+                }</span>
+                <span class="cov8" title="1">pause = pauseInt</span>
+        }
+
+        // pattern is the pattern used to build the audio files at /internal/pattern
+        <span class="cov8" title="1">patternForm := e.FormValue("pattern")
+        if patternForm != "" </span><span class="cov8" title="1">{
+                patternInt, err := strconv.Atoi(patternForm)
+                if err != nil </span><span class="cov8" title="1">{
+                        e.Logger().Error(err)
+                        return models.Title{}, fmt.Errorf("error converting pattern to int: %s", err.Error())
+                }</span>
+                <span class="cov8" title="1">if patternInt &gt; 4 || patternInt &lt; 1 </span><span class="cov8" title="1">{
+                        e.Logger().Error(fmt.Sprintf("pattern must be between 1 and 4: %d", patternInt))
+                        return models.Title{}, fmt.Errorf("pattern must be between 1 and 4: %d", patternInt)
+                }</span>
+                <span class="cov0" title="0">pattern = patternInt</span>
+        }
+
+        <span class="cov8" title="1">return models.Title{
+                Name:         titleName,
+                TitleLangId:  fileLangId,
+                ToVoiceId:    toVoiceId,
+                FromVoiceId:  fromVoiceId,
+                Pause:        pause,
+                TitlePhrases: nil,
+                ToPhrases:    nil,
+                Pattern:      pattern,
+        }, nil</span>
+}
 </pre>
 		
 		<pre class="file" id="file1" style="display: none">package api
@@ -367,6 +395,12 @@ func NewServer(cfg config.Config, t translates.TranslateX, af audiofile.AudioFil
                 models.MakeAmazonMaps()
         }</span>
 
+        // create token map
+        <span class="cov8" title="1">models.LoadTokens(cfg.TokenFilePath)
+        if models.GetTokensLength() == 0 </span><span class="cov0" title="0">{
+                log.Fatal("token map length can not be 0")
+        }</span>
+
         <span class="cov8" title="1">spec, err := oapi.GetSwagger()
         if err != nil </span><span class="cov0" title="0">{
                 log.Fatalln("loading spec: %w", err)
@@ -378,8 +412,7 @@ func NewServer(cfg config.Config, t translates.TranslateX, af audiofile.AudioFil
         e.Use(echomw.Logger())
         e.Use(echomw.Recover())
 
-        // Use our validation middleware to check all requests against the
-        // OpenAPI schema.
+        // Use our validation middleware to check all requests against the OpenAPI schema.
         e.Use(middleware.OapiRequestValidator(spec))
 
         srv := &amp;Server{
@@ -1066,6 +1099,7 @@ type Config struct {
         MaxNumPhrases   int
         TTSBasePath     string
         FileUploadLimit int64
+        TokenFilePath   string
 }
 
 func SetConfigs(config *Config) error <span class="cov8" title="1">{
@@ -1085,6 +1119,7 @@ func SetConfigs(config *Config) error <span class="cov8" title="1">{
                 return errors.New("invalid pause value (must be between 3 and 10)")
         }</span>
 
+        // set the global variable GlobalPlatform to google or amazon
         <span class="cov8" title="1">var platform string
         flag.StringVar(&amp;platform, "platform", "google", "which platform you are using [google|amazon]")
         if platform == "google" </span><span class="cov8" title="1">{
@@ -1095,7 +1130,11 @@ func SetConfigs(config *Config) error <span class="cov8" title="1">{
                 return errors.New("invalid platform (must be google|amazon)")
         }</span>
 
-        <span class="cov8" title="1">return nil</span>
+        // get the token file path to make a map of tokens required to make a valid request
+        <span class="cov8" title="1">tokenUsageString := "file path where the tokens needed to make a valid request are stored (see scripts/go/generatecoins.go"
+        flag.StringVar(&amp;config.TokenFilePath, "token-file-path", "", tokenUsageString)
+
+        return nil</span>
 }
 
 func isValidPause(port int) bool <span class="cov8" title="1">{
@@ -1614,10 +1653,15 @@ func (mr *MockTranslateXMockRecorder) TranslatePhrases(arg0, arg1, arg2 any) *go
 		<pre class="file" id="file10" style="display: none">package models
 
 import (
+        "crypto/sha256"
         "encoding/json"
+        "errors"
+        "io/fs"
         "log"
+        "os"
         "strings"
         "talkliketv.click/tltv/internal/util"
+        "time"
 )
 
 // aws_languages =&gt; aws translate list-languages &gt; aws_languages.json
@@ -1653,9 +1697,16 @@ type GoogleJsonLanguage struct {
         Name     string
 }
 
+type AmazonLanguageArray struct {
+        Languages []AmazonJsonLanguage
+}
 type AmazonJsonLanguage struct {
         LanguageCode string
         LanguageName string
+}
+
+type AmazonVoiceArray struct {
+        Voices []AmazonJsonVoice
 }
 
 type AmazonJsonVoice struct {
@@ -1684,8 +1735,26 @@ type Voice struct {
         LangId                 int
 }
 
+type Token struct {
+        Status  Status
+        Created time.Time
+        Hash    []byte
+}
+
+type TokenValue struct {
+        Created time.Time
+        Status  Status
+}
+type Status int
+
+const (
+        New Status = iota
+        Used
+)
+
 var languages = make(map[int]Language)
 var voices = make(map[int]Voice)
+var tokens = make(map[string]TokenValue)
 
 type ModelsX interface {
         GetLanguage(int) (Language, error)
@@ -1799,14 +1868,14 @@ func MakeAmazonMaps() <span class="cov0" title="0">{
                 log.Fatal(err)
         }</span>
         // Decode the JSON data into a struct
-        <span class="cov0" title="0">var alangs []AmazonJsonLanguage
+        <span class="cov0" title="0">var array AmazonLanguageArray
         decoder := json.NewDecoder(languageFile)
-        err = decoder.Decode(&amp;alangs)
+        err = decoder.Decode(&amp;array)
         if err != nil </span><span class="cov0" title="0">{
                 log.Fatal("Error decoding JSON:", err)
         }</span>
         // add each voice to the Languages map using key for the id
-        <span class="cov0" title="0">for i, lang := range alangs </span><span class="cov0" title="0">{
+        <span class="cov0" title="0">for i, lang := range array.Languages </span><span class="cov0" title="0">{
                 languages[i] = Language{
                         ID:   i,
                         Code: lang.LanguageCode,
@@ -1819,21 +1888,21 @@ func MakeAmazonMaps() <span class="cov0" title="0">{
                 log.Fatal(err)
         }</span>
         // Decode the JSON data into a struct
-        <span class="cov0" title="0">var avoices []AmazonJsonVoice
+        <span class="cov0" title="0">var avoices AmazonVoiceArray
         decoder = json.NewDecoder(voiceFile)
         err = decoder.Decode(&amp;avoices)
         if err != nil </span><span class="cov0" title="0">{
                 log.Fatal("Error decoding JSON:", err)
         }</span>
 
-        <span class="cov0" title="0">for i, voice := range avoices </span><span class="cov0" title="0">{
+        <span class="cov0" title="0">for i, voice := range avoices.Voices </span><span class="cov0" title="0">{
                 langCode := voice.LanguageCode
                 // get the language id for the voice from the language tag
                 langTag := strings.Split(langCode, "-")
                 found := false
                 langId := -1
                 // find the language id (key) for the language that corresponds to the voice
-                for j, lang := range alangs </span><span class="cov0" title="0">{
+                for j, lang := range array.Languages </span><span class="cov0" title="0">{
                         if lang.LanguageCode == langTag[0] </span><span class="cov0" title="0">{
                                 found = true
                                 langId = j
@@ -1855,6 +1924,64 @@ func MakeAmazonMaps() <span class="cov0" title="0">{
                         }
                 }</span>
         }
+}
+
+func LoadTokens(filePath string) <span class="cov8" title="1">{
+        var tokenFile fs.File
+        var err error
+        if filePath == "" </span><span class="cov0" title="0">{
+                tokenFile, err = JsonModels.Open("jsonmodels/tokens.json")
+                if err != nil </span><span class="cov0" title="0">{
+                        log.Fatalf("add tokens.json file to /internal/models/jsonmodels/ : %s", err)
+                }</span>
+        } else<span class="cov8" title="1"> {
+                tokenFile, err = os.Open(filePath)
+                if err != nil </span><span class="cov0" title="0">{
+                        log.Fatalf("Error opening file to load tokens: %s", err)
+                        return
+                }</span>
+        }
+        // Decode the JSON data into a struct
+        <span class="cov8" title="1">var array []Token
+        decoder := json.NewDecoder(tokenFile)
+        err = decoder.Decode(&amp;array)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal("Error decoding JSON:", err)
+        }</span>
+        // add each token to the tokens map
+        <span class="cov8" title="1">for _, tok := range array </span><span class="cov8" title="1">{
+                tokens[string(tok.Hash)] = TokenValue{
+                        Created: tok.Created,
+                        Status:  tok.Status,
+                }
+        }</span>
+}
+
+func GetTokensLength() int <span class="cov8" title="1">{
+        return len(tokens)
+}</span>
+
+func CheckToken(token string) error <span class="cov8" title="1">{
+        tokenHash := sha256.Sum256([]byte(token))
+        tok, ok := tokens[string(tokenHash[:])]
+        if !ok </span><span class="cov0" title="0">{
+                return errors.New("token not found")
+        }</span>
+        <span class="cov8" title="1">if tok.Status == Used </span><span class="cov8" title="1">{
+                return errors.New("token already used")
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+
+func SetTokenStatus(token string, status Status) error <span class="cov8" title="1">{
+        tokenHash := sha256.Sum256([]byte(token))
+        tok, ok := tokens[string(tokenHash[:])]
+        if !ok </span><span class="cov0" title="0">{
+                return errors.New("something went wrong")
+        }</span>
+        <span class="cov8" title="1">tok.Status = status
+        tokens[string(tokenHash[:])] = tok
+        return nil</span>
 }
 </pre>
 		
@@ -1918,6 +2045,9 @@ type AudioFromFileMultipartBody struct {
 
         // ToVoiceId the language you want to learn
         ToVoiceId string `json:"toVoiceId"`
+
+        // Token tokens are required to be able to successfully request an audio file
+        Token string `json:"token"`
 }
 
 // AudioFromFileMultipartRequestBody defines body for AudioFromFile for multipart/form-data ContentType.
@@ -1979,30 +2109,30 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-        "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",
-        "AP//HWM8yg8NAAA=",
+        "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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
@@ -2081,8 +2211,15 @@ func GetSwagger() (swagger *openapi3.T, err error) <span class="cov8" title="1">
 		<pre class="file" id="file12" style="display: none">package test
 
 import (
+        crypto "crypto/rand"
+        "crypto/sha256"
+        "encoding/base32"
+        "encoding/json"
         "go.uber.org/mock/gomock"
+        "log"
         "math/rand"
+        "os"
+        "path/filepath"
         "reflect"
         "slices"
         "strings"
@@ -2091,6 +2228,7 @@ import (
         mockt "talkliketv.click/tltv/internal/mock/translates"
         "talkliketv.click/tltv/internal/models"
         "testing"
+        "time"
 
         "github.com/stretchr/testify/require"
 )
@@ -2129,6 +2267,8 @@ func RequireMatchAnyExcept(t *testing.T, model any, response any, skip []string,
 const (
         DefaultPause   = 5
         DefaultPattern = 2
+        MaxLanguages   = 75
+        MaxVoices      = 95
         alphabet       = "abcdefghijklmnopqrstuvwxyz"
 )
 
@@ -2172,7 +2312,7 @@ func RandomPhrase() models.Phrase <span class="cov8" title="1">{
 // RandomVoice creates a random Voice for testing
 func RandomVoice() models.Voice <span class="cov8" title="1">{
         return models.Voice{
-                LangId:                 rand.Intn(100), //nolint:gosec
+                LangId:                 rand.Intn(MaxLanguages), //nolint:gosec
                 LanguageCodes:          []string{RandomString(8), RandomString(8)},
                 Gender:                 "FEMALE",
                 VoiceName:              RandomString(8),
@@ -2183,9 +2323,9 @@ func RandomVoice() models.Voice <span class="cov8" title="1">{
 func RandomTitle() (title models.Title) <span class="cov8" title="1">{
         return models.Title{
                 Name:        RandomString(8),
-                TitleLangId: rand.Intn(100), //nolint:gosec
-                ToVoiceId:   rand.Intn(100), //nolint:gosec
-                FromVoiceId: rand.Intn(100), //nolint:gosec
+                TitleLangId: rand.Intn(MaxLanguages), //nolint:gosec
+                ToVoiceId:   rand.Intn(MaxVoices),    //nolint:gosec
+                FromVoiceId: rand.Intn(MaxVoices),    //nolint:gosec
                 Pause:       DefaultPause,
                 Pattern:     DefaultPattern,
         }
@@ -2213,6 +2353,66 @@ func NewMockStubs(ctrl *gomock.Controller) MockStubs <span class="cov8" title="1
                 AmazonTTsClientX:       mockt.NewMockAmazonTTSClientX(ctrl),
         }
 }</span>
+
+func generateToken() (*models.Token, string, error) <span class="cov8" title="1">{
+        // Initialize a zero-valued byte slice with a length of 16 bytes.
+        randomBytes := make([]byte, 16)
+
+        // Use the Read() function from the crypto/rand package to fill the byte slice with
+        // random bytes from your operating system's CSPRNG. This will return an error if
+        // the CSPRNG fails to function correctly.
+        _, err := crypto.Read(randomBytes)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, "", err
+        }</span>
+
+        <span class="cov8" title="1">token := &amp;models.Token{
+                Created: time.Now(),
+                Status:  0,
+        }
+        plaintext := base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(randomBytes)
+        // Generate a SHA-256 hash of the plaintext token string. This will be the value
+        // that we store in the `hash` field of our database table. Note that the
+        // sha256.Sum256() function returns an *array* of length 32, so to make it easier to
+        // work with we convert it to a slice using the [:] operator before storing it.
+        hash := sha256.Sum256([]byte(plaintext))
+        token.Hash = hash[:]
+
+        return token, plaintext, nil</span>
+}
+
+func CreateTokensFile(filePath string, numTokens int) ([]string, error) <span class="cov8" title="1">{
+        var tokens []*models.Token
+        var plaintexts []string
+        for i := 0; i &lt; numTokens; i++ </span><span class="cov8" title="1">{
+                token, plaintext, err := generateToken()
+                if err != nil </span><span class="cov0" title="0">{
+                        log.Fatal(err)
+                }</span>
+                <span class="cov8" title="1">tokens = append(tokens, token)
+                plaintexts = append(plaintexts, plaintext)</span>
+        }
+
+        // Marshal the data to JSON
+        <span class="cov8" title="1">jsonData, err := json.Marshal(tokens)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal(err)
+        }</span>
+
+        // Open the file for writing
+        <span class="cov8" title="1">file, err := os.Create(filepath.Clean(filePath))
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal(err)
+        }</span>
+        <span class="cov8" title="1">defer file.Close()
+
+        // Write the JSON data to the file
+        _, err = file.Write(jsonData)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal(err)
+        }</span>
+        <span class="cov8" title="1">return plaintexts, nil</span>
+}
 </pre>
 		
 		<pre class="file" id="file13" style="display: none">package translates
@@ -2265,24 +2465,24 @@ func NewAmazonClients() *AmazonClients <span class="cov0" title="0">{
         // Create a Polly client
         ttsClient := polly.NewFromConfig(cfg)
 
-        // Input text to translate
-        text := "Hello, how are you?"
-        sourceLanguage := "en" // Source language code (e.g., "en" for English)
-        targetLanguage := "es" // Target language code (e.g., "es" for Spanish)
+        //// Input text to translate
+        //text := "Hello, how are you?"
+        //sourceLanguage := "en" // Source language code (e.g., "en" for English)
+        //targetLanguage := "es" // Target language code (e.g., "es" for Spanish)
 
         // Call the TranslateText API
-        output, err := translateClient.TranslateText(context.TODO(), &amp;translate.TranslateTextInput{
-                Text:               &amp;text,
-                SourceLanguageCode: &amp;sourceLanguage,
-                TargetLanguageCode: &amp;targetLanguage,
-        })
-        if err != nil </span><span class="cov0" title="0">{
-                log.Fatalf("Failed to translate text: %v", err)
-        }</span>
-
-        // Print the translated text
-        <span class="cov0" title="0">fmt.Printf("Original text: %s\n", text)
-        fmt.Printf("Translated text: %s\n", *output.TranslatedText)
+        //output, err := translateClient.TranslateText(context.TODO(), &amp;translate.TranslateTextInput{
+        //        Text:               &amp;text,
+        //        SourceLanguageCode: &amp;sourceLanguage,
+        //        TargetLanguageCode: &amp;targetLanguage,
+        //})
+        //if err != nil {
+        //        log.Fatalf("Failed to translate text: %v", err)
+        //}
+        //
+        //// Print the translated text
+        //fmt.Printf("Original text: %s\n", text)
+        //fmt.Printf("Translated text: %s\n", *output.TranslatedText)
         return &amp;AmazonClients{atc: translateClient, atts: ttsClient}</span>
 }
 
@@ -2826,6 +3026,53 @@ func main() <span class="cov0" title="0">{
         <span class="cov0" title="0">e := api.NewServer(cfg, t, af)
 
         e.Logger.Fatal(e.Start(net.JoinHostPort("0.0.0.0", cfg.Port)))</span>
+}
+</pre>
+		
+		<pre class="file" id="file19" style="display: none">/*
+generatetokens generates tokens to be used in token-tltv.
+
+It will print the plaintext token once when you run the program. They will not be
+saved to the json file so you must save them to some place safe after you run the
+program.
+
+Usage:
+
+        Generatetokens [flags] [path ...]
+
+The flags are:
+
+        -o
+            The file where you want the tokens json file to be output. Default is /tmp/
+        -n
+            The number of tokens you want to be generated. Default is 10.
+*/
+package main
+
+import (
+        "flag"
+        "log"
+        "talkliketv.click/tltv/internal/test"
+        "time"
+)
+
+func main() <span class="cov0" title="0">{
+        var outputPath string
+        var numTokens int
+
+        filename := "tokens-" + time.Now().Format("20060102150405") + ".json"
+        flag.StringVar(&amp;outputPath, "o", "/tmp/", "file path where you want json token file")
+        flag.IntVar(&amp;numTokens, "n", 0, "the number of tokens to generate")
+        flag.Parse()
+
+        plaintexts, err := test.CreateTokensFile(outputPath+"/"+filename, numTokens)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal(err)
+        }</span>
+
+        <span class="cov0" title="0">for plain := range plaintexts </span><span class="cov0" title="0">{
+                println(plain)
+        }</span>
 }
 </pre>
 		
