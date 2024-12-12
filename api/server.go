@@ -40,7 +40,7 @@ func NewServer(cfg config.Config, t translates.TranslateX, af audiofile.AudioFil
 	}
 
 	// create token map
-	models.LoadTokens("")
+	models.LoadTokens(cfg.TokenFilePath)
 	if models.GetTokensLength() == 0 {
 		log.Fatal("token map length can not be 0")
 	}

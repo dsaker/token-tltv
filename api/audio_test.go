@@ -679,8 +679,8 @@ func TestAmazonIntegration(t *testing.T) {
 	okFormMap := map[string]string{
 		"fileLanguageId": strconv.Itoa(rand.IntN(test.MaxLanguages)), //nolint:gosec
 		"titleName":      title.Name,
-		"fromVoiceId":    strconv.Itoa(rand.IntN(test.MaxVoices)),
-		"toVoiceId":      strconv.Itoa(rand.IntN(test.MaxVoices)),
+		"fromVoiceId":    strconv.Itoa(rand.IntN(test.MaxVoices)), //nolint:gosec
+		"toVoiceId":      strconv.Itoa(rand.IntN(test.MaxVoices)), //nolint:gosec
 	}
 
 	testCases := []testCase{

@@ -28,7 +28,7 @@ var (
 
 const (
 	audioBasePath = "/audio"
-	tokenFilePath = "/tokens.json"
+	tokenFilePath = "/tokens.json" //nolint:gosec
 )
 
 type TestConfig struct {

@@ -29,6 +29,8 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 	if err != nil {
 		return e.String(http.StatusBadRequest, err.Error())
 	}
+
+	// TODO put limit on characters
 	phrases, phraseZipFile, err := s.processFile(e, title.Name)
 	if err != nil {
 		if errors.Is(err, util.ErrTooManyPhrases) {

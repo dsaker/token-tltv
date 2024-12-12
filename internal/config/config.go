@@ -16,6 +16,7 @@ type Config struct {
 	MaxNumPhrases   int
 	TTSBasePath     string
 	FileUploadLimit int64
+	TokenFilePath   string
 }
 
 func SetConfigs(config *Config) error {
@@ -45,6 +46,11 @@ func SetConfigs(config *Config) error {
 	} else {
 		return errors.New("invalid platform (must be google|amazon)")
 	}
+
+	// get the token file path to make a map of tokens required to make a valid request
+	tokenUsageString := "file path where the tokens needed to make a valid request are stored (see scripts/go/generatecoins.go"
+	flag.StringVar(&config.TokenFilePath, "token-file-path", "", tokenUsageString)
+
 	return nil
 }
 
