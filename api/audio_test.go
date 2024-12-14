@@ -425,7 +425,7 @@ func TestAudioFromFile(t *testing.T) {
 					"fileLanguageId": strconv.Itoa(title.TitleLangId),
 					"fromVoiceId":    strconv.Itoa(title.FromVoiceId),
 					"toVoiceId":      strconv.Itoa(title.ToVoiceId),
-					"pause":          "11",
+					"pause":          "10",
 				}
 				mu.Lock()
 				token := tokenStrings[tokenCount]

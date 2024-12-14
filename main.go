@@ -35,6 +35,7 @@ func main() {
 
 	//initialize audiofile with the real command runner
 	af := audiofile.New(&audiofile.RealCmdRunner{})
+
 	// create translates with google or amazon clients depending on the flag set in conifg
 	// I also set a global platform since this will not be changed during execution
 	t := translates.New(*translates.NewGoogleClients(), translates.AmazonClients{}, &models.Models{})

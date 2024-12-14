@@ -16,6 +16,10 @@ import (
 	"talkliketv.click/tltv/internal/util"
 )
 
+func (s *Server) Home(e echo.Context) error {
+	return e.Render(http.StatusOK, "home.gohtml", "World!")
+}
+
 // AudioFromFile accepts a file in srt, phrase per line, or paragraph form and
 // sends a zip file of mp3 audio tracks for learning a language that you choose
 func (s *Server) AudioFromFile(e echo.Context) error {

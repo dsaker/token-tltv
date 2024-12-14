@@ -27,7 +27,7 @@ var (
 )
 
 const (
-	audioBasePath = "/audio"
+	audioBasePath = "/v1/audio"
 	tokenFilePath = "/tokens.json" //nolint:gosec
 )
 

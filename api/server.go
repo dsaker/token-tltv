@@ -2,19 +2,19 @@ package api
 
 import (
 	"fmt"
+	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/labstack/echo/v4"
 	echomw "github.com/labstack/echo/v4/middleware"
 	middleware "github.com/oapi-codegen/echo-middleware"
 	"golang.org/x/time/rate"
 	"log"
 	"os"
 	"sync"
-	"talkliketv.click/tltv/internal/models"
-	"talkliketv.click/tltv/internal/oapi"
-
-	"github.com/labstack/echo/v4"
 	"talkliketv.click/tltv/internal/audio"
 	"talkliketv.click/tltv/internal/audio/audiofile"
 	"talkliketv.click/tltv/internal/config"
+	"talkliketv.click/tltv/internal/models"
+	"talkliketv.click/tltv/internal/oapi"
 	"talkliketv.click/tltv/internal/translates"
 	"talkliketv.click/tltv/internal/util"
 )
@@ -45,26 +45,35 @@ func NewServer(cfg config.Config, t translates.TranslateX, af audiofile.AudioFil
 		log.Fatal("token map length can not be 0")
 	}
 
-	spec, err := oapi.GetSwagger()
-	if err != nil {
-		log.Fatalln("loading spec: %w", err)
-	}
-
-	spec.Servers = nil
-	// add middleware
-	e.Use(echomw.RateLimiter(echomw.NewRateLimiterMemoryStore(rate.Limit(5))))
-	e.Use(echomw.Logger())
-	e.Use(echomw.Recover())
-
-	// Use our validation middleware to check all requests against the OpenAPI schema.
-	e.Use(middleware.OapiRequestValidator(spec))
-
 	srv := &Server{
 		translate: t,
 		config:    cfg,
 		af:        af,
 	}
-	oapi.RegisterHandlers(e, srv)
+
+	tmpl := NewTemplates()
+	e.Renderer = tmpl
+
+	ui := e.Group("")
+	ui.Static("/static", "ui/static")
+	ui.GET("/", srv.Home)
+
+	// add middleware
+	e.Use(echomw.RateLimiter(echomw.NewRateLimiterMemoryStore(rate.Limit(5))))
+	e.Use(echomw.Logger())
+	e.Use(echomw.Recover())
+
+	spec, err := oapi.GetSwagger()
+	if err != nil {
+		log.Fatalln("loading spec: %w", err)
+	}
+
+	spec.Servers = openapi3.Servers{&openapi3.Server{URL: "/v1"}}
+
+	apiGrp := e.Group("/v1")
+	//Use our validation middleware to check all requests against the OpenAPI schema.
+	apiGrp.Use(middleware.OapiRequestValidator(spec))
+	oapi.RegisterHandlersWithBaseURL(apiGrp, srv, "")
 	return e
 }
 
