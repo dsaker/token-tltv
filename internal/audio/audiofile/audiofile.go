@@ -323,6 +323,7 @@ func replaceFmt(line string) string {
 	re = regexp.MustCompile("<.*?>")
 	line = re.ReplaceAllString(line, "")
 	line = strings.ReplaceAll(line, "-", "")
+	line = strings.ReplaceAll(line, "♪", "")
 	line = strings.TrimSpace(line)
 
 	return line

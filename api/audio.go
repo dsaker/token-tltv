@@ -16,8 +16,29 @@ import (
 	"talkliketv.click/tltv/internal/util"
 )
 
-func (s *Server) Home(e echo.Context) error {
+type templateData struct {
+	Languages map[int]models.Language
+	Voices    map[int]models.Voice
+	Form      any
+}
+
+type AudioForm struct {
+	OgLanguageId int    `form:"og_language_id"`
+	FromEnglish  string `form:"from_english"`
+	Title        string `form:"title"`
+}
+
+func (s *Server) homeView(e echo.Context) error {
 	return e.Render(http.StatusOK, "home.gohtml", "World!")
+}
+
+// Update the handler so it displays the signup page.
+func (s *Server) audioView(e echo.Context) error {
+	data := templateData{}
+
+	data.Languages = models.Languages
+	data.Voices = models.Voices
+	return e.Render(http.StatusOK, "audio.gohtml", data)
 }
 
 // AudioFromFile accepts a file in srt, phrase per line, or paragraph form and

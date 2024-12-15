@@ -12,8 +12,8 @@ import (
 	"time"
 )
 
-// aws_languages => aws translate list-languages > aws_languages.json
-// aws_voices => aws polly describe-voices > aws_voices.json
+// aws_languages => aws translate list-Languages > aws_languages.json
+// aws_voices => aws polly describe-Voices > aws_voices.json
 // google_languages => /scripts/python/supported_languages.json
 // google_voices => /scripts/python/voices_api.json
 
@@ -100,8 +100,8 @@ const (
 	Used
 )
 
-var languages = make(map[int]Language)
-var voices = make(map[int]Voice)
+var Languages = make(map[int]Language)
+var Voices = make(map[int]Voice)
 var tokens = make(map[string]TokenValue)
 
 type ModelsX interface {
@@ -112,7 +112,7 @@ type ModelsX interface {
 type Models struct{}
 
 func (m *Models) GetLanguage(id int) (Language, error) {
-	lang, ok := languages[id]
+	lang, ok := Languages[id]
 	if !ok {
 		return Language{}, util.ErrLanguageIdInvalid
 	}
@@ -120,7 +120,7 @@ func (m *Models) GetLanguage(id int) (Language, error) {
 }
 
 func (m *Models) GetVoice(id int) (Voice, error) {
-	voice, ok := voices[id]
+	voice, ok := Voices[id]
 	if !ok {
 		return Voice{}, util.ErrVoiceIdInvalid
 	}
@@ -128,11 +128,11 @@ func (m *Models) GetVoice(id int) (Voice, error) {
 }
 
 func GetLanguagesLength() int {
-	return len(languages)
+	return len(Languages)
 }
 
 func GetVoicesLength() int {
-	return len(voices)
+	return len(Voices)
 }
 
 func MakeGoogleMaps() {
@@ -149,7 +149,7 @@ func MakeGoogleMaps() {
 	}
 	// add each voice to the Languages map using key for the id
 	for i, lang := range glangs {
-		languages[i] = Language{
+		Languages[i] = Language{
 			ID:   i,
 			Code: lang.Language,
 			Name: lang.Name,
@@ -198,7 +198,7 @@ func MakeGoogleMaps() {
 			//log.Println("langId not found for " + voice.Name + " : " + voice.LanguageCodes[0])
 		} else {
 			// add to VoiceLangId map
-			voices[i] = Voice{
+			Voices[i] = Voice{
 				ID:                     i,
 				LanguageCodes:          voice.LanguageCodes,
 				Gender:                 voice.SsmlGender,
@@ -224,7 +224,7 @@ func MakeAmazonMaps() {
 	}
 	// add each voice to the Languages map using key for the id
 	for i, lang := range array.Languages {
-		languages[i] = Language{
+		Languages[i] = Language{
 			ID:   i,
 			Code: lang.LanguageCode,
 			Name: lang.LanguageName,
@@ -261,7 +261,7 @@ func MakeAmazonMaps() {
 			log.Println("langId not found for " + voice.Name + voice.LanguageCode)
 		} else {
 			// add to VoiceLangId map
-			voices[i] = Voice{
+			Voices[i] = Voice{
 				ID:            i,
 				LanguageCodes: []string{voice.LanguageCode},
 				Gender:        voice.Gender,

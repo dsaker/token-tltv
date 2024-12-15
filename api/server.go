@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/go-playground/form/v4"
 	"github.com/labstack/echo/v4"
 	echomw "github.com/labstack/echo/v4/middleware"
 	middleware "github.com/oapi-codegen/echo-middleware"
@@ -24,6 +25,7 @@ type Server struct {
 	translate translates.TranslateX
 	config    config.Config
 	af        audiofile.AudioFileX
+	fd        *form.Decoder
 }
 
 // NewServer creates a new HTTP server and sets up routing.
@@ -49,6 +51,7 @@ func NewServer(cfg config.Config, t translates.TranslateX, af audiofile.AudioFil
 		translate: t,
 		config:    cfg,
 		af:        af,
+		fd:        form.NewDecoder(),
 	}
 
 	tmpl := NewTemplates()
@@ -56,7 +59,8 @@ func NewServer(cfg config.Config, t translates.TranslateX, af audiofile.AudioFil
 
 	ui := e.Group("")
 	ui.Static("/static", "ui/static")
-	ui.GET("/", srv.Home)
+	ui.GET("/", srv.homeView)
+	ui.GET("/audio", srv.audioView)
 
 	// add middleware
 	e.Use(echomw.RateLimiter(echomw.NewRateLimiterMemoryStore(rate.Limit(5))))
@@ -72,7 +76,10 @@ func NewServer(cfg config.Config, t translates.TranslateX, af audiofile.AudioFil
 
 	apiGrp := e.Group("/v1")
 	//Use our validation middleware to check all requests against the OpenAPI schema.
-	apiGrp.Use(middleware.OapiRequestValidator(spec))
+	apiGrp.Use(middleware.OapiRequestValidatorWithOptions(spec,
+		&middleware.Options{
+			SilenceServersWarning: true,
+		}))
 	oapi.RegisterHandlersWithBaseURL(apiGrp, srv, "")
 	return e
 }
