@@ -34,7 +34,7 @@ func main() {
 	flag.IntVar(&numTokens, "n", 0, "the number of tokens to generate")
 	flag.Parse()
 
-	plaintexts, err := test.CreateTokensFile(outputPath+"/"+filename, numTokens)
+	plaintexts, err := test.CreateTokensFile(outputPath, filename, numTokens)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -9,7 +9,6 @@ import (
 	"log"
 	"math/rand"
 	"os"
-	"path/filepath"
 	"reflect"
 	"slices"
 	"strings"
@@ -17,6 +16,7 @@ import (
 	mockm "talkliketv.click/tltv/internal/mock/models"
 	mockt "talkliketv.click/tltv/internal/mock/translates"
 	"talkliketv.click/tltv/internal/models"
+	"talkliketv.click/tltv/internal/util"
 	"testing"
 	"time"
 
@@ -171,7 +171,7 @@ func generateToken() (*models.Token, string, error) {
 	return token, plaintext, nil
 }
 
-func CreateTokensFile(filePath string, numTokens int) ([]string, error) {
+func CreateTokensFile(filePath string, filename string, numTokens int) ([]string, error) {
 	var tokens []*models.Token
 	var plaintexts []string
 	for i := 0; i < numTokens; i++ {
@@ -189,8 +189,19 @@ func CreateTokensFile(filePath string, numTokens int) ([]string, error) {
 		log.Fatal(err)
 	}
 
+	// create a file path if it does not exist
+	exists, err := util.PathExists(filePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if !exists {
+		err = os.MkdirAll(filePath, os.ModePerm)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 	// Open the file for writing
-	file, err := os.Create(filepath.Clean(filePath))
+	file, err := os.Create(filePath + filename)
 	if err != nil {
 		log.Fatal(err)
 	}

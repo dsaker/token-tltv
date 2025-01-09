@@ -2,7 +2,6 @@ package api
 
 import (
 	"fmt"
-	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-playground/form/v4"
 	"github.com/labstack/echo/v4"
 	echomw "github.com/labstack/echo/v4/middleware"
@@ -23,16 +22,17 @@ import (
 type Server struct {
 	sync.RWMutex
 	translate translates.TranslateX
-	config    config.Config
 	af        audiofile.AudioFileX
+	m         models.ModelsX
+	config    config.Config
 	fd        *form.Decoder
 }
 
 // NewServer creates a new HTTP server and sets up routing.
-func NewServer(cfg config.Config, t translates.TranslateX, af audiofile.AudioFileX) *echo.Echo {
+func NewServer(c config.Config, t translates.TranslateX, af audiofile.AudioFileX) *echo.Echo {
 	e := echo.New()
 	// make sure silence mp3s exist in your base path
-	initSilence(cfg)
+	initSilence(c)
 
 	// create maps of voices and languages depending on platform
 	if translates.GlobalPlatform == translates.Google {
@@ -42,45 +42,31 @@ func NewServer(cfg config.Config, t translates.TranslateX, af audiofile.AudioFil
 	}
 
 	// create token map
-	models.LoadTokens(cfg.TokenFilePath)
+	models.LoadTokens(c.TokenFilePath)
 	if models.GetTokensLength() == 0 {
 		log.Fatal("token map length can not be 0")
 	}
-
-	srv := &Server{
-		translate: t,
-		config:    cfg,
-		af:        af,
-		fd:        form.NewDecoder(),
-	}
-
-	tmpl := NewTemplates()
-	e.Renderer = tmpl
-
-	ui := e.Group("")
-	ui.Static("/static", "ui/static")
-	ui.GET("/", srv.homeView)
-	ui.GET("/audio", srv.audioView)
-
-	// add middleware
-	e.Use(echomw.RateLimiter(echomw.NewRateLimiterMemoryStore(rate.Limit(5))))
-	e.Use(echomw.Logger())
-	e.Use(echomw.Recover())
 
 	spec, err := oapi.GetSwagger()
 	if err != nil {
 		log.Fatalln("loading spec: %w", err)
 	}
 
-	spec.Servers = openapi3.Servers{&openapi3.Server{URL: "/v1"}}
+	spec.Servers = nil
+	// add middleware
+	e.Use(echomw.RateLimiter(echomw.NewRateLimiterMemoryStore(rate.Limit(5))))
+	e.Use(echomw.Logger())
+	e.Use(echomw.Recover())
 
-	apiGrp := e.Group("/v1")
-	//Use our validation middleware to check all requests against the OpenAPI schema.
-	apiGrp.Use(middleware.OapiRequestValidatorWithOptions(spec,
-		&middleware.Options{
-			SilenceServersWarning: true,
-		}))
-	oapi.RegisterHandlersWithBaseURL(apiGrp, srv, "")
+	// Use our validation middleware to check all requests against the OpenAPI schema.
+	e.Use(middleware.OapiRequestValidator(spec))
+
+	srv := &Server{
+		translate: t,
+		config:    c,
+		af:        af,
+	}
+	oapi.RegisterHandlers(e, srv)
 	return e
 }
 

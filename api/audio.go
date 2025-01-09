@@ -3,15 +3,14 @@ package api
 import (
 	"errors"
 	"fmt"
+	"github.com/labstack/echo/v4"
 	"net/http"
 	"os"
 	"slices"
 	"strconv"
 	"strings"
-	"talkliketv.click/tltv/internal/models"
-
-	"github.com/labstack/echo/v4"
 	"talkliketv.click/tltv/internal/audio/audiofile"
+	"talkliketv.click/tltv/internal/models"
 	"talkliketv.click/tltv/internal/test"
 	"talkliketv.click/tltv/internal/util"
 )
@@ -20,12 +19,6 @@ type templateData struct {
 	Languages map[int]models.Language
 	Voices    map[int]models.Voice
 	Form      any
-}
-
-type AudioForm struct {
-	OgLanguageId int    `form:"og_language_id"`
-	FromEnglish  string `form:"from_english"`
-	Title        string `form:"title"`
 }
 
 func (s *Server) homeView(e echo.Context) error {
@@ -44,8 +37,9 @@ func (s *Server) audioView(e echo.Context) error {
 // AudioFromFile accepts a file in srt, phrase per line, or paragraph form and
 // sends a zip file of mp3 audio tracks for learning a language that you choose
 func (s *Server) AudioFromFile(e echo.Context) error {
-	// check token
+
 	token := e.FormValue("token")
+	// check token
 	if err := models.CheckToken(token); err != nil {
 		return e.String(http.StatusForbidden, err.Error())
 	}
@@ -88,8 +82,9 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 }
 
 func (s *Server) processFile(e echo.Context, titleName string) ([]models.Phrase, *os.File, error) {
+
 	// Get file handler for filename, size and headers
-	fh, err := e.FormFile("filePath")
+	fh, err := e.FormFile("file_path")
 	if err != nil {
 		e.Logger().Error(err)
 		return nil, nil, util.ErrUnableToParseFile(err)
@@ -194,37 +189,37 @@ func validateAudioRequest(e echo.Context, pause, pattern int) (models.Title, err
 	languagesCount := models.GetLanguagesLength() - 1
 	voicesCount := models.GetVoicesLength() - 1
 	// get values from multipart form
-	titleName := e.FormValue("titleName")
+	titleName := e.FormValue("title_name")
 	// convert strings from multipart form to int
-	fileLangId, err := strconv.Atoi(e.FormValue("fileLanguageId"))
+	fileLangId, err := strconv.Atoi(e.FormValue("file_language_id"))
 	if err != nil {
 		e.Logger().Error(err)
-		return models.Title{}, fmt.Errorf("error converting fileLanguageId to int: %s", err.Error())
+		return models.Title{}, fmt.Errorf("error converting file_language_id to int: %s", err.Error())
 	}
 	// validate fileLangId
 	if fileLangId < 0 || fileLangId > languagesCount {
 		e.Logger().Error(util.ErrLanguageIdInvalid)
-		return models.Title{}, fmt.Errorf("fileLangId must be between 0 and %d", languagesCount)
+		return models.Title{}, fmt.Errorf("file_language_id must be between 0 and %d", languagesCount)
 	}
-	toVoiceId, err := strconv.Atoi(e.FormValue("toVoiceId"))
+	toVoiceId, err := strconv.Atoi(e.FormValue("to_voice_id"))
 	if err != nil {
 		e.Logger().Error(err)
-		return models.Title{}, fmt.Errorf("error converting toVoiceId to int: %s", err.Error())
+		return models.Title{}, fmt.Errorf("error converting to_voice_id to int: %s", err.Error())
 	}
 	// validate voiceId
 	if toVoiceId < 0 || toVoiceId > voicesCount {
 		e.Logger().Error(util.ErrVoiceIdInvalid)
-		return models.Title{}, fmt.Errorf("toVoiceId must be between 0 and %d", voicesCount)
+		return models.Title{}, fmt.Errorf("to_voice_id must be between 0 and %d", voicesCount)
 	}
-	fromVoiceId, err := strconv.Atoi(e.FormValue("fromVoiceId"))
+	fromVoiceId, err := strconv.Atoi(e.FormValue("from_voice_id"))
 	if err != nil {
 		e.Logger().Error(err)
-		return models.Title{}, fmt.Errorf("error converting fromVoiceId to int: %s", err.Error())
+		return models.Title{}, fmt.Errorf("error converting from_voice_id to int: %s", err.Error())
 	}
 	// validate voiceId
 	if fromVoiceId < 0 || fromVoiceId > voicesCount {
 		e.Logger().Error(util.ErrVoiceIdInvalid)
-		return models.Title{}, fmt.Errorf("fromVoiceId must be between 0 and %d", voicesCount)
+		return models.Title{}, fmt.Errorf("from_voice_id must be between 0 and %d", voicesCount)
 	}
 
 	// check if user sent 'pause' in the request and update config if they did

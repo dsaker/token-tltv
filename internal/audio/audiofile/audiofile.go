@@ -13,8 +13,10 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"talkliketv.click/tltv/internal/models"
+	"talkliketv.click/tltv/internal/util"
 	"unicode"
 
 	"github.com/labstack/echo/v4"
@@ -157,7 +159,7 @@ func (a *AudioFile) GetLines(e echo.Context, f multipart.File) ([]string, error)
 		return nil, errors.New("unable to parse file")
 	}
 
-	return stringsSlice, nil
+	return util.RemoveDuplicateStr(stringsSlice), nil
 }
 
 // parseSrt takes a srt multipart file and parses it into a slice of strings
@@ -451,18 +453,31 @@ func (a *AudioFile) BuildAudioInputFiles(e echo.Context, t models.Title, pause, 
 			e.Logger().Error(err)
 			return err
 		}
-		for _, audioStruct := range chunk {
+		for _, audioFloat := range chunk {
+			// convert float representation of phrase id and whether speech should be native or translated
+			// it is represented in /internal/pattern as "phraseId"."native_boolean" as a float32 to save space
+			stringFloat := strconv.FormatFloat(float64(audioFloat), 'f', -1, 32)
+			phraseNative := strings.Split(stringFloat, ".")
+			// if when you split the string the length is 1 that means the float ended in .0 which means audio
+			// should be translated; if length is 2 that means float ended in .1 which indicates it should be
+			// native
+			native := false
+			if len(phraseNative) == 2 {
+				native = true
+			}
+			phraseId, err := strconv.Atoi(phraseNative[0])
+			if err != nil {
+				e.Logger().Error(err)
+				return err
+			}
 			// if: we have reached the highest phrase id then this will be the last audio block
 			// else if: skip if phraseId does not exist (is greater than maxP)
 			// else if: native language then we add filepath for from audio mp3
 			// else: add audio filepath for language you want to learn
-			phraseId := audioStruct.Id
 			if phraseId == maxP {
 				last = true
 			}
-			if phraseId == 0 && audioStruct.Id > 0 {
-				continue
-			} else if audioStruct.Native {
+			if native {
 				_, err = f.WriteString(fmt.Sprintf("file '%s%d'\n", from, phraseId))
 				if err != nil {
 					e.Logger().Error(err)

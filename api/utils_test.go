@@ -27,7 +27,7 @@ var (
 )
 
 const (
-	audioBasePath = "/v1/audio"
+	audioBasePath = "/audio"
 	tokenFilePath = "/tokens.json" //nolint:gosec
 )
 
@@ -54,7 +54,7 @@ func TestMain(m *testing.M) {
 	flag.BoolVar(&util.Integration, "integration", false, "Run integration tests")
 	flag.Parse()
 	testCfg.TTSBasePath = test.AudioBasePath
-	plaintext, err := test.CreateTokensFile(test.AudioBasePath+tokenFilePath, 100)
+	plaintext, err := test.CreateTokensFile(test.AudioBasePath, tokenFilePath, 100)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -104,7 +104,7 @@ func createMultiPartBody(t *testing.T, data []byte, filename string, m map[strin
 	require.NoError(t, err)
 	body := new(bytes.Buffer)
 	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("filePath", filename)
+	part, err := writer.CreateFormFile("file_path", filename)
 	require.NoError(t, err)
 	_, err = io.Copy(part, file)
 	require.NoError(t, err)
