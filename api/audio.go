@@ -21,7 +21,7 @@ type templateData struct {
 	Form      any
 }
 
-func (s *Server) homeView(e echo.Context) error {
+func homeView(e echo.Context) error {
 	return e.Render(http.StatusOK, "home.gohtml", "World!")
 }
 

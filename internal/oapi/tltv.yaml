@@ -82,17 +82,27 @@ paths:
         '200':
           description: audio from file response
           content:
-            application/json:
+            application/zip:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Translates'
+                type: string
+                format: binary
         default:
           description: unexpected error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+#  /:
+#    get:
+#      description: home page
+#      operationId: homeView
+#      responses:
+#        200:
+#          description: OK
+#          content:
+#            text/html:
+#              schema:
+#                type: string
 components:
   schemas:
     Translates:

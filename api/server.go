@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-playground/form/v4"
 	"github.com/labstack/echo/v4"
 	echomw "github.com/labstack/echo/v4/middleware"
@@ -23,7 +24,6 @@ type Server struct {
 	sync.RWMutex
 	translate translates.TranslateX
 	af        audiofile.AudioFileX
-	m         models.ModelsX
 	config    config.Config
 	fd        *form.Decoder
 }
@@ -52,21 +52,30 @@ func NewServer(c config.Config, t translates.TranslateX, af audiofile.AudioFileX
 		log.Fatalln("loading spec: %w", err)
 	}
 
-	spec.Servers = nil
+	spec.Servers = openapi3.Servers{&openapi3.Server{URL: "/v1"}}
+	tmpl := NewTemplates()
+	e.Renderer = tmpl
+
+	uiGrp := e.Group("")
+	uiGrp.Static("/static", "ui/static")
+	uiGrp.GET("/", homeView)
+
 	// add middleware
 	e.Use(echomw.RateLimiter(echomw.NewRateLimiterMemoryStore(rate.Limit(5))))
 	e.Use(echomw.Logger())
 	e.Use(echomw.Recover())
 
 	// Use our validation middleware to check all requests against the OpenAPI schema.
-	e.Use(middleware.OapiRequestValidator(spec))
+	apiGrp := e.Group("/v1")
+	apiGrp.Use(middleware.OapiRequestValidator(spec))
 
 	srv := &Server{
 		translate: t,
 		config:    c,
 		af:        af,
 	}
-	oapi.RegisterHandlers(e, srv)
+
+	oapi.RegisterHandlersWithBaseURL(apiGrp, srv, "")
 	return e
 }
 

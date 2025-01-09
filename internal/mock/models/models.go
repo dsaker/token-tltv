@@ -40,20 +40,6 @@ func (m *MockModelsX) EXPECT() *MockModelsXMockRecorder {
 	return m.recorder
 }
 
-// CheckToken mocks base method.
-func (m *MockModelsX) CheckToken(arg0 string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckToken", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CheckToken indicates an expected call of CheckToken.
-func (mr *MockModelsXMockRecorder) CheckToken(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckToken", reflect.TypeOf((*MockModelsX)(nil).CheckToken), arg0)
-}
-
 // GetLanguage mocks base method.
 func (m *MockModelsX) GetLanguage(arg0 int) (models.Language, error) {
 	m.ctrl.T.Helper()
