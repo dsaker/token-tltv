@@ -15,23 +15,13 @@ import (
 	"talkliketv.click/tltv/internal/util"
 )
 
-type templateData struct {
-	Languages map[int]models.Language
-	Voices    map[int]models.Voice
-	Form      any
-}
-
 func homeView(e echo.Context) error {
-	return e.Render(http.StatusOK, "home.gohtml", "World!")
+	return e.Render(http.StatusOK, "home.gohtml", nil)
 }
 
 // Update the handler so it displays the signup page.
-func (s *Server) audioView(e echo.Context) error {
-	data := templateData{}
-
-	data.Languages = models.Languages
-	data.Voices = models.Voices
-	return e.Render(http.StatusOK, "audio.gohtml", data)
+func audioView(e echo.Context) error {
+	return e.Render(http.StatusOK, "audio.gohtml", newTemplateData(""))
 }
 
 // AudioFromFile accepts a file in srt, phrase per line, or paragraph form and
@@ -41,12 +31,12 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 	token := e.FormValue("token")
 	// check token
 	if err := models.CheckToken(token); err != nil {
-		return e.String(http.StatusForbidden, err.Error())
+		return e.Render(http.StatusForbidden, "audio.gohtml", newTemplateData(err.Error()))
 	}
 
 	title, err := validateAudioRequest(e, s.config.PhrasePause, s.config.AudioPattern)
 	if err != nil {
-		return e.String(http.StatusBadRequest, err.Error())
+		return e.Render(http.StatusBadRequest, "audio.gohtml", newTemplateData(err.Error()))
 	}
 
 	// TODO put limit on characters
@@ -56,9 +46,10 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 			return e.Attachment(phraseZipFile.Name(), "TooManyPhrasesUseTheseFiles.zip")
 		}
 		if strings.Contains(err.Error(), "unable to parse file") {
-			return e.String(http.StatusBadRequest, err.Error())
+			return e.Render(http.StatusBadRequest, "audio.gohtml", newTemplateData(err.Error()))
+
 		}
-		return e.String(http.StatusInternalServerError, err.Error())
+		return e.Render(http.StatusInternalServerError, "audio.gohtml", newTemplateData(err.Error()))
 	}
 
 	// TODO add to and from languages to titleName
@@ -68,7 +59,7 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 
 	zipFile, err := s.createAudioFromTitle(e, title)
 	if err != nil {
-		return e.String(http.StatusInternalServerError, err.Error())
+		return e.Render(http.StatusInternalServerError, "audio.gohtml", newTemplateData(err.Error()))
 	}
 
 	titleName = titleName + "." + strconv.Itoa(title.FromVoiceId) + "-" + strconv.Itoa(title.ToVoiceId) + ".zip"
@@ -76,7 +67,7 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 	// change token status to Used
 	err = models.SetTokenStatus(token, models.Used)
 	if err != nil {
-		return e.String(http.StatusInternalServerError, err.Error())
+		return e.Render(http.StatusInternalServerError, "audio.gohtml", newTemplateData(err.Error()))
 	}
 	return e.Attachment(zipFile.Name(), titleName)
 }

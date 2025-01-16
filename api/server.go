@@ -47,27 +47,33 @@ func NewServer(c config.Config, t translates.TranslateX, af audiofile.AudioFileX
 		log.Fatal("token map length can not be 0")
 	}
 
-	spec, err := oapi.GetSwagger()
+	tempC, err := newTemplateCache()
 	if err != nil {
-		log.Fatalln("loading spec: %w", err)
+		log.Fatal(err)
 	}
-
-	spec.Servers = openapi3.Servers{&openapi3.Server{URL: "/v1"}}
-	tmpl := NewTemplates()
-	e.Renderer = tmpl
-
-	uiGrp := e.Group("")
-	uiGrp.Static("/static", "ui/static")
-	uiGrp.GET("/", homeView)
+	e.Renderer = &TemplateRegistry{templates: tempC}
 
 	// add middleware
 	e.Use(echomw.RateLimiter(echomw.NewRateLimiterMemoryStore(rate.Limit(5))))
 	e.Use(echomw.Logger())
 	e.Use(echomw.Recover())
 
+	uiGrp := e.Group("")
+	uiGrp.Static("/static", "ui/static")
+	uiGrp.GET("/", homeView)
+	uiGrp.GET("/audio", audioView)
+
 	// Use our validation middleware to check all requests against the OpenAPI schema.
 	apiGrp := e.Group("/v1")
-	apiGrp.Use(middleware.OapiRequestValidator(spec))
+	spec, err := oapi.GetSwagger()
+	if err != nil {
+		log.Fatalln("loading spec: %w", err)
+	}
+	spec.Servers = openapi3.Servers{&openapi3.Server{URL: "/v1"}}
+	apiGrp.Use(middleware.OapiRequestValidatorWithOptions(spec,
+		&middleware.Options{
+			SilenceServersWarning: true,
+		}))
 
 	srv := &Server{
 		translate: t,

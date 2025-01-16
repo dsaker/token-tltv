@@ -6,6 +6,14 @@
     font-family: "Ubuntu Mono", monospace;
 }
 
+input:invalid {
+    border: 2px dashed red;
+}
+
+input:valid {
+    border: 2px solid black;
+}
+
 html, body {
     height: 100%;
 }
@@ -46,7 +54,8 @@ h1 a:hover {
 
 h2 {
     font-size: 22px;
-    margin-bottom: 24px;
+    margin-bottom: 12px;
+    margin-top: 12px;
     position: relative;
     top: -9px;
 }

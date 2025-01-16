@@ -2,79 +2,93 @@
 
 {{define "title"}}Upload{{end}}
 
-{{define "contents"}}
-    <form id="audio_form" action='/v1/audio' method='POST' enctype="multipart/form-data" novalidate>
-        {{range .Form.NonFieldErrors}}
-            <div class='error'>{{.}}</div>
-        {{end}}
-        {{with .Form.FieldErrors.title}}
-            <label class='error'>{{.}}</label>
-        {{end}}
-        <label>Token:</label>
+{{define "content"}}
+    <form id="audio_form" action='/v1/audio' method='POST' enctype="multipart/form-data" >
+        <label class="error" id="error-div" style="display: none;" ></label>
+        <br/>
         <div>
-            <input type='text' name='token' value='{{.Form.Token}}'>
-        </div>
-        <label>Title Name:</label>
-        <div>
-            <input type='text' name='title' value='{{.Form.Title}}'>
+            <label for="token-input">Token:</label>
+            <input
+                    type="text"
+                    id="token-input"
+                    name="token"
+                    minlength="26"
+                    maxlength="26"
+                    required >
         </div>
         <div>
-            <label id="og_language_id">Language of File: </label>
-            <select name="og_language_id" id="og_language_id">
+            <label for="title-input">Title Name:</label>
+            <input
+                    id="title-input"
+                    type="text"
+                    name="title_name"
+                    minlength="5"
+                    maxlength="32"
+                    required >
+        </div>
+        <div>
+            <label for="og-lang-select">Language of File: </label>
+            <select  id="og-lang-select" name="file_language_id" required>
+                <option disabled selected value> -- select an option -- </option>
                 {{if .Languages}}
                     {{range .Languages}}
-                        <option value="{{.ID}}">{{.Language}}</option>
+                        <option value="{{.ID}}">{{.Name}}</option>
                     {{end}}
                 {{end}}
             </select>
         </div>
         <div>
-            <label id="from_language_id_label">Language to learn from: </label>
-            <select name="from_language_id" id="from_language_id">
+            <label for="from-lang-select">Language to learn from: </label>
+            <select id="from-lang-select" required>
+                <option disabled selected value> -- select an option -- </option>
                 {{if .Languages}}
                     {{range .Languages}}
-                        <option value="{{.ID}}">{{.Language}}</option>
+                        <option value="{{.ID}}">{{.Name}}</option>
                     {{end}}
                 {{end}}
             </select>
         </div>
-        <div>
-            <label id="fromvoice_id_label">Voice to learn from: </label>
-            <select name="fromvoice_id" id="fromvoice_id">
+        <div id="from-voice-div" style="display: none;">
+            <label for="from-voice-select">Voice to learn from: </label>
+            <select id="from-voice-select" name="from_voice_id" required>
+                <option disabled selected value> -- select an option -- </option>
                 {{if .Voices}}
-                    {{range .Voices}}
-                        <option value="{{.ID}}">{{.Voice}}</option>
+                    {{range $index, $value := .Voices}}
+                        <option style="display: none;" class="{{.LangId}}" value="{{.ID}}" name="from-voice-option" >{{.VoiceName}}</option>
                     {{end}}
                 {{end}}
             </select>
         </div>
         <div>
-            <label id="tolanguage_id_label">Language you want to learn: </label>
-            <select name="language_id" id="language_id">
+            <label for="to-lang-select">Language you want to learn: </label>
+            <select id="to-lang-select">
+                <option disabled selected value> -- select an option -- </option>
                 {{if .Languages}}
                     {{range .Languages}}
-                        <option value="{{.ID}}">{{.Language}}</option>
+                        <option value="{{.ID}}">{{.Name}}</option>
                     {{end}}
                 {{end}}
             </select>
         </div>
-        <div>
-            <label id="tovoice_id_label">Voice of learned language: </label>
-            <select name="fromvoice_id" id="fromvoice_id">
+        <div id="to-voice-div" style="display: none;">
+            <label for="to-voice-select">Voice of language to learn: </label>
+            <select  id="to-voice-select" name="to_voice_id" required>
+                <option disabled selected value> -- select an option -- </option>
                 {{if .Voices}}
-                    {{range .Voices}}
-                        <option value="{{.ID}}">{{.Voice}}</option>
+                    {{range $index, $value := .Voices}}
+                        <option style="display: none;" class="{{.LangId}}" value="{{.ID}}" name="to-voice-option" >{{.VoiceName}}</option>
                     {{end}}
                 {{end}}
             </select>
         </div>
-        <input type="file" name="text_file" id="text_file" />
         <div>
-            <input id='translate_submit' type='submit' value='Upload'>
+            <input type="file" name="file_path" id="text-file" required/>
+        </div>
+        <div>
+            <input id="submit-form" type="submit">
         </div>
     </form>
     <div class="lds-div" id="lds-div">
         <div class="lds-roller"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
     </div>
-    <script src="/static/js/translate.js" type="text/javascript"></script>
 {{end}}
