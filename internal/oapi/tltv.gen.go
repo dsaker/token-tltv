@@ -40,10 +40,10 @@ type AudioFromFileMultipartBody struct {
 	// 2 is intermediate --
 	// 3 is advanced and repeats phrases less often and should only be used if you are at an advanced level --
 	// 4 is review and repeats each phrase one time and can be used to review already learned phrases
-	Pattern *string `json:"pattern,omitempty"`
+	Pattern string `json:"pattern"`
 
-	// Pause the pause in seconds between phrases in the audiofile (default is 5)
-	Pause *string `json:"pause,omitempty"`
+	// Pause the pause in seconds between phrases in the audiofile (default is 4)
+	Pause string `json:"pause"`
 
 	// TitleName choose a descriptive title that includes to and from languages
 	TitleName string `json:"title_name"`
@@ -55,14 +55,25 @@ type AudioFromFileMultipartBody struct {
 	Token string `json:"token"`
 }
 
+// ParseFileMultipartBody defines parameters for ParseFile.
+type ParseFileMultipartBody struct {
+	FilePath openapi_types.File `json:"file_path"`
+}
+
 // AudioFromFileMultipartRequestBody defines body for AudioFromFile for multipart/form-data ContentType.
 type AudioFromFileMultipartRequestBody AudioFromFileMultipartBody
+
+// ParseFileMultipartRequestBody defines body for ParseFile for multipart/form-data ContentType.
+type ParseFileMultipartRequestBody ParseFileMultipartBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
 	// (POST /audio)
 	AudioFromFile(ctx echo.Context) error
+
+	// (POST /parse)
+	ParseFile(ctx echo.Context) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
@@ -76,6 +87,15 @@ func (w *ServerInterfaceWrapper) AudioFromFile(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.AudioFromFile(ctx)
+	return err
+}
+
+// ParseFile converts echo context to params.
+func (w *ServerInterfaceWrapper) ParseFile(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ParseFile(ctx)
 	return err
 }
 
@@ -108,35 +128,38 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	}
 
 	router.POST(baseURL+"/audio", wrapper.AudioFromFile)
+	router.POST(baseURL+"/parse", wrapper.ParseFile)
 
 }
 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
+	"cr68/DsAAP//nxLsPi8PAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

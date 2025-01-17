@@ -56,7 +56,7 @@ func RequireMatchAnyExcept(t *testing.T, model any, response any, skip []string,
 
 const (
 	DefaultPause   = 5
-	DefaultPattern = 2
+	DefaultPattern = 1
 	MaxLanguages   = 75
 	MaxVoices      = 95
 	alphabet       = "abcdefghijklmnopqrstuvwxyz"
@@ -113,9 +113,9 @@ func RandomVoice() models.Voice {
 func RandomTitle() (title models.Title) {
 	return models.Title{
 		Name:        RandomString(8),
-		TitleLangId: rand.Intn(MaxLanguages), //nolint:gosec
-		ToVoiceId:   rand.Intn(MaxVoices),    //nolint:gosec
-		FromVoiceId: rand.Intn(MaxVoices),    //nolint:gosec
+		TitleLangId: models.Languages[0].ID, //nolint:gosec
+		ToVoiceId:   rand.Intn(MaxVoices),   //nolint:gosec
+		FromVoiceId: rand.Intn(MaxVoices),   //nolint:gosec
 		Pause:       DefaultPause,
 		Pattern:     DefaultPattern,
 	}

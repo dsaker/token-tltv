@@ -41,6 +41,8 @@ paths:
                 - to_voice_id
                 - file_path
                 - token
+                - pause
+                - pattern
               properties:
                 title_name:
                   type: string
@@ -59,10 +61,10 @@ paths:
                   description: the language you want to learn
                 pause:
                   type: string
-                  example: "5"
+                  example: 4
                   minimum: 3
                   maximum: 10
-                  description: the pause in seconds between phrases in the audiofile (default is 5)
+                  description: the pause in seconds between phrases in the audiofile (default is 4)
                 pattern:
                   type: string
                   example: "1"
@@ -92,17 +94,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-#  /:
-#    get:
-#      description: home page
-#      operationId: homeView
-#      responses:
-#        200:
-#          description: OK
-#          content:
-#            text/html:
-#              schema:
-#                type: string
+  /parse:
+    post:
+      description: |
+        parses the file uploaded and returns a zipped file of text files of the phrases created
+      operationId: parseFile
+      requestBody:
+        description: >
+          file_path is the file you want to parse
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file_path
+              properties:
+                file_path:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: zip of text files of parsed phrases
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
     Translates:
