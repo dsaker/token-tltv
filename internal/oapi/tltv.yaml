@@ -35,34 +35,36 @@ paths:
             schema:
               type: object
               required:
-                - titleName
-                - fileLanguageId
-                - fromVoiceId
-                - toVoiceId
-                - filePath
+                - title_name
+                - file_language_id
+                - from_voice_id
+                - to_voice_id
+                - file_path
                 - token
+                - pause
+                - pattern
               properties:
-                titleName:
+                title_name:
                   type: string
                   description: choose a descriptive title that includes to and from languages
-                fileLanguageId:
+                file_language_id:
                   type: string
                   example: "49"
                   description: the original language of the file you are uploading
-                fromVoiceId:
+                from_voice_id:
                   type: string
                   example: "162"
                   description: the language you know
-                toVoiceId:
+                to_voice_id:
                   type: string
                   example: "208"
                   description: the language you want to learn
                 pause:
                   type: string
-                  example: "5"
+                  example: 4
                   minimum: 3
                   maximum: 10
-                  description: the pause in seconds between phrases in the audiofile (default is 5)
+                  description: the pause in seconds between phrases in the audiofile (default is 4)
                 pattern:
                   type: string
                   example: "1"
@@ -72,7 +74,7 @@ paths:
                     2 is intermediate -- 
                     3 is advanced and repeats phrases less often and should only be used if you are at an advanced level -- 
                     4 is review and repeats each phrase one time and can be used to review already learned phrases
-                filePath:
+                file_path:
                   type: string
                   format: binary
                 token:
@@ -82,11 +84,43 @@ paths:
         '200':
           description: audio from file response
           content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: unexpected error
+          content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Translates'
+                $ref: '#/components/schemas/Error'
+  /parse:
+    post:
+      description: |
+        parses the file uploaded and returns a zipped file of text files of the phrases created
+      operationId: parseFile
+      requestBody:
+        description: >
+          file_path is the file you want to parse
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file_path
+              properties:
+                file_path:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: zip of text files of parsed phrases
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
         default:
           description: unexpected error
           content:

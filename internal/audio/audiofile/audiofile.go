@@ -13,8 +13,10 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"talkliketv.click/tltv/internal/models"
+	"talkliketv.click/tltv/internal/util"
 	"unicode"
 
 	"github.com/labstack/echo/v4"
@@ -157,7 +159,7 @@ func (a *AudioFile) GetLines(e echo.Context, f multipart.File) ([]string, error)
 		return nil, errors.New("unable to parse file")
 	}
 
-	return stringsSlice, nil
+	return util.RemoveDuplicateStr(stringsSlice), nil
 }
 
 // parseSrt takes a srt multipart file and parses it into a slice of strings
@@ -189,14 +191,14 @@ func parseSrt(f multipart.File) []string {
 			}
 		}
 
-		phrases := splitBigPhrases(line)
+		phrases := splitLongPhrases(line)
 		stringsSlice = append(stringsSlice, phrases...)
 	}
 
 	return stringsSlice
 }
 
-func splitBigPhrases(line string) []string {
+func splitLongPhrases(line string) []string {
 	var splitString []string
 
 	words := strings.Fields(line)
@@ -289,7 +291,7 @@ func parseParagraph(f multipart.File) []string {
 			} else if endSentenceMap[c] {
 				sentence := strings.TrimSpace(line[last : i+1])
 				last = i + 1
-				phrases := splitBigPhrases(sentence)
+				phrases := splitLongPhrases(sentence)
 				stringsSlice = append(stringsSlice, phrases...)
 			}
 		}
@@ -305,7 +307,7 @@ func parseSingle(f multipart.File) []string {
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := scanner.Text()
-		phrases := splitBigPhrases(line)
+		phrases := splitLongPhrases(line)
 		stringsSlice = append(stringsSlice, phrases...)
 	}
 
@@ -323,9 +325,8 @@ func replaceFmt(line string) string {
 	re = regexp.MustCompile("<.*?>")
 	line = re.ReplaceAllString(line, "")
 	line = strings.ReplaceAll(line, "-", "")
+	line = strings.ReplaceAll(line, "♪", "")
 	line = strings.ReplaceAll(line, "\"", "")
-	line = strings.ReplaceAll(line, "'", "")
-	line = strings.ReplaceAll(line, "", "")
 	line = strings.TrimSpace(line)
 
 	return line
@@ -436,9 +437,9 @@ func (a *AudioFile) BuildAudioInputFiles(e echo.Context, t models.Title, pause, 
 	chunkedSlice := slices.Chunk(pattern, 125)
 	count := 1
 	last := false
-	// TODO fix long silences in last file
 	for chunk := range chunkedSlice {
-		inputString := fmt.Sprintf("%s-input-%d", t.Name, count)
+		// you must pad the count for them to be read in the correct order when building mp3 files
+		inputString := fmt.Sprintf("%s-input-%02d", t.Name, count)
 		count++
 		f, err := os.Create(tmpDir + inputString)
 		if err != nil {
@@ -453,18 +454,31 @@ func (a *AudioFile) BuildAudioInputFiles(e echo.Context, t models.Title, pause, 
 			e.Logger().Error(err)
 			return err
 		}
-		for _, audioStruct := range chunk {
+		for _, audioFloat := range chunk {
+			// convert float representation of phrase id and whether speech should be native or translated
+			// it is represented in /internal/pattern as "phraseId"."native_boolean" as a float32 to save space
+			stringFloat := strconv.FormatFloat(float64(audioFloat), 'f', -1, 32)
+			phraseNative := strings.Split(stringFloat, ".")
+			// if when you split the string the length is 1 that means the float ended in .0 which means audio
+			// should be translated; if length is 2 that means float ended in .1 which indicates it should be
+			// native
+			native := false
+			if len(phraseNative) == 2 {
+				native = true
+			}
+			phraseId, err := strconv.Atoi(phraseNative[0])
+			if err != nil {
+				e.Logger().Error(err)
+				return err
+			}
 			// if: we have reached the highest phrase id then this will be the last audio block
 			// else if: skip if phraseId does not exist (is greater than maxP)
 			// else if: native language then we add filepath for from audio mp3
 			// else: add audio filepath for language you want to learn
-			phraseId := audioStruct.Id
 			if phraseId == maxP {
 				last = true
 			}
-			if phraseId == 0 && audioStruct.Id > 0 {
-				continue
-			} else if audioStruct.Native {
+			if native {
 				_, err = f.WriteString(fmt.Sprintf("file '%s%d'\n", from, phraseId))
 				if err != nil {
 					e.Logger().Error(err)
@@ -540,7 +554,7 @@ func (a *AudioFile) CreatePhrasesZip(e echo.Context, chunkedPhrases iter.Seq[[]s
 // and outDirPath which is where the zip file will be stored and zips up the files
 func createZipFile(e echo.Context, tmpDir, filename, outDirPath string) (*os.File, error) {
 	// TODO add txt file of the phrases
-	zipFile, err := os.Create(tmpDir + "/" + filename + ".zip")
+	zipFile, err := os.Create(tmpDir + "/" + filename)
 	if err != nil {
 		e.Logger().Error(err)
 		return nil, err

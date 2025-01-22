@@ -9,6 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/polly v1.45.8
 	github.com/aws/aws-sdk-go-v2/service/translate v1.28.7
 	github.com/getkin/kin-openapi v0.127.0
+	github.com/go-playground/form/v4 v4.2.1
 	github.com/golang-migrate/migrate/v4 v4.18.1
 	github.com/golang/mock v1.1.1
 	github.com/googleapis/gax-go/v2 v2.13.0
@@ -29,6 +30,7 @@ require (
 	cloud.google.com/go/auth/oauth2adapt v0.2.4 // indirect
 	cloud.google.com/go/compute/metadata v0.5.0 // indirect
 	cloud.google.com/go/longrunning v0.6.0 // indirect
+	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.32.6 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.47 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.21 // indirect

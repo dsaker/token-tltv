@@ -44,6 +44,8 @@ type TranslateX interface {
 // TranslatePhrases takes a slice of db.Translate{} and a db.Language and returns a slice
 // of util.TranslatesReturn to be inserted into the db
 func (t *Translate) TranslatePhrases(e echo.Context, title models.Title, lang models.Language) ([]models.Phrase, error) {
+	//TODO try translating as document instead of separate phrase
+
 	// concurrently get all the responses from Google Translate
 	var wg sync.WaitGroup
 	responses := make([]models.Phrase, len(title.TitlePhrases)) // create string slice to hold all the responses

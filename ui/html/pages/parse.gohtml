@@ -1,0 +1,20 @@
+{{template "base" . }}
+
+{{define "title"}}Parse{{end}}
+
+{{define "content"}}
+    <form id="parse_form" action='/v1/parse' method='POST' enctype="multipart/form-data" >
+        {{with .MaxPhrases}}
+            <p>This will parse the file into the max number of phrases: {{.}}</p>
+        {{end}}
+        <div>
+            <input type="file" name="file_path" id="text-file" required/>
+        </div>
+        <div>
+            <input id="submit-form" type="submit">
+        </div>
+    </form>
+    <div class="lds-div" id="lds-div">
+        <div class="lds-roller"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+    </div>
+{{end}}

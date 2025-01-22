@@ -12,8 +12,8 @@ import (
 	"time"
 )
 
-// aws_languages => aws translate list-languages > aws_languages.json
-// aws_voices => aws polly describe-voices > aws_voices.json
+// aws_languages => aws translate list-Languages > aws_languages.json
+// aws_voices => aws polly describe-Voices > aws_voices.json
 // google_languages => /scripts/python/supported_languages.json
 // google_voices => /scripts/python/voices_api.json
 
@@ -100,8 +100,8 @@ const (
 	Used
 )
 
-var languages = make(map[int]Language)
-var voices = make(map[int]Voice)
+var Languages = make(map[int]Language)
+var Voices = make(map[int]Voice)
 var tokens = make(map[string]TokenValue)
 
 type ModelsX interface {
@@ -112,7 +112,7 @@ type ModelsX interface {
 type Models struct{}
 
 func (m *Models) GetLanguage(id int) (Language, error) {
-	lang, ok := languages[id]
+	lang, ok := Languages[id]
 	if !ok {
 		return Language{}, util.ErrLanguageIdInvalid
 	}
@@ -120,7 +120,7 @@ func (m *Models) GetLanguage(id int) (Language, error) {
 }
 
 func (m *Models) GetVoice(id int) (Voice, error) {
-	voice, ok := voices[id]
+	voice, ok := Voices[id]
 	if !ok {
 		return Voice{}, util.ErrVoiceIdInvalid
 	}
@@ -128,11 +128,11 @@ func (m *Models) GetVoice(id int) (Voice, error) {
 }
 
 func GetLanguagesLength() int {
-	return len(languages)
+	return len(Languages)
 }
 
 func GetVoicesLength() int {
-	return len(voices)
+	return len(Voices)
 }
 
 func MakeGoogleMaps() {
@@ -147,28 +147,21 @@ func MakeGoogleMaps() {
 	if err != nil {
 		log.Fatal("Error decoding JSON:", err)
 	}
-	// add each voice to the Languages map using key for the id
-	for i, lang := range glangs {
-		languages[i] = Language{
-			ID:   i,
-			Code: lang.Language,
-			Name: lang.Name,
-		}
-	}
 
 	voiceFile, err := JsonModels.Open("jsonmodels/google_voices.json")
 	if err != nil {
 		log.Fatal(err)
 	}
 	// Decode the JSON data into a struct
-	var gvoices []GoogleJsonVoice
+	var voices []GoogleJsonVoice
 	decoder = json.NewDecoder(voiceFile)
-	err = decoder.Decode(&gvoices)
+	err = decoder.Decode(&voices)
 	if err != nil {
 		log.Fatal("Error decoding JSON:", err)
 	}
 
-	for i, voice := range gvoices {
+	usedLangs := make(map[int]bool)
+	for i, voice := range voices {
 		langCode := voice.LanguageCodes[0]
 		// get the language id for the voice from the language tag
 		langTag := strings.Split(langCode, "-")
@@ -197,14 +190,27 @@ func MakeGoogleMaps() {
 		if !found {
 			//log.Println("langId not found for " + voice.Name + " : " + voice.LanguageCodes[0])
 		} else {
+			usedLangs[langId] = true
 			// add to VoiceLangId map
-			voices[i] = Voice{
+			Voices[i] = Voice{
 				ID:                     i,
 				LanguageCodes:          voice.LanguageCodes,
 				Gender:                 voice.SsmlGender,
 				VoiceName:              voice.Name,
 				NaturalSampleRateHertz: voice.NaturalSampleRateHertz,
 				LangId:                 langId,
+			}
+		}
+	}
+	// only add google language to models.Language if it has a voice
+	for i, lang := range glangs {
+		_, ok := usedLangs[i]
+		// If the key exists
+		if ok {
+			Languages[i] = Language{
+				ID:   i,
+				Code: lang.Language,
+				Name: lang.Name,
 			}
 		}
 	}
@@ -216,41 +222,35 @@ func MakeAmazonMaps() {
 		log.Fatal(err)
 	}
 	// Decode the JSON data into a struct
-	var array AmazonLanguageArray
+	var langArray AmazonLanguageArray
 	decoder := json.NewDecoder(languageFile)
-	err = decoder.Decode(&array)
+	err = decoder.Decode(&langArray)
 	if err != nil {
 		log.Fatal("Error decoding JSON:", err)
 	}
-	// add each voice to the Languages map using key for the id
-	for i, lang := range array.Languages {
-		languages[i] = Language{
-			ID:   i,
-			Code: lang.LanguageCode,
-			Name: lang.LanguageName,
-		}
-	}
+	languages := langArray.Languages
 
 	voiceFile, err := JsonModels.Open("jsonmodels/aws_voices.json")
 	if err != nil {
 		log.Fatal(err)
 	}
 	// Decode the JSON data into a struct
-	var avoices AmazonVoiceArray
+	var voices AmazonVoiceArray
 	decoder = json.NewDecoder(voiceFile)
-	err = decoder.Decode(&avoices)
+	err = decoder.Decode(&voices)
 	if err != nil {
 		log.Fatal("Error decoding JSON:", err)
 	}
 
-	for i, voice := range avoices.Voices {
+	usedLangs := make(map[int]bool)
+	for i, voice := range voices.Voices {
 		langCode := voice.LanguageCode
 		// get the language id for the voice from the language tag
 		langTag := strings.Split(langCode, "-")
 		found := false
 		langId := -1
 		// find the language id (key) for the language that corresponds to the voice
-		for j, lang := range array.Languages {
+		for j, lang := range languages {
 			if lang.LanguageCode == langTag[0] {
 				found = true
 				langId = j
@@ -260,8 +260,9 @@ func MakeAmazonMaps() {
 		if !found {
 			log.Println("langId not found for " + voice.Name + voice.LanguageCode)
 		} else {
+			usedLangs[langId] = true
 			// add to VoiceLangId map
-			voices[i] = Voice{
+			Voices[i] = Voice{
 				ID:            i,
 				LanguageCodes: []string{voice.LanguageCode},
 				Gender:        voice.Gender,
@@ -269,6 +270,19 @@ func MakeAmazonMaps() {
 				LanguageName:  voice.LanguageName,
 				LangId:        langId,
 				Engine:        voice.SupportedEngines[0],
+			}
+		}
+	}
+
+	// only add the language to models.Language if it has a voice
+	for i, lang := range languages {
+		_, ok := usedLangs[i]
+		// If the key exists
+		if ok {
+			Languages[i] = Language{
+				ID:   i,
+				Code: lang.LanguageCode,
+				Name: lang.LanguageName,
 			}
 		}
 	}

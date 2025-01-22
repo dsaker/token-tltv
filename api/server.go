@@ -2,19 +2,20 @@ package api
 
 import (
 	"fmt"
+	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/go-playground/form/v4"
+	"github.com/labstack/echo/v4"
 	echomw "github.com/labstack/echo/v4/middleware"
 	middleware "github.com/oapi-codegen/echo-middleware"
 	"golang.org/x/time/rate"
 	"log"
 	"os"
 	"sync"
-	"talkliketv.click/tltv/internal/models"
-	"talkliketv.click/tltv/internal/oapi"
-
-	"github.com/labstack/echo/v4"
 	"talkliketv.click/tltv/internal/audio"
 	"talkliketv.click/tltv/internal/audio/audiofile"
 	"talkliketv.click/tltv/internal/config"
+	"talkliketv.click/tltv/internal/models"
+	"talkliketv.click/tltv/internal/oapi"
 	"talkliketv.click/tltv/internal/translates"
 	"talkliketv.click/tltv/internal/util"
 )
@@ -22,15 +23,16 @@ import (
 type Server struct {
 	sync.RWMutex
 	translate translates.TranslateX
-	config    config.Config
 	af        audiofile.AudioFileX
+	config    config.Config
+	fd        *form.Decoder
 }
 
 // NewServer creates a new HTTP server and sets up routing.
-func NewServer(cfg config.Config, t translates.TranslateX, af audiofile.AudioFileX) *echo.Echo {
+func NewServer(c config.Config, t translates.TranslateX, af audiofile.AudioFileX) *echo.Echo {
 	e := echo.New()
 	// make sure silence mp3s exist in your base path
-	initSilence(cfg)
+	initSilence(c)
 
 	// create maps of voices and languages depending on platform
 	if translates.GlobalPlatform == translates.Google {
@@ -40,31 +42,47 @@ func NewServer(cfg config.Config, t translates.TranslateX, af audiofile.AudioFil
 	}
 
 	// create token map
-	models.LoadTokens(cfg.TokenFilePath)
+	models.LoadTokens(c.TokenFilePath)
 	if models.GetTokensLength() == 0 {
 		log.Fatal("token map length can not be 0")
 	}
 
-	spec, err := oapi.GetSwagger()
+	tempC, err := newTemplateCache()
 	if err != nil {
-		log.Fatalln("loading spec: %w", err)
+		log.Fatal(err)
 	}
+	e.Renderer = &TemplateRegistry{templates: tempC}
 
-	spec.Servers = nil
 	// add middleware
 	e.Use(echomw.RateLimiter(echomw.NewRateLimiterMemoryStore(rate.Limit(5))))
 	e.Use(echomw.Logger())
 	e.Use(echomw.Recover())
 
 	// Use our validation middleware to check all requests against the OpenAPI schema.
-	e.Use(middleware.OapiRequestValidator(spec))
+	apiGrp := e.Group("/v1")
+	spec, err := oapi.GetSwagger()
+	if err != nil {
+		log.Fatalln("loading spec: %w", err)
+	}
+	spec.Servers = openapi3.Servers{&openapi3.Server{URL: "/v1"}}
+	apiGrp.Use(middleware.OapiRequestValidatorWithOptions(spec,
+		&middleware.Options{
+			SilenceServersWarning: true,
+		}))
 
 	srv := &Server{
 		translate: t,
-		config:    cfg,
+		config:    c,
 		af:        af,
 	}
-	oapi.RegisterHandlers(e, srv)
+
+	uiGrp := e.Group("")
+	uiGrp.Static("/static", "ui/static")
+	uiGrp.GET("/", homeView)
+	uiGrp.GET("/audio", audioView)
+	uiGrp.GET("/parse", srv.parseView)
+
+	oapi.RegisterHandlersWithBaseURL(apiGrp, srv, "")
 	return e
 }
 
@@ -74,7 +92,7 @@ var _ oapi.ServerInterface = (*Server)(nil)
 // initSilence copies the silence mp3's from the embedded filesystem to the config TTSBasePath
 func initSilence(cfg config.Config) {
 	// check if silence mp3s exist in your base path
-	silencePath := cfg.TTSBasePath + audiofile.AudioPauseFilePath[cfg.PhrasePause]
+	silencePath := cfg.TTSBasePath + audiofile.AudioPauseFilePath[4]
 	exists, err := util.PathExists(silencePath)
 	if err != nil {
 		log.Fatal(err)

@@ -1,0 +1,113 @@
+{{template "base" . }}
+
+{{define "title"}}Upload{{end}}
+
+{{define "content"}}
+    <form id="audio_form" action='/v1/audio' method='POST' enctype="multipart/form-data" >
+        <div>
+            <label for="token-input">Token:</label>
+            <input
+                    type="text"
+                    id="token-input"
+                    name="token"
+                    minlength="26"
+                    maxlength="26"
+                    required >
+        </div>
+        <div>
+            <label for="title-input">Title Name:</label>
+            <input
+                    id="title-input"
+                    type="text"
+                    name="title_name"
+                    minlength="5"
+                    maxlength="32"
+                    required >
+        </div>
+        <div>
+            <label for="og-lang-select">Language of File: </label>
+            <select  id="og-lang-select" name="file_language_id" required>
+                <option disabled selected value> -- select an option -- </option>
+                {{if .Languages}}
+                    {{range .Languages}}
+                        <option value="{{.ID}}">{{.Name}}</option>
+                    {{end}}
+                {{end}}
+            </select>
+        </div>
+        <div>
+            <label for="from-lang-select">Language to learn from: </label>
+            <select id="from-lang-select" required>
+                <option disabled selected value> -- select an option -- </option>
+                {{if .Languages}}
+                    {{range .Languages}}
+                        <option value="{{.ID}}">{{.Name}}</option>
+                    {{end}}
+                {{end}}
+            </select>
+        </div>
+        <div id="from-voice-div" style="display: none;">
+            <label for="from-voice-select">Voice to learn from: </label>
+            <select id="from-voice-select" name="from_voice_id" required>
+                <option disabled selected value> -- select an option -- </option>
+                {{if .Voices}}
+                    {{range $index, $value := .Voices}}
+                        <option style="display: none;" class="{{.LangId}}" value="{{.ID}}" name="from-voice-option" >{{.VoiceName}}</option>
+                    {{end}}
+                {{end}}
+            </select>
+        </div>
+        <div>
+            <label for="to-lang-select">Language you want to learn: </label>
+            <select id="to-lang-select">
+                <option disabled selected value> -- select an option -- </option>
+                {{if .Languages}}
+                    {{range .Languages}}
+                        <option value="{{.ID}}">{{.Name}}</option>
+                    {{end}}
+                {{end}}
+            </select>
+        </div>
+        <div id="to-voice-div" style="display: none;">
+            <label for="to-voice-select">Voice of language to learn: </label>
+            <select  id="to-voice-select" name="to_voice_id" required>
+                <option disabled selected value> -- select an option -- </option>
+                {{if .Voices}}
+                    {{range $index, $value := .Voices}}
+                        <option style="display: none;" class="{{.LangId}}" value="{{.ID}}" name="to-voice-option" >{{.VoiceName}}</option>
+                    {{end}}
+                {{end}}
+            </select>
+        </div>
+        <div id="pause" >
+            <label for="pause">Pause between phrases: </label>
+            <select  id="pause" name="pause" required>
+                <option value="3">3</option>
+                <option value="4" selected>4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+            </select>
+        </div>
+        <div id="pattern" >
+            <label for="pattern">Repetition pattern: </label>
+            <select  id="pattern" name="pattern" required>
+                <option value="1" selected>standard</option>
+                <option value="2" >advanced</option>
+                <option value="3">review</option>
+            </select>
+        </div>
+        <div>
+            <input type="file" name="file_path" id="text-file" required/>
+        </div>
+        <div>
+            <input id="submit-form" type="submit">
+        </div>
+    </form>
+    <div class="lds-div" id="lds-div">
+        <div class="lds-roller"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+    </div>
+{{end}}
