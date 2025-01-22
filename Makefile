@@ -36,6 +36,10 @@ generate:
 run:
 	go run .
 
+## run: run the docker container
+run/docker:
+	docker run -d --name token-tltv token-tltv:latest
+
 # ==================================================================================== #
 # QUALITY CONTROL
 # ==================================================================================== #
@@ -54,6 +58,7 @@ audit:
 audit/pipeline:
 	make audit
 	go test -race -vet=off ./... -coverprofile=coverage.out
+
 ## audit/local: tidy dependencies and format, vet and test all code (race off)
 audit/local:
 	make audit
@@ -100,3 +105,13 @@ build:
 	@echo 'Building api...'
 	go build -ldflags=${linker_flags} -o=./bin/tltv ./api
 	GOOS=linux GOARCH=amd64 go build -ldflags=${linker_flags} -o=./bin/linux_amd64/tltv ./api
+
+## build/docker: build the talkliketv container
+build/docker:
+	@echo 'Building container...'
+	docker build --build-arg LINKER_FLAGS=${linker_flags} --tag token-tltv:latest .
+
+## build/pack: build the talkliketv container using build pack
+build/pack:
+	@echo 'Building container with buildpack'
+	pack build token-tltv --env "LINKER_FLAGS=${linker_flags}" --builder paketobuildpacks/builder-jammy-base
