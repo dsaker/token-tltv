@@ -15,15 +15,6 @@ import (
 	"talkliketv.click/tltv/internal/util"
 )
 
-func homeView(e echo.Context) error {
-	return e.Render(http.StatusOK, "home.gohtml", nil)
-}
-
-// Update the handler so it displays the signup page.
-func audioView(e echo.Context) error {
-	return e.Render(http.StatusOK, "audio.gohtml", newTemplateData(""))
-}
-
 // ParseFile takes a file and parses it into the phrases that will be used to
 // create the audio mp3 files.
 // This allows the user to check to make sure the phrases are parsed correctly
@@ -35,7 +26,7 @@ func (s *Server) ParseFile(e echo.Context) error {
 	}
 
 	// Get file handler for filename, size and headers
-	fh, err := e.FormFile("filePath")
+	fh, err := e.FormFile("file_path")
 	if err != nil {
 		e.Logger().Error(err)
 		return e.String(http.StatusBadRequest, err.Error())
@@ -45,7 +36,7 @@ func (s *Server) ParseFile(e echo.Context) error {
 	if err != nil {
 		return e.String(http.StatusBadRequest, err.Error())
 	}
-	return e.Attachment(zippedFile.Name(), zippedFile.Name()+".zip")
+	return e.Attachment(zippedFile.Name(), fh.Filename+"_parsed.zip")
 }
 
 // AudioFromFile accepts a file in srt, phrase per line, or paragraph form and

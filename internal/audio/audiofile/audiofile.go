@@ -191,14 +191,14 @@ func parseSrt(f multipart.File) []string {
 			}
 		}
 
-		phrases := splitBigPhrases(line)
+		phrases := splitLongPhrases(line)
 		stringsSlice = append(stringsSlice, phrases...)
 	}
 
 	return stringsSlice
 }
 
-func splitBigPhrases(line string) []string {
+func splitLongPhrases(line string) []string {
 	var splitString []string
 
 	words := strings.Fields(line)
@@ -291,7 +291,7 @@ func parseParagraph(f multipart.File) []string {
 			} else if endSentenceMap[c] {
 				sentence := strings.TrimSpace(line[last : i+1])
 				last = i + 1
-				phrases := splitBigPhrases(sentence)
+				phrases := splitLongPhrases(sentence)
 				stringsSlice = append(stringsSlice, phrases...)
 			}
 		}
@@ -307,7 +307,7 @@ func parseSingle(f multipart.File) []string {
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := scanner.Text()
-		phrases := splitBigPhrases(line)
+		phrases := splitLongPhrases(line)
 		stringsSlice = append(stringsSlice, phrases...)
 	}
 
@@ -326,6 +326,7 @@ func replaceFmt(line string) string {
 	line = re.ReplaceAllString(line, "")
 	line = strings.ReplaceAll(line, "-", "")
 	line = strings.ReplaceAll(line, "♪", "")
+	line = strings.ReplaceAll(line, "\"", "")
 	line = strings.TrimSpace(line)
 
 	return line
@@ -436,9 +437,9 @@ func (a *AudioFile) BuildAudioInputFiles(e echo.Context, t models.Title, pause, 
 	chunkedSlice := slices.Chunk(pattern, 125)
 	count := 1
 	last := false
-	// TODO fix long silences in last file
 	for chunk := range chunkedSlice {
-		inputString := fmt.Sprintf("%s-input-%d", t.Name, count)
+		// you must pad the count for them to be read in the correct order when building mp3 files
+		inputString := fmt.Sprintf("%s-input-%02d", t.Name, count)
 		count++
 		f, err := os.Create(tmpDir + inputString)
 		if err != nil {
@@ -553,7 +554,7 @@ func (a *AudioFile) CreatePhrasesZip(e echo.Context, chunkedPhrases iter.Seq[[]s
 // and outDirPath which is where the zip file will be stored and zips up the files
 func createZipFile(e echo.Context, tmpDir, filename, outDirPath string) (*os.File, error) {
 	// TODO add txt file of the phrases
-	zipFile, err := os.Create(tmpDir + "/" + filename + ".zip")
+	zipFile, err := os.Create(tmpDir + "/" + filename)
 	if err != nil {
 		e.Logger().Error(err)
 		return nil, err

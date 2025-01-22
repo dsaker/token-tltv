@@ -58,11 +58,6 @@ func NewServer(c config.Config, t translates.TranslateX, af audiofile.AudioFileX
 	e.Use(echomw.Logger())
 	e.Use(echomw.Recover())
 
-	uiGrp := e.Group("")
-	uiGrp.Static("/static", "ui/static")
-	uiGrp.GET("/", homeView)
-	uiGrp.GET("/audio", audioView)
-
 	// Use our validation middleware to check all requests against the OpenAPI schema.
 	apiGrp := e.Group("/v1")
 	spec, err := oapi.GetSwagger()
@@ -80,6 +75,12 @@ func NewServer(c config.Config, t translates.TranslateX, af audiofile.AudioFileX
 		config:    c,
 		af:        af,
 	}
+
+	uiGrp := e.Group("")
+	uiGrp.Static("/static", "ui/static")
+	uiGrp.GET("/", homeView)
+	uiGrp.GET("/audio", audioView)
+	uiGrp.GET("/parse", srv.parseView)
 
 	oapi.RegisterHandlersWithBaseURL(apiGrp, srv, "")
 	return e

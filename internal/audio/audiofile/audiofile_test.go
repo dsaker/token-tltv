@@ -463,7 +463,7 @@ func TestSplitBigPhrases(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := splitBigPhrases(tc.line)
+			got := splitLongPhrases(tc.line)
 			assert.NotNil(t, got)
 			for i := range got {
 				if got[i] != tc.want[i] {

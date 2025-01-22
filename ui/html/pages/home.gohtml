@@ -8,5 +8,29 @@
     <p>To overcome these barriers, I’ve created an application that generates a Pimsleur-like audio course from any file the user selects. Personally, I use subtitles from current TV shows from the countries I plan to visit. This approach has several benefits: it familiarizes me with contemporary slang, improves my understanding of spoken dialogue, and challenges me to express myself more naturally. Practicing with these audio files not only enhances comprehension of the shows but also provides an immersive, effective way to advance my language skills.</p>
     <br/>
     <h2>How do I use it?</h2>
-    <p>First you need to obtain a token. Then choose the file you want to upload. Then you have to choose the voices that you want to learn from.</p>
+    <ol>
+        <li>Get a token. Email or message me if you need one. </li>
+        <li>Choose the file you want to upload. You can use srt files, lyrics, transcripts, etc.</li>
+        <li><a href='/parse'>Parse</a> the file and check it to make sure it is what you are expecting.
+            <ul>
+                <li class="ul-li">Parsing will split up longer phrases into smaller ones if they contain punctuation.</li>
+                <li class="ul-li">If your file contains more than the maximum number of phrases allowed per upload it will return a zipped file with multiple parsed files.</li>
+            </ul>
+        </li>
+        <li>Choose the voices that you want to learn from <a href='https://cloud.google.com/text-to-speech/docs/voices'>here</a></li>
+        <li>Choose the spacing you want between phrases.
+            <ul>
+                <li class="ul-li"> Four seconds is good if you will be able to press pause.</li>
+                <li class="ul-li"> I prefer ten seconds if my hands are going to be busy.</li>
+            </ul>
+        </li>
+        <li>Choose the pattern you want to learn from.
+            <ul>
+                <li class="ul-li">Standard is good for most uses.</li>
+                <li class="ul-li">Advanced repeats the phrases less if you are already beyond intermediate level.</li>
+                <li class="ul-li">Review only repeats the phrases one time.</li>
+            </ul>
+        </li>
+        <li>Click Submit.</li>
+    </ol>
 {{end}}
