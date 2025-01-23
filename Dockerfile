@@ -1,21 +1,25 @@
-FROM golang:1.23 AS deps
+FROM golang:latest AS build
 
-ARG LINKER_FLAGS=$LINKER_FLAGS
+# Set destination for COPY
+WORKDIR /app
 
-WORKDIR /talkliketv
-ADD *.mod *.sum ./
+# Download Go modules
+COPY go.mod go.sum ./
 RUN go mod download
 
-FROM deps AS dev
-ADD . .
-EXPOSE 4000
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="$LINKER_FLAGS" -o=./tltv ./api
+# Copy the source code. Note the slash at the end, as explained in
+# https://docs.docker.com/reference/dockerfile/#copy
+COPY . ./
 
-CMD ["/talkliketv/tltv"]
+# Build
+RUN CGO_ENABLED=0 GOOS=linux go build -o /tltv
 
-FROM scratch AS prod
+FROM alpine:latest
+RUN apk update
+RUN apk upgrade
+RUN apk add --no-cache ffmpeg
 
-WORKDIR /
-EXPOSE 4000
-COPY --from=dev /talkliketv/tltv /
+COPY --from=build /tltv /
+EXPOSE 8080
+
 CMD ["/tltv"]
