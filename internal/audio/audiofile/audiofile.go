@@ -139,7 +139,7 @@ func (a *AudioFile) GetLines(e echo.Context, f multipart.File) ([]string, error)
 		}
 		count++
 	}
-	// TODO somehow verify single phrase per line form (these can be multiple sentences per line)
+	// TODO verify single phrase per line form (these can be multiple sentences per line)
 	_, err = f.Seek(0, 0)
 	if err != nil {
 		e.Logger().Error(err)
@@ -159,7 +159,8 @@ func (a *AudioFile) GetLines(e echo.Context, f multipart.File) ([]string, error)
 		return nil, errors.New("unable to parse file")
 	}
 
-	return util.RemoveDuplicateStr(stringsSlice), nil
+	// remove strings longer than 150 characters and duplicates from stringsSlice
+	return util.RemoveLongStr(util.RemoveDuplicateStr(stringsSlice)), nil
 }
 
 // parseSrt takes a srt multipart file and parses it into a slice of strings

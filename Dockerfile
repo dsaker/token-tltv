@@ -9,17 +9,21 @@ RUN go mod download
 
 # Copy the source code. Note the slash at the end, as explained in
 # https://docs.docker.com/reference/dockerfile/#copy
-COPY . ./
+COPY . .
 
-# Build
-RUN CGO_ENABLED=0 GOOS=linux go build -o /tltv
+RUN CGO_ENABLED=0 GOOS=linux go build -o /api
 
 FROM alpine:latest
+
+# install ffmpeg
 RUN apk update
 RUN apk upgrade
 RUN apk add --no-cache ffmpeg
 
-COPY --from=build /tltv /
+# copy static files to container
+COPY ui/ ui/
+COPY --from=build api /app/api
+
 EXPOSE 8080
 
-CMD ["/tltv"]
+CMD ["/app/api"]

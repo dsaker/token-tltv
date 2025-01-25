@@ -20,22 +20,19 @@ data "google_artifact_registry_repository" "token_tltv" {
 }
 
 # cloud run job to run container
-resource "google_cloud_run_v2_job" "token-tltv" {
-  name     = "token-tltv-cloudrun-job"
+resource "google_cloud_run_v2_service" "token-tltv" {
+  name     = "token-tltv-cloudrun-service"
   location = var.region
   deletion_protection = false
 
   template {
-    template {
-      containers {
-        image = local.image
-        resources {
-          limits = {
-            cpu    = "1000m",
-            memory = "1024Mi"
-          }
+    containers {
+      image = local.image
+      resources {
+        limits = {
+          cpu    = "1000m",
+          memory = "1024Mi"
         }
-
       }
     }
   }
@@ -59,9 +56,9 @@ resource "google_project_iam_member" "cloud-run-invoker" {
 }
 
 # alerting policy to alert when errors occur in the token-tltv project
-resource "google_monitoring_alert_policy" "cloud_run_job_alert" {
+resource "google_monitoring_alert_policy" "cloud_run_service_alert" {
   combiner              = "OR"
-  display_name          = "cloud_run_job_error"
+  display_name          = "cloud_run_service_error"
   enabled               = true
   # add notification channels
   notification_channels = [google_monitoring_notification_channel.sms_notification.id, google_monitoring_notification_channel.email_notification.id]
