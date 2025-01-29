@@ -555,7 +555,7 @@ func (a *AudioFile) CreatePhrasesZip(e echo.Context, chunkedPhrases iter.Seq[[]s
 // and outDirPath which is where the zip file will be stored and zips up the files
 func createZipFile(e echo.Context, tmpDir, filename, outDirPath string) (*os.File, error) {
 	// TODO add txt file of the phrases
-	zipFile, err := os.Create(tmpDir + "/" + filename)
+	zipFile, err := os.Create(tmpDir + filename + ".zip")
 	if err != nil {
 		e.Logger().Error(err)
 		return nil, err

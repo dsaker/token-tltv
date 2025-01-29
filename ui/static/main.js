@@ -4,12 +4,10 @@ const fromVoiceOptions = document.getElementsByName("from-voice-option");
 const toLangSelect = document.getElementById("to-lang-select");
 const toVoiceDiv = document.getElementById("to-voice-div");
 const toVoiceOptions = document.getElementsByName("to-voice-option");
-const translateForm = document.getElementById("translate-form");
+const audioForm = document.getElementById("audio-form");
 const ldsDiv = document.getElementById("lds-div");
-const tokenInput = document.getElementById("token-input");
-const titleInput = document.getElementById("title-input");
-const errorDiv = document.getElementById("error-div");
 const submitForm = document.getElementById("submit-form");
+const divFlash = document.getElementById("div-flash")
 
 fromLangSelect.addEventListener("change", () => {
 	let langId = fromLangSelect.value;
@@ -32,6 +30,7 @@ toLangSelect.addEventListener("change", () => {
 })
 
 submitForm.addEventListener("click", () => {
-	translateForm.style.display = "none";
+	audioForm.style.display = "none";
 	ldsDiv.style.display = "block";
+	divFlash.style.display = "none";
 });

@@ -4,7 +4,7 @@
     <head>
         <meta charset='utf-8'>
         <title>{{block "title" .}}{{end}} - TalkLikeTV</title>
-        <link rel='stylesheet' href='/static/main.css'>
+        <link rel="stylesheet" href='/static/main.css'>
         <link rel='shortcut icon' href='/static/simpsons_tv_icon' type='image/x-icon'>
 {{/*        <link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700'>*/}}
     </head>
@@ -16,7 +16,7 @@
         <main>
             <!-- Display the error message if one exists -->
             {{with .Error}}
-                <div class='flash'>{{.}}</div>
+                <div class="flash" id="div-flash">{{.}}</div>
             {{end}}
             {{template "content" .}}
         </main>

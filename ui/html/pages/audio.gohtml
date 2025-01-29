@@ -1,9 +1,9 @@
 {{template "base" . }}
 
-{{define "title"}}Upload{{end}}
+{{define "title"}}Audio{{end}}
 
 {{define "content"}}
-    <form id="audio_form" action='/v1/audio' method='POST' enctype="multipart/form-data" >
+    <form id="audio-form" action='/v1/audio' method='POST' enctype="multipart/form-data" >
         <div>
             <label for="token-input">Token:</label>
             <input
