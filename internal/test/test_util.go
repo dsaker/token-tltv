@@ -59,6 +59,7 @@ const (
 	DefaultPattern = 1
 	MaxLanguages   = 75
 	MaxVoices      = 95
+	ValidLangId    = 16
 	alphabet       = "abcdefghijklmnopqrstuvwxyz"
 )
 
@@ -113,9 +114,9 @@ func RandomVoice() models.Voice {
 func RandomTitle() (title models.Title) {
 	return models.Title{
 		Name:        RandomString(8),
-		TitleLangId: models.Languages[0].ID, //nolint:gosec
-		ToVoiceId:   rand.Intn(MaxVoices),   //nolint:gosec
-		FromVoiceId: rand.Intn(MaxVoices),   //nolint:gosec
+		TitleLangId: ValidLangId,
+		ToVoiceId:   models.Voices[rand.Intn(MaxVoices)].ID, //nolint:gosec
+		FromVoiceId: models.Voices[rand.Intn(MaxVoices)].ID, //nolint:gosec
 		Pause:       DefaultPause,
 		Pattern:     DefaultPattern,
 	}

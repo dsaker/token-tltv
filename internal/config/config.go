@@ -45,7 +45,3 @@ func SetConfigs(config *Config) error {
 
 	return nil
 }
-
-func isValidPause(port int) bool {
-	return port >= 3 && port <= 10
-}

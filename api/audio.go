@@ -71,7 +71,6 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 		e.Logger().Error(err)
 		if strings.Contains(err.Error(), "unable to parse file") {
 			return e.Render(http.StatusBadRequest, "audio.gohtml", newTemplateData(err.Error()))
-
 		}
 		return e.Render(http.StatusInternalServerError, "audio.gohtml", newTemplateData(err.Error()))
 	}
@@ -228,8 +227,10 @@ func validateAudioRequest(e echo.Context) (*models.Title, error) {
 		e.Logger().Error(err)
 		return nil, fmt.Errorf("error converting file_language_id to int: %s", err.Error())
 	}
+
 	// validate fileLangId
 	_, ok := models.Languages[fileLangId]
+
 	if !ok {
 		e.Logger().Error(util.ErrLanguageIdInvalid)
 		return nil, util.ErrLanguageIdInvalid

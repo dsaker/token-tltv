@@ -26,4 +26,4 @@ COPY --from=build api /app/api
 
 EXPOSE 8080
 
-CMD ["/app/api"]
+CMD ["/app/api", "-maximum-number-phrases=500"]

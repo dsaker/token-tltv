@@ -194,7 +194,7 @@ func TestBuildAudioInputFiles(t *testing.T) {
 				tmpDir,
 			)
 			require.NoError(t, err)
-			filePath := tmpDir + title.Name + "-input-1"
+			filePath := tmpDir + title.Name + "-input-01"
 			require.FileExists(t, filePath)
 		})
 	}
