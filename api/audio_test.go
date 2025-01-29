@@ -146,7 +146,7 @@ func TestAudioFromFile(t *testing.T) {
 			checkResponse: func(res *http.Response) {
 				require.Equal(t, http.StatusBadRequest, res.StatusCode)
 				resBody := readBody(t, res)
-				require.Contains(t, resBody, "file_language_id must be between 0 and")
+				require.Contains(t, resBody, "language id invalid")
 			},
 		},
 		{
@@ -188,7 +188,7 @@ func TestAudioFromFile(t *testing.T) {
 			checkResponse: func(res *http.Response) {
 				require.Equal(t, http.StatusBadRequest, res.StatusCode)
 				resBody := readBody(t, res)
-				require.Contains(t, resBody, "to_voice_id must be between 0 and "+strconv.Itoa(models.GetVoicesLength()-1))
+				require.Contains(t, resBody, "voice id invalid")
 			},
 		},
 		{

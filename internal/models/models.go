@@ -127,10 +127,6 @@ func (m *Models) GetVoice(id int) (Voice, error) {
 	return voice, nil
 }
 
-func GetLanguagesLength() int {
-	return len(Languages)
-}
-
 func GetVoicesLength() int {
 	return len(Voices)
 }

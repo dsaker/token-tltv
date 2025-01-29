@@ -10,6 +10,8 @@ import (
 	"net/http/httptest"
 	"os"
 	"sync"
+	"talkliketv.click/tltv/internal/models"
+	"talkliketv.click/tltv/internal/translates"
 
 	"testing"
 
@@ -60,6 +62,13 @@ func TestMain(m *testing.M) {
 	}
 	tokenStrings = plaintext
 	testCfg.TokenFilePath = test.AudioBasePath + tokenFilePath
+
+	// create maps of voices and languages depending on platform
+	if translates.GlobalPlatform == translates.Google {
+		models.MakeGoogleMaps()
+	} else {
+		models.MakeAmazonMaps()
+	}
 	os.Exit(m.Run())
 }
 

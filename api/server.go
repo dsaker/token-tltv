@@ -3,7 +3,6 @@ package api
 import (
 	"fmt"
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/go-playground/form/v4"
 	"github.com/labstack/echo/v4"
 	echomw "github.com/labstack/echo/v4/middleware"
 	middleware "github.com/oapi-codegen/echo-middleware"
@@ -25,7 +24,6 @@ type Server struct {
 	translate translates.TranslateX
 	af        audiofile.AudioFileX
 	config    config.Config
-	fd        *form.Decoder
 }
 
 // NewServer creates a new HTTP server and sets up routing.
