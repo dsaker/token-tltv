@@ -139,7 +139,7 @@ func (a *AudioFile) GetLines(e echo.Context, f multipart.File) ([]string, error)
 		}
 		count++
 	}
-	// TODO somehow verify single phrase per line form (these can be multiple sentences per line)
+	// TODO verify single phrase per line form (these can be multiple sentences per line)
 	_, err = f.Seek(0, 0)
 	if err != nil {
 		e.Logger().Error(err)
@@ -159,7 +159,8 @@ func (a *AudioFile) GetLines(e echo.Context, f multipart.File) ([]string, error)
 		return nil, errors.New("unable to parse file")
 	}
 
-	return util.RemoveDuplicateStr(stringsSlice), nil
+	// remove strings longer than 150 characters and duplicates from stringsSlice
+	return util.RemoveLongStr(util.RemoveDuplicateStr(stringsSlice)), nil
 }
 
 // parseSrt takes a srt multipart file and parses it into a slice of strings
@@ -554,7 +555,7 @@ func (a *AudioFile) CreatePhrasesZip(e echo.Context, chunkedPhrases iter.Seq[[]s
 // and outDirPath which is where the zip file will be stored and zips up the files
 func createZipFile(e echo.Context, tmpDir, filename, outDirPath string) (*os.File, error) {
 	// TODO add txt file of the phrases
-	zipFile, err := os.Create(tmpDir + "/" + filename)
+	zipFile, err := os.Create(tmpDir + filename + ".zip")
 	if err != nil {
 		e.Logger().Error(err)
 		return nil, err

@@ -62,3 +62,14 @@ func RemoveDuplicateStr(strSlice []string) []string {
 	}
 	return list
 }
+
+// RemoveLongStr removes strings with more than 150 characters.
+func RemoveLongStr(strSlice []string) []string {
+	var list []string
+	for _, item := range strSlice {
+		if len(item) < 150 {
+			list = append(list, item)
+		}
+	}
+	return list
+}
