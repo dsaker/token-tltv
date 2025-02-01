@@ -65,6 +65,7 @@ audit/local:
 	make report
 	make ci-lint
 	make vuln
+	go test ./... -integration=true
 
 ## staticcheck:  detect bugs, suggest code simplifications, and point out dead code
 staticcheck:

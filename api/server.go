@@ -23,11 +23,12 @@ type Server struct {
 	sync.RWMutex
 	translate translates.TranslateX
 	af        audiofile.AudioFileX
+	tokens    models.TokensX
 	config    config.Config
 }
 
 // NewServer creates a new HTTP server and sets up routing.
-func NewServer(c config.Config, t translates.TranslateX, af audiofile.AudioFileX) *echo.Echo {
+func NewServer(c config.Config, t translates.TranslateX, af audiofile.AudioFileX, tok models.TokensX) *echo.Echo {
 	e := echo.New()
 	// make sure silence mp3s exist in your base path
 	initSilence(c)
@@ -37,12 +38,6 @@ func NewServer(c config.Config, t translates.TranslateX, af audiofile.AudioFileX
 		models.MakeGoogleMaps()
 	} else {
 		models.MakeAmazonMaps()
-	}
-
-	// create token map
-	models.LoadTokens(c.TokenFilePath)
-	if models.GetTokensLength() == 0 {
-		log.Fatal("token map length can not be 0")
 	}
 
 	tempC, err := newTemplateCache()
@@ -72,6 +67,7 @@ func NewServer(c config.Config, t translates.TranslateX, af audiofile.AudioFileX
 		translate: t,
 		config:    c,
 		af:        af,
+		tokens:    tok,
 	}
 
 	uiGrp := e.Group("")

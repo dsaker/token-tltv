@@ -38,8 +38,12 @@ var AudioPauseFilePath = map[int]string{
 }
 
 // endSentenceMap is a map to find the ending punctuation of a sentence
-// TODO change this to work for any language
+// TODO change endSentenceMap to work for any language
 var (
+	ErrOneFile           = errors.New("no need to zip one file")
+	ErrUnableToParseFile = func(err error) error {
+		return fmt.Errorf("unable to parse file: %s", err)
+	}
 	endSentenceMap = map[rune]bool{
 		'!': true,
 		'.': true,

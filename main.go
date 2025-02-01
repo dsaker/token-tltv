@@ -17,7 +17,7 @@ import (
 
 func main() {
 	var cfg config.Config
-	err := config.SetConfigs(&cfg)
+	err := cfg.SetConfigs()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -43,8 +43,16 @@ func main() {
 		t = translates.New(translates.GoogleClients{}, *translates.NewAmazonClients(), &models.Models{})
 	}
 
+	fClient, err := cfg.FirestoreClient()
+	if err != nil {
+		log.Fatal("Error creating firestore client: ", err)
+	}
+
+	tokensColl := fClient.Collection("tokens")
+	tokens := models.Tokens{Coll: tokensColl}
+
 	// create new server
-	e := api.NewServer(cfg, t, af)
+	e := api.NewServer(cfg, t, af, &tokens)
 
 	e.Logger.Fatal(e.Start(net.JoinHostPort("0.0.0.0", cfg.Port)))
 }

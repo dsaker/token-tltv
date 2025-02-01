@@ -3,21 +3,22 @@ package api
 import (
 	"bufio"
 	"bytes"
+	"cloud.google.com/go/firestore"
+	"context"
 	"fmt"
 	"io"
 	"maps"
-	"math/rand/v2"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strconv"
+	"strings"
 	"talkliketv.click/tltv/internal/audio/audiofile"
 	"talkliketv.click/tltv/internal/models"
 	"talkliketv.click/tltv/internal/translates"
-	"testing"
-
 	"talkliketv.click/tltv/internal/util"
+	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -59,6 +60,7 @@ func TestAudioFromFile(t *testing.T) {
 	fromAudioBasePath := fmt.Sprintf("%s%d/", tmpAudioBasePath, title.FromVoiceId)
 	toAudioBasePath := fmt.Sprintf("%s%d/", tmpAudioBasePath, title.ToVoiceId)
 
+	randomToken := test.RandomString(32)
 	okFormMap := map[string]string{
 		"file_language_id": strconv.Itoa(title.TitleLangId),
 		"title_name":       title.Name,
@@ -66,6 +68,7 @@ func TestAudioFromFile(t *testing.T) {
 		"to_voice_id":      strconv.Itoa(title.ToVoiceId),
 		"pause":            "5",
 		"pattern":          "1",
+		"token":            randomToken,
 	}
 
 	testCases := []testCase{
@@ -75,7 +78,9 @@ func TestAudioFromFile(t *testing.T) {
 				file, err := os.Create(filename)
 				require.NoError(t, err)
 				defer file.Close()
-				// GetLines(echo.Context, multipart.File) ([]string, error)
+				stubs.TokensX.EXPECT().
+					CheckToken(gomock.Any(), randomToken).
+					Return(nil)
 				stubs.AudioFileX.EXPECT().
 					GetLines(gomock.Any(), gomock.Any()).
 					Return(stringsSlice, nil)
@@ -93,14 +98,12 @@ func TestAudioFromFile(t *testing.T) {
 				stubs.AudioFileX.EXPECT().
 					CreateMp3Zip(gomock.Any(), titleWithTranslates, gomock.Any()).
 					Return(file, nil)
+				stubs.TokensX.EXPECT().
+					UpdateField(gomock.Any(), randomToken, "UploadUsed", "true").
+					Return(nil)
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
-				mu.Lock()
-				token := tokenStrings[tokenCount]
-				tokenCount++
-				mu.Unlock()
-				okFormMap["token"] = token
 				return createMultiPartBody(t, data, filename, okFormMap)
 			},
 			checkResponse: func(res *http.Response) {
@@ -110,16 +113,14 @@ func TestAudioFromFile(t *testing.T) {
 		{
 			name: "Pause out of range",
 			buildStubs: func(stubs test.MockStubs) {
+				stubs.TokensX.EXPECT().
+					CheckToken(gomock.Any(), randomToken).
+					Return(nil)
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
 				formMap := maps.Clone(okFormMap)
 				formMap["pause"] = "11"
-				mu.Lock()
-				token := tokenStrings[tokenCount]
-				tokenCount++
-				mu.Unlock()
-				formMap["token"] = token
 				return createMultiPartBody(t, data, filename, formMap)
 			},
 			checkResponse: func(res *http.Response) {
@@ -131,16 +132,14 @@ func TestAudioFromFile(t *testing.T) {
 		{
 			name: "file_language_id out of range",
 			buildStubs: func(stubs test.MockStubs) {
+				stubs.TokensX.EXPECT().
+					CheckToken(gomock.Any(), randomToken).
+					Return(nil)
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
 				formMap := maps.Clone(okFormMap)
 				formMap["file_language_id"] = "9999"
-				mu.Lock()
-				token := tokenStrings[tokenCount]
-				tokenCount++
-				mu.Unlock()
-				formMap["token"] = token
 				return createMultiPartBody(t, data, filename, formMap)
 			},
 			checkResponse: func(res *http.Response) {
@@ -152,16 +151,14 @@ func TestAudioFromFile(t *testing.T) {
 		{
 			name: "file_langauge_id string",
 			buildStubs: func(stubs test.MockStubs) {
+				stubs.TokensX.EXPECT().
+					CheckToken(gomock.Any(), randomToken).
+					Return(nil)
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
 				formMap := maps.Clone(okFormMap)
 				formMap["file_language_id"] = "abcd"
-				mu.Lock()
-				token := tokenStrings[tokenCount]
-				tokenCount++
-				mu.Unlock()
-				formMap["token"] = token
 				return createMultiPartBody(t, data, filename, formMap)
 			},
 			checkResponse: func(res *http.Response) {
@@ -173,16 +170,14 @@ func TestAudioFromFile(t *testing.T) {
 		{
 			name: "to_voice_id out of range",
 			buildStubs: func(stubs test.MockStubs) {
+				stubs.TokensX.EXPECT().
+					CheckToken(gomock.Any(), randomToken).
+					Return(nil)
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
 				formMap := maps.Clone(okFormMap)
 				formMap["to_voice_id"] = "9999"
-				mu.Lock()
-				token := tokenStrings[tokenCount]
-				tokenCount++
-				mu.Unlock()
-				formMap["token"] = token
 				return createMultiPartBody(t, data, filename, formMap)
 			},
 			checkResponse: func(res *http.Response) {
@@ -194,16 +189,14 @@ func TestAudioFromFile(t *testing.T) {
 		{
 			name: "pattern out of range",
 			buildStubs: func(stubs test.MockStubs) {
+				stubs.TokensX.EXPECT().
+					CheckToken(gomock.Any(), randomToken).
+					Return(nil)
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
 				formMap := maps.Clone(okFormMap)
 				formMap["pattern"] = "5"
-				mu.Lock()
-				token := tokenStrings[tokenCount]
-				tokenCount++
-				mu.Unlock()
-				formMap["token"] = token
 				return createMultiPartBody(t, data, filename, formMap)
 			},
 			checkResponse: func(res *http.Response) {
@@ -221,12 +214,8 @@ func TestAudioFromFile(t *testing.T) {
 					"from_voice_id":    strconv.Itoa(title.FromVoiceId),
 					"to_voice_id":      strconv.Itoa(title.ToVoiceId),
 					"pause":            "10",
+					"token":            randomToken,
 				}
-				mu.Lock()
-				token := tokenStrings[tokenCount]
-				tokenCount++
-				mu.Unlock()
-				formMap["token"] = token
 				return createMultiPartBody(t, data, filename, formMap)
 			},
 			buildStubs: func(stubs test.MockStubs) {
@@ -261,11 +250,6 @@ func TestAudioFromFile(t *testing.T) {
 				require.NoError(t, err)
 				_, err = io.Copy(part, multiFile)
 				require.NoError(t, err)
-				mu.Lock()
-				token := tokenStrings[tokenCount]
-				tokenCount++
-				mu.Unlock()
-				okFormMap["token"] = token
 				//fieldMap := okFormMap
 				for field, value := range okFormMap {
 					err = multiWriter.WriteField(field, value)
@@ -275,6 +259,9 @@ func TestAudioFromFile(t *testing.T) {
 				return body, multiWriter
 			},
 			buildStubs: func(stubs test.MockStubs) {
+				stubs.TokensX.EXPECT().
+					CheckToken(gomock.Any(), randomToken).
+					Return(nil)
 			},
 			checkResponse: func(res *http.Response) {
 				require.Equal(t, http.StatusBadRequest, res.StatusCode)
@@ -294,7 +281,9 @@ func TestAudioFromFile(t *testing.T) {
 				require.NoError(t, err)
 				defer file.Close()
 
-				// GetLines(echo.Context, multipart.File) ([]string, error)
+				stubs.TokensX.EXPECT().
+					CheckToken(gomock.Any(), randomToken).
+					Return(nil)
 				stubs.AudioFileX.EXPECT().
 					GetLines(gomock.Any(), gomock.Any()).
 					Return(stringsSlice, nil)
@@ -308,26 +297,18 @@ func TestAudioFromFile(t *testing.T) {
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
-				mu.Lock()
-				token := tokenStrings[tokenCount]
-				tokenCount++
-				mu.Unlock()
-				okFormMap["token"] = token
 				return createMultiPartBody(t, data, filename, okFormMap)
 			},
 		},
 		{
 			name: "Used Token",
 			buildStubs: func(stubs test.MockStubs) {
+				stubs.TokensX.EXPECT().
+					CheckToken(gomock.Any(), randomToken).
+					Return(models.UsedTokenError)
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
-				mu.Lock()
-				token := tokenStrings[tokenCount]
-				tokenCount++
-				mu.Unlock()
-				okFormMap["token"] = token
-				err = models.SetTokenStatus(token, models.Used)
 				require.NoError(t, err)
 				return createMultiPartBody(t, data, filename, okFormMap)
 			},
@@ -365,8 +346,6 @@ func TestGoogleIntegration(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
-	t.Parallel()
-
 	//initialize audiofile with the real command runner
 	af := audiofile.New(&audiofile.RealCmdRunner{})
 	// create translates with google or amazon clients depending on the flag set in conifg
@@ -376,13 +355,38 @@ func TestGoogleIntegration(t *testing.T) {
 		tr = translates.New(translates.GoogleClients{}, *translates.NewAmazonClients(), &models.Models{})
 	}
 
-	e := NewServer(testCfg.Config, tr, af)
+	// Use the application default credentials
+	ctx := context.Background()
+	client, err := testCfg.FirestoreClient()
+	require.NoError(t, err)
+	defer client.Close()
+
+	// generate new token
+	testToken, plaintext, err := models.GenerateToken()
+	require.NoError(t, err)
+
+	collName := strings.Split(t.Name(), "/")[0]
+
+	// get the tokens collection from the database
+	testColl := client.Collection(collName)
+
+	tokens := models.Tokens{Coll: testColl}
+	// defer deleting the collection
+	defer func(ctx context.Context, client *firestore.Client, coll *firestore.CollectionRef) {
+		err = util.DeleteFirestoreCollection(ctx, client, coll)
+		require.NoError(t, err)
+	}(ctx, client, testColl)
+	// add test token to the collection
+	err = tokens.AddToken(ctx, *testToken)
+	require.NoError(t, err)
+
+	e := NewServer(testCfg.Config, tr, af, &tokens)
 
 	title := test.RandomTitle()
 
 	//create a base path for storing mp3 audio files
 	tmpAudioBasePath := test.AudioBasePath + title.Name + "/"
-	err := os.MkdirAll(tmpAudioBasePath, 0777)
+	err = os.MkdirAll(tmpAudioBasePath, 0777)
 	require.NoError(t, err)
 
 	// remove directory after tests run
@@ -391,10 +395,13 @@ func TestGoogleIntegration(t *testing.T) {
 	filename := tmpAudioBasePath + "TestAudioFromFile.txt"
 
 	okFormMap := map[string]string{
-		"file_language_id": strconv.Itoa(rand.IntN(100)), //nolint:gosec
+		"file_language_id": strconv.Itoa(title.TitleLangId),
 		"title_name":       title.Name,
-		"from_voice_id":    strconv.Itoa(80),
-		"to_voice_id":      strconv.Itoa(182),
+		"from_voice_id":    strconv.Itoa(title.FromVoiceId),
+		"to_voice_id":      strconv.Itoa(title.ToVoiceId),
+		"token":            plaintext,
+		"pause":            "4",
+		"pattern":          "1",
 	}
 
 	testCases := []testCase{
@@ -407,22 +414,13 @@ func TestGoogleIntegration(t *testing.T) {
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
 
-				formMap := okFormMap
-				mu.Lock()
-				token := tokenStrings[tokenCount]
-				tokenCount++
-				mu.Unlock()
-				formMap["token"] = token
-				return createMultiPartBody(t, data, filename, formMap)
+				return createMultiPartBody(t, data, filename, okFormMap)
 			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			//ctrl := gomock.NewController(t)
-			//defer ctrl.Finish()
-
 			ts := httptest.NewServer(e)
 
 			multiBody, multiWriter := tc.multipartBody(t)
@@ -438,14 +436,13 @@ func TestGoogleIntegration(t *testing.T) {
 			require.NoError(t, err)
 		})
 	}
+
 }
 
 func TestAmazonIntegration(t *testing.T) {
 	if !util.Integration {
 		t.Skip("skipping integration test")
 	}
-
-	t.Parallel()
 
 	translates.GlobalPlatform = translates.Amazon
 	//initialize audiofile with the real command runner
@@ -457,13 +454,37 @@ func TestAmazonIntegration(t *testing.T) {
 		tr = translates.New(translates.GoogleClients{}, *translates.NewAmazonClients(), &models.Models{})
 	}
 
-	e := NewServer(testCfg.Config, tr, af)
+	// Use the application default credentials
+	ctx := context.Background()
+	client, err := testCfg.FirestoreClient()
+	require.NoError(t, err)
+	defer client.Close()
+
+	// generate new token
+	testToken, plaintext, err := models.GenerateToken()
+	require.NoError(t, err)
+
+	collName := strings.Split(t.Name(), "/")[0]
+
+	// get the tokens collection from the database
+	testColl := client.Collection(collName)
+
+	tokens := models.Tokens{Coll: testColl}
+	// defer deleting the collection
+	defer func(ctx context.Context, client *firestore.Client, coll *firestore.CollectionRef) {
+		err = util.DeleteFirestoreCollection(ctx, client, coll)
+		require.NoError(t, err)
+	}(ctx, client, testColl)
+	// add test token to the collection
+	err = tokens.AddToken(ctx, *testToken)
+	require.NoError(t, err)
+	e := NewServer(testCfg.Config, tr, af, &tokens)
 
 	title := test.RandomTitle()
 
 	//create a base path for storing mp3 audio files
 	tmpAudioBasePath := test.AudioBasePath + title.Name + "/"
-	err := os.MkdirAll(tmpAudioBasePath, 0777)
+	err = os.MkdirAll(tmpAudioBasePath, 0777)
 	require.NoError(t, err)
 
 	// remove directory after tests run
@@ -472,10 +493,13 @@ func TestAmazonIntegration(t *testing.T) {
 	filename := tmpAudioBasePath + "TestAudioFromFile.txt"
 
 	okFormMap := map[string]string{
-		"file_language_id": strconv.Itoa(rand.IntN(test.MaxLanguages)), //nolint:gosec
+		"file_language_id": strconv.Itoa(title.TitleLangId),
 		"title_name":       title.Name,
-		"from_voice_id":    strconv.Itoa(rand.IntN(test.MaxVoices)), //nolint:gosec
-		"to_voice_id":      strconv.Itoa(rand.IntN(test.MaxVoices)), //nolint:gosec
+		"from_voice_id":    strconv.Itoa(title.FromVoiceId),
+		"to_voice_id":      strconv.Itoa(title.ToVoiceId),
+		"token":            plaintext,
+		"pause":            "4",
+		"pattern":          "1",
 	}
 
 	testCases := []testCase{
@@ -487,12 +511,6 @@ func TestAmazonIntegration(t *testing.T) {
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
-
-				mu.Lock()
-				token := tokenStrings[tokenCount]
-				tokenCount++
-				mu.Unlock()
-				okFormMap["token"] = token
 				return createMultiPartBody(t, data, filename, okFormMap)
 			},
 		},
@@ -500,9 +518,6 @@ func TestAmazonIntegration(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			//ctrl := gomock.NewController(t)
-			//defer ctrl.Finish()
-
 			ts := httptest.NewServer(e)
 
 			multiBody, multiWriter := tc.multipartBody(t)

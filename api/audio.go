@@ -12,7 +12,6 @@ import (
 	"talkliketv.click/tltv/internal/audio/audiofile"
 	"talkliketv.click/tltv/internal/models"
 	"talkliketv.click/tltv/internal/test"
-	"talkliketv.click/tltv/internal/util"
 )
 
 // ParseFile takes a file and parses it into the phrases that will be used to
@@ -52,7 +51,7 @@ func (s *Server) ParseFile(e echo.Context) error {
 func (s *Server) AudioFromFile(e echo.Context) error {
 	token := e.FormValue("token")
 	// check token
-	if err := models.CheckToken(token); err != nil {
+	if err := s.tokens.CheckToken(e.Request().Context(), token); err != nil {
 		e.Logger().Error(err)
 		return e.Render(http.StatusForbidden, "audio.gohtml", newTemplateData(err.Error()))
 	}
@@ -65,7 +64,7 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 	// TODO put limit on characters
 	phrases, phraseZipFile, err := s.processFile(e, title.Name)
 	if err != nil {
-		if errors.Is(err, util.ErrTooManyPhrases) {
+		if errors.Is(err, models.ErrTooManyPhrases) {
 			return e.Attachment(phraseZipFile.Name(), "TooManyPhrasesUseTheseFiles")
 		}
 		e.Logger().Error(err)
@@ -84,7 +83,7 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 	}
 
 	// change token status to Used
-	err = models.SetTokenStatus(token, models.Used)
+	err = s.tokens.UpdateField(e.Request().Context(), token, "UploadUsed", "true")
 	if err != nil {
 		e.Logger().Error(err)
 		return e.Render(http.StatusInternalServerError, "audio.gohtml", newTemplateData(err.Error()))
@@ -100,13 +99,13 @@ func (s *Server) parseFile(e echo.Context) ([]string, error) {
 	fh, err := e.FormFile("file_path")
 	if err != nil {
 		e.Logger().Error(err)
-		return nil, util.ErrUnableToParseFile(err)
+		return nil, audiofile.ErrUnableToParseFile(err)
 	}
 
 	// Check if file size is too large 64000 == 8KB ~ approximately 4 pages of text
 	if fh.Size > s.config.FileUploadLimit {
 		rString := fmt.Sprintf("file too large (%d > %d)", fh.Size, s.config.FileUploadLimit)
-		return nil, util.ErrUnableToParseFile(errors.New(rString))
+		return nil, audiofile.ErrUnableToParseFile(errors.New(rString))
 	}
 	src, err := fh.Open()
 	if err != nil {
@@ -118,7 +117,7 @@ func (s *Server) parseFile(e echo.Context) ([]string, error) {
 	// get an array of all the phrases from the uploaded file
 	stringsSlice, err := s.af.GetLines(e, src)
 	if err != nil {
-		return nil, util.ErrUnableToParseFile(err)
+		return nil, audiofile.ErrUnableToParseFile(err)
 	}
 
 	return stringsSlice, nil
@@ -150,7 +149,7 @@ func (s *Server) processFile(e echo.Context, titleName string) ([]models.Phrase,
 			e.Logger().Error(err)
 			return nil, nil, err
 		}
-		return nil, zipFile, util.ErrTooManyPhrases
+		return nil, zipFile, models.ErrTooManyPhrases
 	}
 
 	// make an array of phrases with id so we can match all the translates and text-to-speech
@@ -198,8 +197,8 @@ func (s *Server) createAudioFromTitle(e echo.Context, title models.Title) (*os.F
 	// get pause path string to build the full pause file path
 	pausePath, ok := audiofile.AudioPauseFilePath[title.Pause]
 	if !ok {
-		e.Logger().Error(util.ErrPauseNotFound)
-		return nil, util.ErrPauseNotFound
+		e.Logger().Error(models.ErrPauseNotFound)
+		return nil, models.ErrPauseNotFound
 	}
 	fullPausePath := s.config.TTSBasePath + pausePath
 
@@ -232,8 +231,8 @@ func validateAudioRequest(e echo.Context) (*models.Title, error) {
 	_, ok := models.Languages[fileLangId]
 
 	if !ok {
-		e.Logger().Error(util.ErrLanguageIdInvalid)
-		return nil, util.ErrLanguageIdInvalid
+		e.Logger().Error(models.ErrLanguageIdInvalid)
+		return nil, models.ErrLanguageIdInvalid
 	}
 	toVoiceId, err := strconv.Atoi(e.FormValue("to_voice_id"))
 	if err != nil {
@@ -243,8 +242,8 @@ func validateAudioRequest(e echo.Context) (*models.Title, error) {
 	// validate toVoiceId
 	_, ok = models.Voices[toVoiceId]
 	if !ok {
-		e.Logger().Error(util.ErrVoiceIdInvalid)
-		return nil, util.ErrVoiceIdInvalid
+		e.Logger().Error(models.ErrVoiceIdInvalid)
+		return nil, models.ErrVoiceIdInvalid
 	}
 	fromVoiceId, err := strconv.Atoi(e.FormValue("from_voice_id"))
 	if err != nil {
@@ -254,8 +253,8 @@ func validateAudioRequest(e echo.Context) (*models.Title, error) {
 	// valid fromVoiceId
 	_, ok = models.Voices[fromVoiceId]
 	if !ok {
-		e.Logger().Error(util.ErrVoiceIdInvalid)
-		return nil, util.ErrVoiceIdInvalid
+		e.Logger().Error(models.ErrVoiceIdInvalid)
+		return nil, models.ErrVoiceIdInvalid
 	}
 
 	pause, err := strconv.Atoi(e.FormValue("pause"))
