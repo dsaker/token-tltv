@@ -83,7 +83,7 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 	}
 
 	// change token status to Used
-	err = s.tokens.UpdateField(e.Request().Context(), token, "UploadUsed", "true")
+	err = s.tokens.UpdateField(e.Request().Context(), true, token, "UploadUsed")
 	if err != nil {
 		e.Logger().Error(err)
 		return e.Render(http.StatusInternalServerError, "audio.gohtml", newTemplateData(err.Error()))

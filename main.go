@@ -6,6 +6,7 @@ import (
 	"flag"
 	"log"
 	"net"
+	"os"
 	"os/exec"
 	"strings"
 	"talkliketv.click/tltv/api"
@@ -23,6 +24,13 @@ func main() {
 	}
 	flag.Parse()
 
+	if cfg.Env == "prod" {
+		cfg.GcpProjectID = os.Getenv("PROJECT_ID")
+		cfg.FirestoreTokenColl = os.Getenv("FIRESTORE_TOKENS")
+		if cfg.FirestoreTokenColl == "" || cfg.GcpProjectID == "" {
+			log.Fatal("missing Firestore Token collection or project id")
+		}
+	}
 	// if ffmpeg is not installed and in PATH of host machine fail immediately
 	cmd := exec.Command("ffmpeg", "-version")
 	output, err := cmd.CombinedOutput()
@@ -48,7 +56,7 @@ func main() {
 		log.Fatal("Error creating firestore client: ", err)
 	}
 
-	tokensColl := fClient.Collection("tokens")
+	tokensColl := fClient.Collection(cfg.FirestoreTokenColl)
 	tokens := models.Tokens{Coll: tokensColl}
 
 	// create new server

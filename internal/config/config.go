@@ -7,25 +7,28 @@ import (
 	firebase "firebase.google.com/go"
 	"flag"
 	_ "github.com/lib/pq"
+	"log"
+	"os"
 	"talkliketv.click/tltv/internal/test"
 	"talkliketv.click/tltv/internal/translates"
 )
 
 // Config Update the config struct to hold the SMTP server settings.
 type Config struct {
-	Port            string
-	Env             string
-	MaxNumPhrases   int
-	TTSBasePath     string
-	FileUploadLimit int64
-	GcpProjectID    string
+	Port               string
+	Env                string
+	MaxNumPhrases      int
+	TTSBasePath        string
+	FileUploadLimit    int64
+	GcpProjectID       string
+	FirestoreTokenColl string
 }
 
 func (cfg *Config) SetConfigs() error {
 	// get port and debug from commandline flags... if not present use defaults
 	flag.StringVar(&cfg.Port, "port", "8080", "API server port")
 
-	flag.StringVar(&cfg.Env, "env", "development", "Environment (development|staging|cloud)")
+	flag.StringVar(&cfg.Env, "env", "dev", "Environment (dev|stage|prod)")
 
 	flag.StringVar(&cfg.TTSBasePath, "tts-base-path", "/tmp/audio/", "text-to-speech base path temporary storage of mp3 audio files")
 
@@ -45,7 +48,17 @@ func (cfg *Config) SetConfigs() error {
 
 	// google cloud project id
 	flag.StringVar(&cfg.GcpProjectID, "gcp-project-id", test.TestProject, "project id for google cloud platform that contains firestore")
+	flag.StringVar(&cfg.FirestoreTokenColl, "firestore-token-collection", test.FirestoreTestCollection, "firestore collection name for tokens")
 
+	log.Printf("envinronment: %s", cfg.Env)
+	if cfg.Env == "prod" {
+		log.Print("inside cfg env")
+		cfg.GcpProjectID = os.Getenv("PROJECT_ID")
+		cfg.FirestoreTokenColl = os.Getenv("FIRESTORE_TOKENS")
+		if cfg.FirestoreTokenColl == "" || cfg.GcpProjectID == "" {
+			return errors.New("missing Firestore Token collection or Firestore project id")
+		}
+	}
 	return nil
 }
 

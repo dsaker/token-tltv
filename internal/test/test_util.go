@@ -50,7 +50,7 @@ const (
 	MaxVoices               = 95
 	ValidLangId             = 16
 	alphabet                = "abcdefghijklmnopqrstuvwxyz"
-	FirestoreTestCollection = "token-tltv-test-coll"
+	FirestoreTestCollection = "token-tltv-test"
 	TestProject             = "token-tltv-test"
 )
 

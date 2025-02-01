@@ -3,8 +3,10 @@ module talkliketv.click/tltv
 go 1.23.5
 
 require (
+	cloud.google.com/go/firestore v1.16.0
 	cloud.google.com/go/texttospeech v1.8.1
 	cloud.google.com/go/translate v1.12.1
+	firebase.google.com/go v3.13.0+incompatible
 	github.com/aws/aws-sdk-go-v2/config v1.28.6
 	github.com/aws/aws-sdk-go-v2/service/polly v1.45.8
 	github.com/aws/aws-sdk-go-v2/service/translate v1.28.7
@@ -22,6 +24,7 @@ require (
 	go.uber.org/mock v0.5.0
 	golang.org/x/text v0.20.0
 	golang.org/x/time v0.6.0
+	google.golang.org/api v0.196.0
 )
 
 require (
@@ -29,11 +32,9 @@ require (
 	cloud.google.com/go/auth v0.9.3 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.4 // indirect
 	cloud.google.com/go/compute/metadata v0.5.0 // indirect
-	cloud.google.com/go/firestore v1.16.0 // indirect
 	cloud.google.com/go/iam v1.2.0 // indirect
 	cloud.google.com/go/longrunning v0.6.0 // indirect
 	cloud.google.com/go/storage v1.43.0 // indirect
-	firebase.google.com/go v3.13.0+incompatible // indirect
 	github.com/aws/aws-sdk-go-v2 v1.32.6 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.47 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.21 // indirect
@@ -90,7 +91,6 @@ require (
 	golang.org/x/sync v0.9.0 // indirect
 	golang.org/x/sys v0.27.0 // indirect
 	golang.org/x/tools v0.24.0 // indirect
-	google.golang.org/api v0.196.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto v0.0.0-20240903143218-8af14fe29dc1 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20241104194629-dd2ea8efbc28 // indirect

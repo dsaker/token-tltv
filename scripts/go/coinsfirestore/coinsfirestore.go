@@ -11,6 +11,10 @@ The flags are:
 	    The file path to the json file to upload
 	-p
 	    The project id to upload it to
+	-c
+		The collection to upload it to
+
+	coinsfirestore % go run . -f ../../../internal/models/jsonmodels/tokens-20250131102018.json -p token-tltv -c token-tltv-test
 */
 package main
 
@@ -27,7 +31,6 @@ import (
 )
 
 func main() {
-
 	filePath := flag.String("f", "", "filepath is required")
 	projectID := flag.String("p", test.TestProject, "project is required")
 	collection := flag.String("c", test.FirestoreTestCollection, "collection is required. ")
@@ -35,6 +38,16 @@ func main() {
 
 	if *filePath == "" {
 		fmt.Println("Error: -f filepath flag is required")
+		os.Exit(1)
+	}
+
+	if *projectID == "" {
+		fmt.Println("Error: -p project id flag is required")
+		os.Exit(1)
+	}
+
+	if *collection == "" {
+		fmt.Println("Error: -c collection flag is required")
 		os.Exit(1)
 	}
 

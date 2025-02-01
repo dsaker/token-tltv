@@ -96,7 +96,10 @@ func DeleteFirestoreCollection(ctx context.Context, client *firestore.Client, co
 				return err
 			}
 
-			bulkwriter.Delete(doc.Ref)
+			_, err = bulkwriter.Delete(doc.Ref)
+			if err != nil {
+				return err
+			}
 			numDeleted++
 		}
 

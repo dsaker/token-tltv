@@ -57,49 +57,53 @@
 				
 				<option value="file0">talkliketv.click/tltv/api/audio.go (63.7%)</option>
 				
-				<option value="file1">talkliketv.click/tltv/api/server.go (55.8%)</option>
+				<option value="file1">talkliketv.click/tltv/api/server.go (55.1%)</option>
 				
 				<option value="file2">talkliketv.click/tltv/api/templates.go (77.8%)</option>
 				
 				<option value="file3">talkliketv.click/tltv/api/views.go (0.0%)</option>
 				
-				<option value="file4">talkliketv.click/tltv/internal/audio/audiofile/audiofile.go (78.3%)</option>
+				<option value="file4">talkliketv.click/tltv/internal/audio/audiofile/audiofile.go (78.0%)</option>
 				
 				<option value="file5">talkliketv.click/tltv/internal/audio/pattern/pattern.go (40.0%)</option>
 				
-				<option value="file6">talkliketv.click/tltv/internal/config/config.go (80.0%)</option>
+				<option value="file6">talkliketv.click/tltv/internal/config/config.go (47.8%)</option>
 				
-				<option value="file7">talkliketv.click/tltv/internal/mock/audiofile/audiofile.go (100.0%)</option>
+				<option value="file7">talkliketv.click/tltv/internal/mock/amazonclients.go (56.7%)</option>
 				
-				<option value="file8">talkliketv.click/tltv/internal/mock/models/models.go (16.7%)</option>
+				<option value="file8">talkliketv.click/tltv/internal/mock/audiofile.go (100.0%)</option>
 				
-				<option value="file9">talkliketv.click/tltv/internal/mock/translates/amazonclients.go (56.7%)</option>
+				<option value="file9">talkliketv.click/tltv/internal/mock/googleclients.go (96.2%)</option>
 				
-				<option value="file10">talkliketv.click/tltv/internal/mock/translates/googleclients.go (96.2%)</option>
+				<option value="file10">talkliketv.click/tltv/internal/mock/models.go (16.7%)</option>
 				
-				<option value="file11">talkliketv.click/tltv/internal/mock/translates/translates.go (61.1%)</option>
+				<option value="file11">talkliketv.click/tltv/internal/mock/tokens.go (100.0%)</option>
 				
-				<option value="file12">talkliketv.click/tltv/internal/models/models.go (52.1%)</option>
+				<option value="file12">talkliketv.click/tltv/internal/mock/translates.go (61.1%)</option>
 				
-				<option value="file13">talkliketv.click/tltv/internal/oapi/tltv.gen.go (63.8%)</option>
+				<option value="file13">talkliketv.click/tltv/internal/models/models.go (0.0%)</option>
 				
-				<option value="file14">talkliketv.click/tltv/internal/test/test_util.go (77.2%)</option>
+				<option value="file14">talkliketv.click/tltv/internal/models/tokens.go (0.0%)</option>
 				
-				<option value="file15">talkliketv.click/tltv/internal/translates/amazonclients.go (31.8%)</option>
+				<option value="file15">talkliketv.click/tltv/internal/oapi/tltv.gen.go (63.8%)</option>
 				
-				<option value="file16">talkliketv.click/tltv/internal/translates/googleclients.go (37.8%)</option>
+				<option value="file16">talkliketv.click/tltv/internal/test/test_util.go (81.8%)</option>
 				
-				<option value="file17">talkliketv.click/tltv/internal/translates/translates.go (39.2%)</option>
+				<option value="file17">talkliketv.click/tltv/internal/translates/amazonclients.go (31.8%)</option>
 				
-				<option value="file18">talkliketv.click/tltv/internal/util/errors.go (100.0%)</option>
+				<option value="file18">talkliketv.click/tltv/internal/translates/googleclients.go (37.8%)</option>
 				
-				<option value="file19">talkliketv.click/tltv/internal/util/helpers.go (60.0%)</option>
+				<option value="file19">talkliketv.click/tltv/internal/translates/translates.go (39.2%)</option>
 				
-				<option value="file20">talkliketv.click/tltv/internal/validator/validator.go (0.0%)</option>
+				<option value="file20">talkliketv.click/tltv/internal/util/helpers.go (34.1%)</option>
 				
-				<option value="file21">talkliketv.click/tltv/main.go (0.0%)</option>
+				<option value="file21">talkliketv.click/tltv/internal/validator/validator.go (0.0%)</option>
 				
-				<option value="file22">talkliketv.click/tltv/scripts/go/generatecoins.go (0.0%)</option>
+				<option value="file22">talkliketv.click/tltv/main.go (0.0%)</option>
+				
+				<option value="file23">talkliketv.click/tltv/scripts/go/coinsfirestore/coinsfirestore.go (0.0%)</option>
+				
+				<option value="file24">talkliketv.click/tltv/scripts/go/generatecoins/generatecoins.go (0.0%)</option>
 				
 				</select>
 			</div>
@@ -127,7 +131,6 @@ import (
         "talkliketv.click/tltv/internal/audio/audiofile"
         "talkliketv.click/tltv/internal/models"
         "talkliketv.click/tltv/internal/test"
-        "talkliketv.click/tltv/internal/util"
 )
 
 // ParseFile takes a file and parses it into the phrases that will be used to
@@ -167,7 +170,7 @@ func (s *Server) ParseFile(e echo.Context) error <span class="cov0" title="0">{
 func (s *Server) AudioFromFile(e echo.Context) error <span class="cov8" title="1">{
         token := e.FormValue("token")
         // check token
-        if err := models.CheckToken(token); err != nil </span><span class="cov8" title="1">{
+        if err := s.tokens.CheckToken(e.Request().Context(), token); err != nil </span><span class="cov8" title="1">{
                 e.Logger().Error(err)
                 return e.Render(http.StatusForbidden, "audio.gohtml", newTemplateData(err.Error()))
         }</span>
@@ -180,7 +183,7 @@ func (s *Server) AudioFromFile(e echo.Context) error <span class="cov8" title="1
         // TODO put limit on characters
         <span class="cov8" title="1">phrases, phraseZipFile, err := s.processFile(e, title.Name)
         if err != nil </span><span class="cov8" title="1">{
-                if errors.Is(err, util.ErrTooManyPhrases) </span><span class="cov8" title="1">{
+                if errors.Is(err, models.ErrTooManyPhrases) </span><span class="cov8" title="1">{
                         return e.Attachment(phraseZipFile.Name(), "TooManyPhrasesUseTheseFiles")
                 }</span>
                 <span class="cov8" title="1">e.Logger().Error(err)
@@ -199,7 +202,7 @@ func (s *Server) AudioFromFile(e echo.Context) error <span class="cov8" title="1
         }</span>
 
         // change token status to Used
-        <span class="cov8" title="1">err = models.SetTokenStatus(token, models.Used)
+        <span class="cov8" title="1">err = s.tokens.UpdateField(e.Request().Context(), token, "UploadUsed", "true")
         if err != nil </span><span class="cov0" title="0">{
                 e.Logger().Error(err)
                 return e.Render(http.StatusInternalServerError, "audio.gohtml", newTemplateData(err.Error()))
@@ -215,13 +218,13 @@ func (s *Server) parseFile(e echo.Context) ([]string, error) <span class="cov8" 
         fh, err := e.FormFile("file_path")
         if err != nil </span><span class="cov0" title="0">{
                 e.Logger().Error(err)
-                return nil, util.ErrUnableToParseFile(err)
+                return nil, audiofile.ErrUnableToParseFile(err)
         }</span>
 
         // Check if file size is too large 64000 == 8KB ~ approximately 4 pages of text
         <span class="cov8" title="1">if fh.Size &gt; s.config.FileUploadLimit </span><span class="cov8" title="1">{
                 rString := fmt.Sprintf("file too large (%d &gt; %d)", fh.Size, s.config.FileUploadLimit)
-                return nil, util.ErrUnableToParseFile(errors.New(rString))
+                return nil, audiofile.ErrUnableToParseFile(errors.New(rString))
         }</span>
         <span class="cov8" title="1">src, err := fh.Open()
         if err != nil </span><span class="cov0" title="0">{
@@ -233,7 +236,7 @@ func (s *Server) parseFile(e echo.Context) ([]string, error) <span class="cov8" 
         // get an array of all the phrases from the uploaded file
         stringsSlice, err := s.af.GetLines(e, src)
         if err != nil </span><span class="cov0" title="0">{
-                return nil, util.ErrUnableToParseFile(err)
+                return nil, audiofile.ErrUnableToParseFile(err)
         }</span>
 
         <span class="cov8" title="1">return stringsSlice, nil</span>
@@ -265,7 +268,7 @@ func (s *Server) processFile(e echo.Context, titleName string) ([]models.Phrase,
                         e.Logger().Error(err)
                         return nil, nil, err
                 }</span>
-                <span class="cov8" title="1">return nil, zipFile, util.ErrTooManyPhrases</span>
+                <span class="cov8" title="1">return nil, zipFile, models.ErrTooManyPhrases</span>
         }
 
         // make an array of phrases with id so we can match all the translates and text-to-speech
@@ -313,8 +316,8 @@ func (s *Server) createAudioFromTitle(e echo.Context, title models.Title) (*os.F
         // get pause path string to build the full pause file path
         pausePath, ok := audiofile.AudioPauseFilePath[title.Pause]
         if !ok </span><span class="cov0" title="0">{
-                e.Logger().Error(util.ErrPauseNotFound)
-                return nil, util.ErrPauseNotFound
+                e.Logger().Error(models.ErrPauseNotFound)
+                return nil, models.ErrPauseNotFound
         }</span>
         <span class="cov8" title="1">fullPausePath := s.config.TTSBasePath + pausePath
 
@@ -347,8 +350,8 @@ func validateAudioRequest(e echo.Context) (*models.Title, error) <span class="co
         <span class="cov8" title="1">_, ok := models.Languages[fileLangId]
 
         if !ok </span><span class="cov8" title="1">{
-                e.Logger().Error(util.ErrLanguageIdInvalid)
-                return nil, util.ErrLanguageIdInvalid
+                e.Logger().Error(models.ErrLanguageIdInvalid)
+                return nil, models.ErrLanguageIdInvalid
         }</span>
         <span class="cov8" title="1">toVoiceId, err := strconv.Atoi(e.FormValue("to_voice_id"))
         if err != nil </span><span class="cov0" title="0">{
@@ -358,8 +361,8 @@ func validateAudioRequest(e echo.Context) (*models.Title, error) <span class="co
         // validate toVoiceId
         <span class="cov8" title="1">_, ok = models.Voices[toVoiceId]
         if !ok </span><span class="cov8" title="1">{
-                e.Logger().Error(util.ErrVoiceIdInvalid)
-                return nil, util.ErrVoiceIdInvalid
+                e.Logger().Error(models.ErrVoiceIdInvalid)
+                return nil, models.ErrVoiceIdInvalid
         }</span>
         <span class="cov8" title="1">fromVoiceId, err := strconv.Atoi(e.FormValue("from_voice_id"))
         if err != nil </span><span class="cov0" title="0">{
@@ -369,8 +372,8 @@ func validateAudioRequest(e echo.Context) (*models.Title, error) <span class="co
         // valid fromVoiceId
         <span class="cov8" title="1">_, ok = models.Voices[fromVoiceId]
         if !ok </span><span class="cov0" title="0">{
-                e.Logger().Error(util.ErrVoiceIdInvalid)
-                return nil, util.ErrVoiceIdInvalid
+                e.Logger().Error(models.ErrVoiceIdInvalid)
+                return nil, models.ErrVoiceIdInvalid
         }</span>
 
         <span class="cov8" title="1">pause, err := strconv.Atoi(e.FormValue("pause"))
@@ -436,11 +439,12 @@ type Server struct {
         sync.RWMutex
         translate translates.TranslateX
         af        audiofile.AudioFileX
+        tokens    models.TokensX
         config    config.Config
 }
 
 // NewServer creates a new HTTP server and sets up routing.
-func NewServer(c config.Config, t translates.TranslateX, af audiofile.AudioFileX) *echo.Echo <span class="cov8" title="1">{
+func NewServer(c config.Config, t translates.TranslateX, af audiofile.AudioFileX, tok models.TokensX) *echo.Echo <span class="cov8" title="1">{
         e := echo.New()
         // make sure silence mp3s exist in your base path
         initSilence(c)
@@ -450,12 +454,6 @@ func NewServer(c config.Config, t translates.TranslateX, af audiofile.AudioFileX
                 models.MakeGoogleMaps()
         }</span> else<span class="cov0" title="0"> {
                 models.MakeAmazonMaps()
-        }</span>
-
-        // create token map
-        <span class="cov8" title="1">models.LoadTokens(c.TokenFilePath)
-        if models.GetTokensLength() == 0 </span><span class="cov0" title="0">{
-                log.Fatal("token map length can not be 0")
         }</span>
 
         <span class="cov8" title="1">tempC, err := newTemplateCache()
@@ -485,6 +483,7 @@ func NewServer(c config.Config, t translates.TranslateX, af audiofile.AudioFileX
                 translate: t,
                 config:    c,
                 af:        af,
+                tokens:    tok,
         }
 
         uiGrp := e.Group("")
@@ -683,8 +682,12 @@ var AudioPauseFilePath = map[int]string{
 }
 
 // endSentenceMap is a map to find the ending punctuation of a sentence
-// TODO change this to work for any language
+// TODO change endSentenceMap to work for any language
 var (
+        ErrOneFile           = errors.New("no need to zip one file")
+        ErrUnableToParseFile = func(err error) error <span class="cov0" title="0">{
+                return fmt.Errorf("unable to parse file: %s", err)
+        }</span>
         endSentenceMap = map[rune]bool{
                 '!': true,
                 '.': true,
@@ -1263,9 +1266,13 @@ var Review = []float32{0.1, 0.0, 0.0, 1.1, 1.0, 1.0, 2.1, 2.0, 2.0, 3.1, 3.0, 3.
 		<pre class="file" id="file6" style="display: none">package config
 
 import (
+        "cloud.google.com/go/firestore"
+        "context"
         "errors"
+        firebase "firebase.google.com/go"
         "flag"
         _ "github.com/lib/pq"
+        "talkliketv.click/tltv/internal/test"
         "talkliketv.click/tltv/internal/translates"
 )
 
@@ -1276,19 +1283,19 @@ type Config struct {
         MaxNumPhrases   int
         TTSBasePath     string
         FileUploadLimit int64
-        TokenFilePath   string
+        GcpProjectID    string
 }
 
-func SetConfigs(config *Config) error <span class="cov8" title="1">{
+func (cfg *Config) SetConfigs() error <span class="cov8" title="1">{
         // get port and debug from commandline flags... if not present use defaults
-        flag.StringVar(&amp;config.Port, "port", "8080", "API server port")
+        flag.StringVar(&amp;cfg.Port, "port", "8080", "API server port")
 
-        flag.StringVar(&amp;config.Env, "env", "development", "Environment (development|staging|cloud)")
+        flag.StringVar(&amp;cfg.Env, "env", "development", "Environment (development|staging|cloud)")
 
-        flag.StringVar(&amp;config.TTSBasePath, "tts-base-path", "/tmp/audio/", "text-to-speech base path temporary storage of mp3 audio files")
+        flag.StringVar(&amp;cfg.TTSBasePath, "tts-base-path", "/tmp/audio/", "text-to-speech base path temporary storage of mp3 audio files")
 
-        flag.Int64Var(&amp;config.FileUploadLimit, "upload-size-limit", 8*8000, "File upload size limit in KB (default is 8)")
-        flag.IntVar(&amp;config.MaxNumPhrases, "maximum-number-phrases", 100, "Maximum number of phrases to be turned into audio files")
+        flag.Int64Var(&amp;cfg.FileUploadLimit, "upload-size-limit", 8*8000, "File upload size limit in KB (default is 8)")
+        flag.IntVar(&amp;cfg.MaxNumPhrases, "maximum-number-phrases", 100, "Maximum number of phrases to be turned into audio files")
 
         // set the global variable GlobalPlatform to google or amazon
         var platform string
@@ -1301,24 +1308,148 @@ func SetConfigs(config *Config) error <span class="cov8" title="1">{
                 return errors.New("invalid platform (must be google|amazon)")
         }</span>
 
-        // get the token file path to make a map of tokens required to make a valid request
-        <span class="cov8" title="1">tokenUsageString := "file path where the tokens needed to make a valid request are stored (see scripts/go/generatecoins.go"
-        flag.StringVar(&amp;config.TokenFilePath, "token-file-path", "", tokenUsageString)
+        // google cloud project id
+        <span class="cov8" title="1">flag.StringVar(&amp;cfg.GcpProjectID, "gcp-project-id", test.TestProject, "project id for google cloud platform that contains firestore")
 
         return nil</span>
+}
+
+func (cfg *Config) FirestoreClient() (*firestore.Client, error) <span class="cov0" title="0">{
+        // Use the application default credentials
+        ctx := context.Background()
+        conf := &amp;firebase.Config{ProjectID: cfg.GcpProjectID}
+        app, err := firebase.NewApp(ctx, conf)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">client, err := app.Firestore(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return client, nil</span>
 }
 </pre>
 		
 		<pre class="file" id="file7" style="display: none">// Code generated by MockGen. DO NOT EDIT.
+// Source: internal/translates/amazonclients.go
+//
+// Generated by this command:
+//
+//        mockgen -package mock -destination=internal/mock/amazonclients.go -source=internal/translates/amazonclients.go
+//
+
+// Package mock is a generated GoMock package.
+package mock
+
+import (
+        context "context"
+        reflect "reflect"
+
+        polly "github.com/aws/aws-sdk-go-v2/service/polly"
+        translate "github.com/aws/aws-sdk-go-v2/service/translate"
+        gomock "go.uber.org/mock/gomock"
+)
+
+// MockAmazonTranslateClientX is a mock of AmazonTranslateClientX interface.
+type MockAmazonTranslateClientX struct {
+        ctrl     *gomock.Controller
+        recorder *MockAmazonTranslateClientXMockRecorder
+        isgomock struct{}
+}
+
+// MockAmazonTranslateClientXMockRecorder is the mock recorder for MockAmazonTranslateClientX.
+type MockAmazonTranslateClientXMockRecorder struct {
+        mock *MockAmazonTranslateClientX
+}
+
+// NewMockAmazonTranslateClientX creates a new mock instance.
+func NewMockAmazonTranslateClientX(ctrl *gomock.Controller) *MockAmazonTranslateClientX <span class="cov8" title="1">{
+        mock := &amp;MockAmazonTranslateClientX{ctrl: ctrl}
+        mock.recorder = &amp;MockAmazonTranslateClientXMockRecorder{mock}
+        return mock
+}</span>
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockAmazonTranslateClientX) EXPECT() *MockAmazonTranslateClientXMockRecorder <span class="cov0" title="0">{
+        return m.recorder
+}</span>
+
+// TranslateText mocks base method.
+func (m *MockAmazonTranslateClientX) TranslateText(arg0 context.Context, arg1 *translate.TranslateTextInput, arg2 ...func(*translate.Options)) (*translate.TranslateTextOutput, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        varargs := []any{arg0, arg1}
+        for _, a := range arg2 </span><span class="cov0" title="0">{
+                varargs = append(varargs, a)
+        }</span>
+        <span class="cov0" title="0">ret := m.ctrl.Call(m, "TranslateText", varargs...)
+        ret0, _ := ret[0].(*translate.TranslateTextOutput)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1</span>
+}
+
+// TranslateText indicates an expected call of TranslateText.
+func (mr *MockAmazonTranslateClientXMockRecorder) TranslateText(arg0, arg1 any, arg2 ...any) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        varargs := append([]any{arg0, arg1}, arg2...)
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TranslateText", reflect.TypeOf((*MockAmazonTranslateClientX)(nil).TranslateText), varargs...)
+}</span>
+
+// MockAmazonTTSClientX is a mock of AmazonTTSClientX interface.
+type MockAmazonTTSClientX struct {
+        ctrl     *gomock.Controller
+        recorder *MockAmazonTTSClientXMockRecorder
+        isgomock struct{}
+}
+
+// MockAmazonTTSClientXMockRecorder is the mock recorder for MockAmazonTTSClientX.
+type MockAmazonTTSClientXMockRecorder struct {
+        mock *MockAmazonTTSClientX
+}
+
+// NewMockAmazonTTSClientX creates a new mock instance.
+func NewMockAmazonTTSClientX(ctrl *gomock.Controller) *MockAmazonTTSClientX <span class="cov8" title="1">{
+        mock := &amp;MockAmazonTTSClientX{ctrl: ctrl}
+        mock.recorder = &amp;MockAmazonTTSClientXMockRecorder{mock}
+        return mock
+}</span>
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockAmazonTTSClientX) EXPECT() *MockAmazonTTSClientXMockRecorder <span class="cov8" title="1">{
+        return m.recorder
+}</span>
+
+// SynthesizeSpeech mocks base method.
+func (m *MockAmazonTTSClientX) SynthesizeSpeech(arg0 context.Context, arg1 *polly.SynthesizeSpeechInput, arg2 ...func(*polly.Options)) (*polly.SynthesizeSpeechOutput, error) <span class="cov8" title="1">{
+        m.ctrl.T.Helper()
+        varargs := []any{arg0, arg1}
+        for _, a := range arg2 </span><span class="cov0" title="0">{
+                varargs = append(varargs, a)
+        }</span>
+        <span class="cov8" title="1">ret := m.ctrl.Call(m, "SynthesizeSpeech", varargs...)
+        ret0, _ := ret[0].(*polly.SynthesizeSpeechOutput)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1</span>
+}
+
+// SynthesizeSpeech indicates an expected call of SynthesizeSpeech.
+func (mr *MockAmazonTTSClientXMockRecorder) SynthesizeSpeech(arg0, arg1 any, arg2 ...any) *gomock.Call <span class="cov8" title="1">{
+        mr.mock.ctrl.T.Helper()
+        varargs := append([]any{arg0, arg1}, arg2...)
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SynthesizeSpeech", reflect.TypeOf((*MockAmazonTTSClientX)(nil).SynthesizeSpeech), varargs...)
+}</span>
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">// Code generated by MockGen. DO NOT EDIT.
 // Source: internal/audio/audiofile/audiofile.go
 //
 // Generated by this command:
 //
-//        mockgen -package mocka -destination=internal/mock/audiofile/audiofile.go -source=internal/audio/audiofile/audiofile.go
+//        mockgen -package mock -destination=internal/mock/audiofile.go -source=internal/audio/audiofile/audiofile.go
 //
 
-// Package mocka is a generated GoMock package.
-package mocka
+// Package mock is a generated GoMock package.
+package mock
 
 import (
         iter "iter"
@@ -1455,198 +1586,16 @@ func (mr *MockcmdRunnerXMockRecorder) CombinedOutput(cmd any) *gomock.Call <span
 }</span>
 </pre>
 		
-		<pre class="file" id="file8" style="display: none">// Code generated by MockGen. DO NOT EDIT.
-// Source: internal/models/models.go
-//
-// Generated by this command:
-//
-//        mockgen -package mockm -destination=internal/mock/models/models.go -source=internal/models/models.go
-//
-
-// Package mockm is a generated GoMock package.
-package mockm
-
-import (
-        reflect "reflect"
-
-        gomock "go.uber.org/mock/gomock"
-        models "talkliketv.click/tltv/internal/models"
-)
-
-// MockModelsX is a mock of ModelsX interface.
-type MockModelsX struct {
-        ctrl     *gomock.Controller
-        recorder *MockModelsXMockRecorder
-        isgomock struct{}
-}
-
-// MockModelsXMockRecorder is the mock recorder for MockModelsX.
-type MockModelsXMockRecorder struct {
-        mock *MockModelsX
-}
-
-// NewMockModelsX creates a new mock instance.
-func NewMockModelsX(ctrl *gomock.Controller) *MockModelsX <span class="cov8" title="1">{
-        mock := &amp;MockModelsX{ctrl: ctrl}
-        mock.recorder = &amp;MockModelsXMockRecorder{mock}
-        return mock
-}</span>
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockModelsX) EXPECT() *MockModelsXMockRecorder <span class="cov0" title="0">{
-        return m.recorder
-}</span>
-
-// GetLanguage mocks base method.
-func (m *MockModelsX) GetLanguage(arg0 int) (models.Language, error) <span class="cov0" title="0">{
-        m.ctrl.T.Helper()
-        ret := m.ctrl.Call(m, "GetLanguage", arg0)
-        ret0, _ := ret[0].(models.Language)
-        ret1, _ := ret[1].(error)
-        return ret0, ret1
-}</span>
-
-// GetLanguage indicates an expected call of GetLanguage.
-func (mr *MockModelsXMockRecorder) GetLanguage(arg0 any) *gomock.Call <span class="cov0" title="0">{
-        mr.mock.ctrl.T.Helper()
-        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLanguage", reflect.TypeOf((*MockModelsX)(nil).GetLanguage), arg0)
-}</span>
-
-// GetVoice mocks base method.
-func (m *MockModelsX) GetVoice(arg0 int) (models.Voice, error) <span class="cov0" title="0">{
-        m.ctrl.T.Helper()
-        ret := m.ctrl.Call(m, "GetVoice", arg0)
-        ret0, _ := ret[0].(models.Voice)
-        ret1, _ := ret[1].(error)
-        return ret0, ret1
-}</span>
-
-// GetVoice indicates an expected call of GetVoice.
-func (mr *MockModelsXMockRecorder) GetVoice(arg0 any) *gomock.Call <span class="cov0" title="0">{
-        mr.mock.ctrl.T.Helper()
-        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVoice", reflect.TypeOf((*MockModelsX)(nil).GetVoice), arg0)
-}</span>
-</pre>
-		
 		<pre class="file" id="file9" style="display: none">// Code generated by MockGen. DO NOT EDIT.
-// Source: internal/translates/amazonclients.go
-//
-// Generated by this command:
-//
-//        mockgen -package mockt -destination=internal/mock/translates/amazonclients.go -source=internal/translates/amazonclients.go
-//
-
-// Package mockt is a generated GoMock package.
-package mockt
-
-import (
-        context "context"
-        reflect "reflect"
-
-        polly "github.com/aws/aws-sdk-go-v2/service/polly"
-        translate "github.com/aws/aws-sdk-go-v2/service/translate"
-        gomock "go.uber.org/mock/gomock"
-)
-
-// MockAmazonTranslateClientX is a mock of AmazonTranslateClientX interface.
-type MockAmazonTranslateClientX struct {
-        ctrl     *gomock.Controller
-        recorder *MockAmazonTranslateClientXMockRecorder
-        isgomock struct{}
-}
-
-// MockAmazonTranslateClientXMockRecorder is the mock recorder for MockAmazonTranslateClientX.
-type MockAmazonTranslateClientXMockRecorder struct {
-        mock *MockAmazonTranslateClientX
-}
-
-// NewMockAmazonTranslateClientX creates a new mock instance.
-func NewMockAmazonTranslateClientX(ctrl *gomock.Controller) *MockAmazonTranslateClientX <span class="cov8" title="1">{
-        mock := &amp;MockAmazonTranslateClientX{ctrl: ctrl}
-        mock.recorder = &amp;MockAmazonTranslateClientXMockRecorder{mock}
-        return mock
-}</span>
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockAmazonTranslateClientX) EXPECT() *MockAmazonTranslateClientXMockRecorder <span class="cov0" title="0">{
-        return m.recorder
-}</span>
-
-// TranslateText mocks base method.
-func (m *MockAmazonTranslateClientX) TranslateText(arg0 context.Context, arg1 *translate.TranslateTextInput, arg2 ...func(*translate.Options)) (*translate.TranslateTextOutput, error) <span class="cov0" title="0">{
-        m.ctrl.T.Helper()
-        varargs := []any{arg0, arg1}
-        for _, a := range arg2 </span><span class="cov0" title="0">{
-                varargs = append(varargs, a)
-        }</span>
-        <span class="cov0" title="0">ret := m.ctrl.Call(m, "TranslateText", varargs...)
-        ret0, _ := ret[0].(*translate.TranslateTextOutput)
-        ret1, _ := ret[1].(error)
-        return ret0, ret1</span>
-}
-
-// TranslateText indicates an expected call of TranslateText.
-func (mr *MockAmazonTranslateClientXMockRecorder) TranslateText(arg0, arg1 any, arg2 ...any) *gomock.Call <span class="cov0" title="0">{
-        mr.mock.ctrl.T.Helper()
-        varargs := append([]any{arg0, arg1}, arg2...)
-        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TranslateText", reflect.TypeOf((*MockAmazonTranslateClientX)(nil).TranslateText), varargs...)
-}</span>
-
-// MockAmazonTTSClientX is a mock of AmazonTTSClientX interface.
-type MockAmazonTTSClientX struct {
-        ctrl     *gomock.Controller
-        recorder *MockAmazonTTSClientXMockRecorder
-        isgomock struct{}
-}
-
-// MockAmazonTTSClientXMockRecorder is the mock recorder for MockAmazonTTSClientX.
-type MockAmazonTTSClientXMockRecorder struct {
-        mock *MockAmazonTTSClientX
-}
-
-// NewMockAmazonTTSClientX creates a new mock instance.
-func NewMockAmazonTTSClientX(ctrl *gomock.Controller) *MockAmazonTTSClientX <span class="cov8" title="1">{
-        mock := &amp;MockAmazonTTSClientX{ctrl: ctrl}
-        mock.recorder = &amp;MockAmazonTTSClientXMockRecorder{mock}
-        return mock
-}</span>
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockAmazonTTSClientX) EXPECT() *MockAmazonTTSClientXMockRecorder <span class="cov8" title="1">{
-        return m.recorder
-}</span>
-
-// SynthesizeSpeech mocks base method.
-func (m *MockAmazonTTSClientX) SynthesizeSpeech(arg0 context.Context, arg1 *polly.SynthesizeSpeechInput, arg2 ...func(*polly.Options)) (*polly.SynthesizeSpeechOutput, error) <span class="cov8" title="1">{
-        m.ctrl.T.Helper()
-        varargs := []any{arg0, arg1}
-        for _, a := range arg2 </span><span class="cov0" title="0">{
-                varargs = append(varargs, a)
-        }</span>
-        <span class="cov8" title="1">ret := m.ctrl.Call(m, "SynthesizeSpeech", varargs...)
-        ret0, _ := ret[0].(*polly.SynthesizeSpeechOutput)
-        ret1, _ := ret[1].(error)
-        return ret0, ret1</span>
-}
-
-// SynthesizeSpeech indicates an expected call of SynthesizeSpeech.
-func (mr *MockAmazonTTSClientXMockRecorder) SynthesizeSpeech(arg0, arg1 any, arg2 ...any) *gomock.Call <span class="cov8" title="1">{
-        mr.mock.ctrl.T.Helper()
-        varargs := append([]any{arg0, arg1}, arg2...)
-        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SynthesizeSpeech", reflect.TypeOf((*MockAmazonTTSClientX)(nil).SynthesizeSpeech), varargs...)
-}</span>
-</pre>
-		
-		<pre class="file" id="file10" style="display: none">// Code generated by MockGen. DO NOT EDIT.
 // Source: internal/translates/googleclients.go
 //
 // Generated by this command:
 //
-//        mockgen -package mockt -destination=internal/mock/translates/googleclients.go -source=internal/translates/googleclients.go
+//        mockgen -package mock -destination=internal/mock/googleclients.go -source=internal/translates/googleclients.go
 //
 
-// Package mockt is a generated GoMock package.
-package mockt
+// Package mock is a generated GoMock package.
+package mock
 
 import (
         context "context"
@@ -1743,16 +1692,160 @@ func (mr *MockGoogleTTSClientXMockRecorder) SynthesizeSpeech(arg0, arg1 any, arg
 }</span>
 </pre>
 		
+		<pre class="file" id="file10" style="display: none">// Code generated by MockGen. DO NOT EDIT.
+// Source: internal/models/models.go
+//
+// Generated by this command:
+//
+//        mockgen -package mock -destination=internal/mock/models.go -source=internal/models/models.go
+//
+
+// Package mock is a generated GoMock package.
+package mock
+
+import (
+        reflect "reflect"
+
+        gomock "go.uber.org/mock/gomock"
+        models "talkliketv.click/tltv/internal/models"
+)
+
+// MockModelsX is a mock of ModelsX interface.
+type MockModelsX struct {
+        ctrl     *gomock.Controller
+        recorder *MockModelsXMockRecorder
+        isgomock struct{}
+}
+
+// MockModelsXMockRecorder is the mock recorder for MockModelsX.
+type MockModelsXMockRecorder struct {
+        mock *MockModelsX
+}
+
+// NewMockModelsX creates a new mock instance.
+func NewMockModelsX(ctrl *gomock.Controller) *MockModelsX <span class="cov8" title="1">{
+        mock := &amp;MockModelsX{ctrl: ctrl}
+        mock.recorder = &amp;MockModelsXMockRecorder{mock}
+        return mock
+}</span>
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockModelsX) EXPECT() *MockModelsXMockRecorder <span class="cov0" title="0">{
+        return m.recorder
+}</span>
+
+// GetLanguage mocks base method.
+func (m *MockModelsX) GetLanguage(arg0 int) (models.Language, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "GetLanguage", arg0)
+        ret0, _ := ret[0].(models.Language)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// GetLanguage indicates an expected call of GetLanguage.
+func (mr *MockModelsXMockRecorder) GetLanguage(arg0 any) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLanguage", reflect.TypeOf((*MockModelsX)(nil).GetLanguage), arg0)
+}</span>
+
+// GetVoice mocks base method.
+func (m *MockModelsX) GetVoice(arg0 int) (models.Voice, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "GetVoice", arg0)
+        ret0, _ := ret[0].(models.Voice)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// GetVoice indicates an expected call of GetVoice.
+func (mr *MockModelsXMockRecorder) GetVoice(arg0 any) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVoice", reflect.TypeOf((*MockModelsX)(nil).GetVoice), arg0)
+}</span>
+</pre>
+		
 		<pre class="file" id="file11" style="display: none">// Code generated by MockGen. DO NOT EDIT.
+// Source: internal/models/tokens.go
+//
+// Generated by this command:
+//
+//        mockgen -package mock -destination=internal/mock/tokens.go -source=internal/models/tokens.go
+//
+
+// Package mock is a generated GoMock package.
+package mock
+
+import (
+        context "context"
+        reflect "reflect"
+
+        gomock "go.uber.org/mock/gomock"
+)
+
+// MockTokensX is a mock of TokensX interface.
+type MockTokensX struct {
+        ctrl     *gomock.Controller
+        recorder *MockTokensXMockRecorder
+        isgomock struct{}
+}
+
+// MockTokensXMockRecorder is the mock recorder for MockTokensX.
+type MockTokensXMockRecorder struct {
+        mock *MockTokensX
+}
+
+// NewMockTokensX creates a new mock instance.
+func NewMockTokensX(ctrl *gomock.Controller) *MockTokensX <span class="cov8" title="1">{
+        mock := &amp;MockTokensX{ctrl: ctrl}
+        mock.recorder = &amp;MockTokensXMockRecorder{mock}
+        return mock
+}</span>
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockTokensX) EXPECT() *MockTokensXMockRecorder <span class="cov8" title="1">{
+        return m.recorder
+}</span>
+
+// CheckToken mocks base method.
+func (m *MockTokensX) CheckToken(c context.Context, token string) error <span class="cov8" title="1">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "CheckToken", c, token)
+        ret0, _ := ret[0].(error)
+        return ret0
+}</span>
+
+// CheckToken indicates an expected call of CheckToken.
+func (mr *MockTokensXMockRecorder) CheckToken(c, token any) *gomock.Call <span class="cov8" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckToken", reflect.TypeOf((*MockTokensX)(nil).CheckToken), c, token)
+}</span>
+
+// UpdateField mocks base method.
+func (m *MockTokensX) UpdateField(c context.Context, token, path, value string) error <span class="cov8" title="1">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "UpdateField", c, token, path, value)
+        ret0, _ := ret[0].(error)
+        return ret0
+}</span>
+
+// UpdateField indicates an expected call of UpdateField.
+func (mr *MockTokensXMockRecorder) UpdateField(c, token, path, value any) *gomock.Call <span class="cov8" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateField", reflect.TypeOf((*MockTokensX)(nil).UpdateField), c, token, path, value)
+}</span>
+</pre>
+		
+		<pre class="file" id="file12" style="display: none">// Code generated by MockGen. DO NOT EDIT.
 // Source: internal/translates/translates.go
 //
 // Generated by this command:
 //
-//        mockgen -package mockt -destination=internal/mock/translates/translates.go -source=internal/translates/translates.go
+//        mockgen -package mock -destination=internal/mock/translates.go -source=internal/translates/translates.go
 //
 
-// Package mockt is a generated GoMock package.
-package mockt
+// Package mock is a generated GoMock package.
+package mock
 
 import (
         reflect "reflect"
@@ -1817,24 +1910,27 @@ func (mr *MockTranslateXMockRecorder) TranslatePhrases(arg0, arg1, arg2 any) *go
 }</span>
 </pre>
 		
-		<pre class="file" id="file12" style="display: none">package models
+		<pre class="file" id="file13" style="display: none">package models
 
 import (
-        "crypto/sha256"
         "encoding/json"
         "errors"
-        "io/fs"
         "log"
-        "os"
         "strings"
-        "talkliketv.click/tltv/internal/util"
-        "time"
 )
 
 // aws_languages =&gt; aws translate list-Languages &gt; aws_languages.json
 // aws_voices =&gt; aws polly describe-Voices &gt; aws_voices.json
 // google_languages =&gt; /scripts/python/supported_languages.json
 // google_voices =&gt; /scripts/python/voices_api.json
+
+var (
+        ErrTooManyPhrases    = errors.New("too many phrases")
+        ErrVoiceIdInvalid    = errors.New("voice id invalid")
+        ErrPauseNotFound     = errors.New("audio pause file not found")
+        ErrLanguageIdInvalid = errors.New("language id invalid")
+        ErrPauseInvalid      = errors.New("pause out of range (must be between 3 and 10")
+)
 
 type Title struct {
         Name         string
@@ -1902,16 +1998,6 @@ type Voice struct {
         LangId                 int
 }
 
-type Token struct {
-        Status  Status
-        Created time.Time
-        Hash    []byte
-}
-
-type TokenValue struct {
-        Created time.Time
-        Status  Status
-}
 type Status int
 
 const (
@@ -1921,7 +2007,6 @@ const (
 
 var Languages = make(map[int]Language)
 var Voices = make(map[int]Voice)
-var tokens = make(map[string]TokenValue)
 
 type ModelsX interface {
         GetLanguage(int) (Language, error)
@@ -1933,7 +2018,7 @@ type Models struct{}
 func (m *Models) GetLanguage(id int) (Language, error) <span class="cov0" title="0">{
         lang, ok := Languages[id]
         if !ok </span><span class="cov0" title="0">{
-                return Language{}, util.ErrLanguageIdInvalid
+                return Language{}, ErrLanguageIdInvalid
         }</span>
         <span class="cov0" title="0">return lang, nil</span>
 }
@@ -1941,70 +2026,66 @@ func (m *Models) GetLanguage(id int) (Language, error) <span class="cov0" title=
 func (m *Models) GetVoice(id int) (Voice, error) <span class="cov0" title="0">{
         voice, ok := Voices[id]
         if !ok </span><span class="cov0" title="0">{
-                return Voice{}, util.ErrVoiceIdInvalid
+                return Voice{}, ErrVoiceIdInvalid
         }</span>
         <span class="cov0" title="0">return voice, nil</span>
 }
 
-func GetVoicesLength() int <span class="cov0" title="0">{
-        return len(Voices)
-}</span>
-
-func MakeGoogleMaps() <span class="cov8" title="1">{
+func MakeGoogleMaps() <span class="cov0" title="0">{
         languageFile, err := JsonModels.Open("jsonmodels/google_languages.json")
         if err != nil </span><span class="cov0" title="0">{
                 log.Fatal(err)
         }</span>
         // Decode the JSON data into a struct
-        <span class="cov8" title="1">var glangs []GoogleJsonLanguage
+        <span class="cov0" title="0">var glangs []GoogleJsonLanguage
         decoder := json.NewDecoder(languageFile)
         err = decoder.Decode(&amp;glangs)
         if err != nil </span><span class="cov0" title="0">{
                 log.Fatal("Error decoding JSON:", err)
         }</span>
 
-        <span class="cov8" title="1">voiceFile, err := JsonModels.Open("jsonmodels/google_voices.json")
+        <span class="cov0" title="0">voiceFile, err := JsonModels.Open("jsonmodels/google_voices.json")
         if err != nil </span><span class="cov0" title="0">{
                 log.Fatal(err)
         }</span>
         // Decode the JSON data into a struct
-        <span class="cov8" title="1">var voices []GoogleJsonVoice
+        <span class="cov0" title="0">var voices []GoogleJsonVoice
         decoder = json.NewDecoder(voiceFile)
         err = decoder.Decode(&amp;voices)
         if err != nil </span><span class="cov0" title="0">{
                 log.Fatal("Error decoding JSON:", err)
         }</span>
 
-        <span class="cov8" title="1">usedLangs := make(map[int]bool)
-        for i, voice := range voices </span><span class="cov8" title="1">{
+        <span class="cov0" title="0">usedLangs := make(map[int]bool)
+        for i, voice := range voices </span><span class="cov0" title="0">{
                 langCode := voice.LanguageCodes[0]
                 // get the language id for the voice from the language tag
                 langTag := strings.Split(langCode, "-")
                 found := false
                 langId := -1
                 // find the language id (key) for the language that corresponds to the voice
-                for j, lang := range glangs </span><span class="cov8" title="1">{
+                for j, lang := range glangs </span><span class="cov0" title="0">{
                         // filipino voice langTag does not match language tag
-                        if langTag[0] == "fil" &amp;&amp; lang.Language == "tl" </span><span class="cov8" title="1">{
+                        if langTag[0] == "fil" &amp;&amp; lang.Language == "tl" </span><span class="cov0" title="0">{
                                 found = true
                                 langId = j
                                 break</span>
                         }
                         // norwegian voice langTag does not match language tag
-                        <span class="cov8" title="1">if langTag[0] == "nb" &amp;&amp; lang.Language == "no" </span><span class="cov8" title="1">{
+                        <span class="cov0" title="0">if langTag[0] == "nb" &amp;&amp; lang.Language == "no" </span><span class="cov0" title="0">{
                                 found = true
                                 langId = j
                                 break</span>
                         }
-                        <span class="cov8" title="1">if lang.Language == langTag[0] </span><span class="cov8" title="1">{
+                        <span class="cov0" title="0">if lang.Language == langTag[0] </span><span class="cov0" title="0">{
                                 found = true
                                 langId = j
                                 break</span>
                         }
                 }
-                <span class="cov8" title="1">if !found </span>{<span class="cov8" title="1">
+                <span class="cov0" title="0">if !found </span>{<span class="cov0" title="0">
                         //log.Println("langId not found for " + voice.Name + " : " + voice.LanguageCodes[0])
-                }</span> else<span class="cov8" title="1"> {
+                }</span> else<span class="cov0" title="0"> {
                         usedLangs[langId] = true
                         // add to VoiceLangId map
                         Voices[i] = Voice{
@@ -2018,10 +2099,10 @@ func MakeGoogleMaps() <span class="cov8" title="1">{
                 }</span>
         }
         // only add google language to models.Language if it has a voice
-        <span class="cov8" title="1">for i, lang := range glangs </span><span class="cov8" title="1">{
+        <span class="cov0" title="0">for i, lang := range glangs </span><span class="cov0" title="0">{
                 _, ok := usedLangs[i]
                 // If the key exists
-                if ok </span><span class="cov8" title="1">{
+                if ok </span><span class="cov0" title="0">{
                         Languages[i] = Language{
                                 ID:   i,
                                 Code: lang.Language,
@@ -2102,67 +2183,172 @@ func MakeAmazonMaps() <span class="cov0" title="0">{
                 }</span>
         }
 }
+</pre>
+		
+		<pre class="file" id="file14" style="display: none">package models
 
-func LoadTokens(filePath string) <span class="cov8" title="1">{
-        var tokenFile fs.File
-        var err error
-        if filePath == "" </span><span class="cov0" title="0">{
-                tokenFile, err = JsonModels.Open("jsonmodels/tokens.json")
+import (
+        "cloud.google.com/go/firestore"
+        "context"
+        "crypto/rand"
+        "crypto/sha256"
+        "encoding/base32"
+        "encoding/hex"
+        "encoding/json"
+        "errors"
+        "fmt"
+        "log"
+        "os"
+        "talkliketv.click/tltv/internal/util"
+        "time"
+)
+
+type Token struct {
+        UploadUsed bool
+        TimesUsed  int
+        Created    time.Time
+        Hash       string
+}
+
+type FirestoreToken struct {
+        UploadUsed bool
+        TimesUsed  int
+        Created    time.Time
+}
+
+type Tokens struct {
+        Coll *firestore.CollectionRef
+}
+
+type TokensX interface {
+        CheckToken(c context.Context, token string) error
+        UpdateField(c context.Context, token string, path string, value string) error
+}
+
+var (
+        UsedTokenError = errors.New("token already used")
+)
+
+func (t *Tokens) CheckToken(ctx context.Context, token string) error <span class="cov0" title="0">{
+        tokenHash := sha256.Sum256([]byte(token))
+        hashString := hex.EncodeToString(tokenHash[:])
+        tokenDoc, err := t.Coll.Doc(hashString).Get(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("token check failed: %w", err)
+        }</span>
+        <span class="cov0" title="0">var tStruct Token
+        err = tokenDoc.DataTo(&amp;tStruct)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("token check failed: %w", err)
+        }</span>
+        <span class="cov0" title="0">if tStruct.UploadUsed </span><span class="cov0" title="0">{
+                return UsedTokenError
+        }</span>
+        <span class="cov0" title="0">return err</span>
+}
+
+func (t *Tokens) AddToken(ctx context.Context, token Token) error <span class="cov0" title="0">{
+        _, err := t.Coll.Doc(token.Hash).Set(ctx, FirestoreToken{
+                UploadUsed: token.UploadUsed,
+                TimesUsed:  token.TimesUsed,
+                Created:    token.Created,
+        })
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed adding token: %v", err)
+        }</span>
+        <span class="cov0" title="0">return err</span>
+}
+
+func (t *Tokens) UpdateField(ctx context.Context, token, path, value string) error <span class="cov0" title="0">{
+        tokenHash := sha256.Sum256([]byte(token))
+        hashString := hex.EncodeToString(tokenHash[:])
+        tokenDoc := t.Coll.Doc(hashString)
+        _, err := tokenDoc.Update(ctx, []firestore.Update{
+                {
+                        Path:  path,
+                        Value: value,
+                },
+        })
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("token update failed: %w", err)
+        }</span>
+        <span class="cov0" title="0">return err</span>
+}
+
+func CreateTokensFile(filePath string, filename string, numTokens int) ([]string, error) <span class="cov0" title="0">{
+        var tokens []*Token
+        var plaintexts []string
+        for i := 0; i &lt; numTokens; i++ </span><span class="cov0" title="0">{
+                token, plaintext, err := GenerateToken()
                 if err != nil </span><span class="cov0" title="0">{
-                        log.Fatalf("add tokens.json file to /internal/models/jsonmodels/ : %s", err)
+                        log.Fatal(err)
                 }</span>
-        } else<span class="cov8" title="1"> {
-                tokenFile, err = os.Open(filePath)
+                <span class="cov0" title="0">tokens = append(tokens, token)
+                plaintexts = append(plaintexts, plaintext)</span>
+        }
+
+        // Marshal the data to JSON
+        <span class="cov0" title="0">jsonData, err := json.Marshal(tokens)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal(err)
+        }</span>
+
+        // create a file path if it does not exist
+        <span class="cov0" title="0">exists, err := util.PathExists(filePath)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal(err)
+        }</span>
+        <span class="cov0" title="0">if !exists </span><span class="cov0" title="0">{
+                err = os.MkdirAll(filePath, os.ModePerm)
                 if err != nil </span><span class="cov0" title="0">{
-                        log.Fatalf("Error opening file to load tokens: %s", err)
-                        return
+                        log.Fatal(err)
                 }</span>
         }
-        // Decode the JSON data into a struct
-        <span class="cov8" title="1">var array []Token
-        decoder := json.NewDecoder(tokenFile)
-        err = decoder.Decode(&amp;array)
+        // Open the file for writing
+        <span class="cov0" title="0">file, err := os.Create(filePath + filename)
         if err != nil </span><span class="cov0" title="0">{
-                log.Fatal("Error decoding JSON:", err)
+                log.Fatal(err)
         }</span>
-        // add each token to the tokens map
-        <span class="cov8" title="1">for _, tok := range array </span><span class="cov8" title="1">{
-                tokens[string(tok.Hash)] = TokenValue{
-                        Created: tok.Created,
-                        Status:  tok.Status,
-                }
+        <span class="cov0" title="0">defer file.Close()
+
+        // Write the JSON data to the file
+        _, err = file.Write(jsonData)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal(err)
         }</span>
+        <span class="cov0" title="0">return plaintexts, nil</span>
 }
 
-func GetTokensLength() int <span class="cov8" title="1">{
-        return len(tokens)
-}</span>
+func GenerateToken() (*Token, string, error) <span class="cov0" title="0">{
+        // Initialize a zero-valued byte slice with a length of 16 bytes.
+        randomBytes := make([]byte, 16)
 
-func CheckToken(token string) error <span class="cov8" title="1">{
-        tokenHash := sha256.Sum256([]byte(token))
-        tok, ok := tokens[string(tokenHash[:])]
-        if !ok </span><span class="cov0" title="0">{
-                return errors.New("token not found")
+        // Use the Read() function from the crypto/rand package to fill the byte slice with
+        // random bytes from your operating system's CSPRNG. This will return an error if
+        // the CSPRNG fails to function correctly.
+        _, err := rand.Read(randomBytes)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, "", err
         }</span>
-        <span class="cov8" title="1">if tok.Status == Used </span><span class="cov8" title="1">{
-                return errors.New("token already used")
-        }</span>
-        <span class="cov8" title="1">return nil</span>
-}
 
-func SetTokenStatus(token string, status Status) error <span class="cov8" title="1">{
-        tokenHash := sha256.Sum256([]byte(token))
-        tok, ok := tokens[string(tokenHash[:])]
-        if !ok </span><span class="cov0" title="0">{
-                return errors.New("something went wrong")
-        }</span>
-        <span class="cov8" title="1">tok.Status = status
-        tokens[string(tokenHash[:])] = tok
-        return nil</span>
+        <span class="cov0" title="0">token := &amp;Token{
+                Created: time.Now(),
+        }
+        plaintext := base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(randomBytes)
+        // Generate a SHA-256 hash of the plaintext token string. This will be the value
+        // that we store in the `hash` field of our database table.
+        // Create the hash
+        hash := sha256.Sum256([]byte(plaintext))
+
+        // Convert the hash to a hexadecimal string
+        hashString := hex.EncodeToString(hash[:])
+        token.Hash = hashString
+
+        return token, plaintext, nil</span>
 }
 </pre>
 		
-		<pre class="file" id="file13" style="display: none">// Package oapi provides primitives to interact with the openapi HTTP API.
+		<pre class="file" id="file15" style="display: none">// Package oapi provides primitives to interact with the openapi HTTP API.
 //
 // Code generated by github.com/oapi-codegen/oapi-codegen/v2 version v2.4.1 DO NOT EDIT.
 package oapi
@@ -2399,29 +2585,18 @@ func GetSwagger() (swagger *openapi3.T, err error) <span class="cov8" title="1">
 }
 </pre>
 		
-		<pre class="file" id="file14" style="display: none">package test
+		<pre class="file" id="file16" style="display: none">package test
 
 import (
-        crypto "crypto/rand"
-        "crypto/sha256"
-        "encoding/base32"
-        "encoding/json"
+        "github.com/stretchr/testify/require"
         "go.uber.org/mock/gomock"
-        "log"
         "math/rand"
-        "os"
         "reflect"
         "slices"
         "strings"
-        mocka "talkliketv.click/tltv/internal/mock/audiofile"
-        mockm "talkliketv.click/tltv/internal/mock/models"
-        mockt "talkliketv.click/tltv/internal/mock/translates"
+        "talkliketv.click/tltv/internal/mock"
         "talkliketv.click/tltv/internal/models"
-        "talkliketv.click/tltv/internal/util"
         "testing"
-        "time"
-
-        "github.com/stretchr/testify/require"
 )
 
 var (
@@ -2456,29 +2631,14 @@ func RequireMatchAnyExcept(t *testing.T, model any, response any, skip []string,
 }
 
 const (
-        DefaultPause   = 5
-        DefaultPattern = 1
-        MaxLanguages   = 75
-        MaxVoices      = 95
-        ValidLangId    = 16
-        alphabet       = "abcdefghijklmnopqrstuvwxyz"
-)
-
-var (
-        ValidGoogleVoice = models.Voice{
-                LanguageCodes:          []string{"en-US"},
-                Gender:                 "MALE",
-                VoiceName:              "en-US-Casual-K",
-                LanguageName:           "",
-                NaturalSampleRateHertz: 24000,
-                Engine:                 "",
-                LangId:                 0,
-        }
-        ValidLangauge = models.Language{
-                ID:   0,
-                Code: "en",
-                Name: "English",
-        }
+        DefaultPause            = 5
+        DefaultPattern          = 1
+        MaxLanguages            = 75
+        MaxVoices               = 95
+        ValidLangId             = 16
+        alphabet                = "abcdefghijklmnopqrstuvwxyz"
+        FirestoreTestCollection = "token-tltv-test-coll"
+        TestProject             = "token-tltv-test"
 )
 
 // RandomString generates a random string of length n
@@ -2524,101 +2684,32 @@ func RandomTitle() (title models.Title) <span class="cov8" title="1">{
 }</span>
 
 type MockStubs struct {
-        TranslateX             *mockt.MockTranslateX
-        GoogleTranslateClientX *mockt.MockGoogleTranslateClientX
-        GoogleTTsClientX       *mockt.MockGoogleTTSClientX
-        AmazonTranslateClientX *mockt.MockAmazonTranslateClientX
-        AmazonTTsClientX       *mockt.MockAmazonTTSClientX
-        AudioFileX             *mocka.MockAudioFileX
-        ModelsX                *mockm.MockModelsX
+        TranslateX             *mock.MockTranslateX
+        GoogleTranslateClientX *mock.MockGoogleTranslateClientX
+        GoogleTTsClientX       *mock.MockGoogleTTSClientX
+        AmazonTranslateClientX *mock.MockAmazonTranslateClientX
+        AmazonTTsClientX       *mock.MockAmazonTTSClientX
+        AudioFileX             *mock.MockAudioFileX
+        TokensX                *mock.MockTokensX
+        ModelsX                *mock.MockModelsX
 }
 
 // NewMockStubs creates instantiates new instances of all the mock interfaces for testing
 func NewMockStubs(ctrl *gomock.Controller) MockStubs <span class="cov8" title="1">{
         return MockStubs{
-                TranslateX:             mockt.NewMockTranslateX(ctrl),
-                GoogleTranslateClientX: mockt.NewMockGoogleTranslateClientX(ctrl),
-                GoogleTTsClientX:       mockt.NewMockGoogleTTSClientX(ctrl),
-                AudioFileX:             mocka.NewMockAudioFileX(ctrl),
-                ModelsX:                mockm.NewMockModelsX(ctrl),
-                AmazonTranslateClientX: mockt.NewMockAmazonTranslateClientX(ctrl),
-                AmazonTTsClientX:       mockt.NewMockAmazonTTSClientX(ctrl),
+                TranslateX:             mock.NewMockTranslateX(ctrl),
+                GoogleTranslateClientX: mock.NewMockGoogleTranslateClientX(ctrl),
+                GoogleTTsClientX:       mock.NewMockGoogleTTSClientX(ctrl),
+                AudioFileX:             mock.NewMockAudioFileX(ctrl),
+                AmazonTranslateClientX: mock.NewMockAmazonTranslateClientX(ctrl),
+                AmazonTTsClientX:       mock.NewMockAmazonTTSClientX(ctrl),
+                TokensX:                mock.NewMockTokensX(ctrl),
+                ModelsX:                mock.NewMockModelsX(ctrl),
         }
 }</span>
-
-func generateToken() (*models.Token, string, error) <span class="cov8" title="1">{
-        // Initialize a zero-valued byte slice with a length of 16 bytes.
-        randomBytes := make([]byte, 16)
-
-        // Use the Read() function from the crypto/rand package to fill the byte slice with
-        // random bytes from your operating system's CSPRNG. This will return an error if
-        // the CSPRNG fails to function correctly.
-        _, err := crypto.Read(randomBytes)
-        if err != nil </span><span class="cov0" title="0">{
-                return nil, "", err
-        }</span>
-
-        <span class="cov8" title="1">token := &amp;models.Token{
-                Created: time.Now(),
-                Status:  0,
-        }
-        plaintext := base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(randomBytes)
-        // Generate a SHA-256 hash of the plaintext token string. This will be the value
-        // that we store in the `hash` field of our database table. Note that the
-        // sha256.Sum256() function returns an *array* of length 32, so to make it easier to
-        // work with we convert it to a slice using the [:] operator before storing it.
-        hash := sha256.Sum256([]byte(plaintext))
-        token.Hash = hash[:]
-
-        return token, plaintext, nil</span>
-}
-
-func CreateTokensFile(filePath string, filename string, numTokens int) ([]string, error) <span class="cov8" title="1">{
-        var tokens []*models.Token
-        var plaintexts []string
-        for i := 0; i &lt; numTokens; i++ </span><span class="cov8" title="1">{
-                token, plaintext, err := generateToken()
-                if err != nil </span><span class="cov0" title="0">{
-                        log.Fatal(err)
-                }</span>
-                <span class="cov8" title="1">tokens = append(tokens, token)
-                plaintexts = append(plaintexts, plaintext)</span>
-        }
-
-        // Marshal the data to JSON
-        <span class="cov8" title="1">jsonData, err := json.Marshal(tokens)
-        if err != nil </span><span class="cov0" title="0">{
-                log.Fatal(err)
-        }</span>
-
-        // create a file path if it does not exist
-        <span class="cov8" title="1">exists, err := util.PathExists(filePath)
-        if err != nil </span><span class="cov0" title="0">{
-                log.Fatal(err)
-        }</span>
-        <span class="cov8" title="1">if !exists </span><span class="cov0" title="0">{
-                err = os.MkdirAll(filePath, os.ModePerm)
-                if err != nil </span><span class="cov0" title="0">{
-                        log.Fatal(err)
-                }</span>
-        }
-        // Open the file for writing
-        <span class="cov8" title="1">file, err := os.Create(filePath + filename)
-        if err != nil </span><span class="cov0" title="0">{
-                log.Fatal(err)
-        }</span>
-        <span class="cov8" title="1">defer file.Close()
-
-        // Write the JSON data to the file
-        _, err = file.Write(jsonData)
-        if err != nil </span><span class="cov0" title="0">{
-                log.Fatal(err)
-        }</span>
-        <span class="cov8" title="1">return plaintexts, nil</span>
-}
 </pre>
 		
-		<pre class="file" id="file15" style="display: none">package translates
+		<pre class="file" id="file17" style="display: none">package translates
 
 import (
         "context"
@@ -2792,7 +2883,7 @@ func (g *AmazonClients) GetSpeech(
 }
 </pre>
 		
-		<pre class="file" id="file16" style="display: none">package translates
+		<pre class="file" id="file18" style="display: none">package translates
 
 import (
         tts "cloud.google.com/go/texttospeech/apiv1"
@@ -2940,7 +3031,7 @@ func (g *GoogleClients) GetSpeech(
 }
 </pre>
 		
-		<pre class="file" id="file17" style="display: none">package translates
+		<pre class="file" id="file19" style="display: none">package translates
 
 import (
         "cloud.google.com/go/texttospeech/apiv1/texttospeechpb"
@@ -3140,31 +3231,14 @@ func (t *Translate) CreateTranslates(e echo.Context, title models.Title, lang mo
 }
 </pre>
 		
-		<pre class="file" id="file18" style="display: none">package util
+		<pre class="file" id="file20" style="display: none">package util
 
 import (
-        "errors"
-        "fmt"
-)
-
-var (
-        ErrOneFile           = errors.New("no need to zip one file")
-        ErrUnableToParseFile = func(err error) error <span class="cov8" title="1">{
-                return fmt.Errorf("unable to parse file: %s", err)
-        }</span>
-        ErrTooManyPhrases    = errors.New("too many phrases")
-        ErrVoiceIdInvalid    = errors.New("voice id invalid")
-        ErrPauseNotFound     = errors.New("audio pause file not found")
-        ErrLanguageIdInvalid = errors.New("language id invalid")
-        ErrPauseInvalid      = errors.New("pause out of range (must be between 3 and 10")
-)
-</pre>
-		
-		<pre class="file" id="file19" style="display: none">package util
-
-import (
+        "cloud.google.com/go/firestore"
+        "context"
         "errors"
         "github.com/go-playground/form/v4"
+        "google.golang.org/api/iterator"
         "net/http"
         "os"
 )
@@ -3235,9 +3309,47 @@ func RemoveLongStr(strSlice []string) []string <span class="cov8" title="1">{
         }
         <span class="cov8" title="1">return list</span>
 }
+
+func DeleteFirestoreCollection(ctx context.Context, client *firestore.Client, coll *firestore.CollectionRef) error <span class="cov0" title="0">{
+        // delete all documents in test collection
+        bulkwriter := client.BulkWriter(ctx)
+        for </span><span class="cov0" title="0">{
+                // Get a batch of documents
+                iter := coll.Documents(ctx)
+                numDeleted := 0
+
+                // Iterate through the documents, adding
+                // a delete operation for each one to the BulkWriter.
+                for </span><span class="cov0" title="0">{
+                        doc, err := iter.Next()
+                        if errors.Is(err, iterator.Done) </span><span class="cov0" title="0">{
+                                break</span>
+                        }
+                        <span class="cov0" title="0">if err != nil </span><span class="cov0" title="0">{
+                                return err
+                        }</span>
+
+                        <span class="cov0" title="0">_, err = bulkwriter.Delete(doc.Ref)
+                        if err != nil </span><span class="cov0" title="0">{
+                                return err
+                        }</span>
+                        <span class="cov0" title="0">numDeleted++</span>
+                }
+
+                // If there are no documents to delete,
+                // the process is over.
+                <span class="cov0" title="0">if numDeleted == 0 </span><span class="cov0" title="0">{
+                        bulkwriter.End()
+                        break</span>
+                }
+
+                <span class="cov0" title="0">bulkwriter.Flush()</span>
+        }
+        <span class="cov0" title="0">return nil</span>
+}
 </pre>
 		
-		<pre class="file" id="file20" style="display: none">package validator
+		<pre class="file" id="file21" style="display: none">package validator
 
 import (
         "net/mail"
@@ -3338,7 +3450,7 @@ func (v *Validator) In(value string, list ...string) bool <span class="cov0" tit
 }
 </pre>
 		
-		<pre class="file" id="file21" style="display: none">//go:build go1.22
+		<pre class="file" id="file22" style="display: none">//go:build go1.22
 
 package main
 
@@ -3357,7 +3469,7 @@ import (
 
 func main() <span class="cov0" title="0">{
         var cfg config.Config
-        err := config.SetConfigs(&amp;cfg)
+        err := cfg.SetConfigs()
         if err != nil </span><span class="cov0" title="0">{
                 log.Fatal(err)
         }</span>
@@ -3383,15 +3495,109 @@ func main() <span class="cov0" title="0">{
                 t = translates.New(translates.GoogleClients{}, *translates.NewAmazonClients(), &amp;models.Models{})
         }</span>
 
+        <span class="cov0" title="0">fClient, err := cfg.FirestoreClient()
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal("Error creating firestore client: ", err)
+        }</span>
+
+        <span class="cov0" title="0">tokensColl := fClient.Collection("tokens")
+        tokens := models.Tokens{Coll: tokensColl}
+
         // create new server
-        <span class="cov0" title="0">e := api.NewServer(cfg, t, af)
+        e := api.NewServer(cfg, t, af, &amp;tokens)
 
         e.Logger.Fatal(e.Start(net.JoinHostPort("0.0.0.0", cfg.Port)))</span>
 }
 </pre>
 		
-		<pre class="file" id="file22" style="display: none">/*
-generatetokens generates tokens to be used in token-tltv.
+		<pre class="file" id="file23" style="display: none">/*
+coinsfirestore uploads a jsonfile of tokens to the default firestore database
+
+Usage:
+
+        go run coinsfirestore.go [flags]
+
+The flags are:
+
+        -f
+            The file path to the json file to upload
+        -p
+            The project id to upload it to
+*/
+package main
+
+import (
+        "context"
+        "encoding/json"
+        firebase "firebase.google.com/go"
+        "flag"
+        "fmt"
+        "log"
+        "os"
+        "talkliketv.click/tltv/internal/models"
+        "talkliketv.click/tltv/internal/test"
+)
+
+func main() <span class="cov0" title="0">{
+        filePath := flag.String("f", "", "filepath is required")
+        projectID := flag.String("p", test.TestProject, "project is required")
+        collection := flag.String("c", test.FirestoreTestCollection, "collection is required. ")
+        flag.Parse()
+
+        if *filePath == "" </span><span class="cov0" title="0">{
+                fmt.Println("Error: -f filepath flag is required")
+                os.Exit(1)
+        }</span>
+
+        // Use the application default credentials
+        <span class="cov0" title="0">ctx := context.Background()
+        conf := &amp;firebase.Config{ProjectID: *projectID}
+        app, err := firebase.NewApp(ctx, conf)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalln(err)
+        }</span>
+
+        <span class="cov0" title="0">client, err := app.Firestore(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalln(err)
+        }</span>
+        <span class="cov0" title="0">defer client.Close()
+
+        // Open the JSON file
+        file, err := os.Open(*filePath)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Println("Error opening file:", err)
+                return
+        }</span>
+        <span class="cov0" title="0">defer file.Close()
+
+        // Decode the JSON data
+        var tokens []models.Token
+        decoder := json.NewDecoder(file)
+        err = decoder.Decode(&amp;tokens)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Println("Error decoding JSON:", err)
+                return
+        }</span>
+
+        // get the tokens collection from the database
+        <span class="cov0" title="0">tokensColl := client.Collection(*collection)
+        for _, token := range tokens </span><span class="cov0" title="0">{
+                _, err = tokensColl.Doc(token.Hash).Set(ctx, models.FirestoreToken{
+                        UploadUsed: token.UploadUsed,
+                        TimesUsed:  token.TimesUsed,
+                        Created:    token.Created,
+                })
+                //_, _, err = tokensColl.Add(ctx, token)
+                if err != nil </span><span class="cov0" title="0">{
+                        log.Fatalf("Failed adding token: %v", err)
+                }</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file24" style="display: none">/*
+generatecoins generates tokens to be used in token-tltv.
 
 It will print the plaintext token once when you run the program. They will not be
 saved to the json file so you must save them to some place safe after you run the
@@ -3399,7 +3605,8 @@ program.
 
 Usage:
 
-        Generatetokens [flags] [path ...]
+        generatecoins [flags] [path ...]
+        go run generatecoins.go -o ../../internal/models/jsonmodels/ -n 100
 
 The flags are:
 
@@ -3413,7 +3620,7 @@ package main
 import (
         "flag"
         "log"
-        "talkliketv.click/tltv/internal/test"
+        "talkliketv.click/tltv/internal/models"
         "time"
 )
 
@@ -3426,13 +3633,13 @@ func main() <span class="cov0" title="0">{
         flag.IntVar(&amp;numTokens, "n", 0, "the number of tokens to generate")
         flag.Parse()
 
-        plaintexts, err := test.CreateTokensFile(outputPath, filename, numTokens)
+        plaintexts, err := models.CreateTokensFile(outputPath, filename, numTokens)
         if err != nil </span><span class="cov0" title="0">{
                 log.Fatal(err)
         }</span>
 
-        <span class="cov0" title="0">for plain := range plaintexts </span><span class="cov0" title="0">{
-                println(plain)
+        <span class="cov0" title="0">for i := range plaintexts </span><span class="cov0" title="0">{
+                println(plaintexts[i])
         }</span>
 }
 </pre>

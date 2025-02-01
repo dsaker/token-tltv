@@ -24,7 +24,7 @@ resource "google_cloud_run_v2_service" "token-tltv" {
   name                 = "token-tltv-cloudrun-service"
   ingress              = "INGRESS_TRAFFIC_ALL"
   project              = var.project_id
-  location             = var.region
+  location             = google_compute_subnetwork.tltv_subnetwork.region
 
   template {
     service_account = google_service_account.tltv_cloudrun_service_identity.email
@@ -32,6 +32,14 @@ resource "google_cloud_run_v2_service" "token-tltv" {
     timeout                          = "300s"
     containers {
       image       = local.image
+      env {
+        name  = "FIRESTORE_TOKENS"
+        value = var.firestore_tokens
+      }
+      env {
+        name  = "PROJECT_ID"
+        value = var.project_id
+      }
       resources {
         cpu_idle = true
         limits = {
@@ -54,10 +62,20 @@ resource "google_cloud_run_v2_service" "token-tltv" {
       max_instance_count = 2
       min_instance_count = 0
     }
+    vpc_access {
+      connector = google_vpc_access_connector.tltv_cr_conn.id
+      egress    = "ALL_TRAFFIC"
+    }
   }
   traffic {
     percent  = 100
     type     = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
+  }
+  # Used in sample testing. These fields may change in 'terraform plan' output, which is expected and thus non-blocking.
+  lifecycle {
+    ignore_changes = [
+      ingress, template[0].vpc_access
+    ]
   }
 }
 
@@ -69,29 +87,6 @@ resource "google_cloud_run_service_iam_binding" "all-users" {
   members = [
     "allUsers"
   ]
-}
-
-# service account to allow cloud run service to access necessary google api's
-resource "google_service_account" "tltv_cloudrun_service_identity" {
-  account_id = "token-tltv-service-account"
-}
-
-resource "google_project_iam_member" "tltv_cloud_translate_user" {
-  project = var.project_id
-  role    = "roles/cloudtranslate.user"
-  member  = "serviceAccount:${google_service_account.tltv_cloudrun_service_identity.email}"
-}
-
-resource "google_project_iam_member" "tltv_speech_editor" {
-  project = var.project_id
-  role    = "roles/speech.editor"
-  member  = "serviceAccount:${google_service_account.tltv_cloudrun_service_identity.email}"
-}
-
-resource "google_project_iam_member" "tltv_storage_object_user" {
-  project = var.project_id
-  role    = "roles/storage.objectUser"
-  member  = "serviceAccount:${google_service_account.tltv_cloudrun_service_identity.email}"
 }
 
 resource "google_firestore_database" "database" {

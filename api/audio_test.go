@@ -99,7 +99,7 @@ func TestAudioFromFile(t *testing.T) {
 					CreateMp3Zip(gomock.Any(), titleWithTranslates, gomock.Any()).
 					Return(file, nil)
 				stubs.TokensX.EXPECT().
-					UpdateField(gomock.Any(), randomToken, "UploadUsed", "true").
+					UpdateField(gomock.Any(), true, randomToken, "UploadUsed").
 					Return(nil)
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
@@ -345,6 +345,7 @@ func TestGoogleIntegration(t *testing.T) {
 	if !util.Integration {
 		t.Skip("skipping integration test")
 	}
+	t.Parallel()
 
 	//initialize audiofile with the real command runner
 	af := audiofile.New(&audiofile.RealCmdRunner{})
@@ -417,6 +418,33 @@ func TestGoogleIntegration(t *testing.T) {
 				return createMultiPartBody(t, data, filename, okFormMap)
 			},
 		},
+		{
+			name: "Used Token",
+			checkResponse: func(res *http.Response) {
+				require.Equal(t, http.StatusForbidden, res.StatusCode)
+				resBody := readBody(t, res)
+				require.Contains(t, resBody, "token already used")
+			},
+			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
+				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
+				// generate new token
+				token2, plaintext2, err := models.GenerateToken()
+				require.NoError(t, err)
+				token2.UploadUsed = true
+				err = tokens.AddToken(ctx, *token2)
+				require.NoError(t, err)
+				okFormMap2 := map[string]string{
+					"file_language_id": strconv.Itoa(title.TitleLangId),
+					"title_name":       title.Name,
+					"from_voice_id":    strconv.Itoa(title.FromVoiceId),
+					"to_voice_id":      strconv.Itoa(title.ToVoiceId),
+					"token":            plaintext2,
+					"pause":            "4",
+					"pattern":          "1",
+				}
+				return createMultiPartBody(t, data, filename, okFormMap2)
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -436,7 +464,6 @@ func TestGoogleIntegration(t *testing.T) {
 			require.NoError(t, err)
 		})
 	}
-
 }
 
 func TestAmazonIntegration(t *testing.T) {

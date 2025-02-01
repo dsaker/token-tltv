@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"sync"
 	"talkliketv.click/tltv/internal/models"
 	"talkliketv.click/tltv/internal/translates"
 
@@ -35,12 +34,6 @@ const (
 type TestConfig struct {
 	config.Config
 }
-
-var (
-	tokenStrings []string
-	tokenCount   int
-	mu           sync.RWMutex
-)
 
 // testCase struct groups together the fields necessary for running most of the test cases
 type testCase struct {
