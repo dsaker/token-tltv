@@ -112,10 +112,13 @@ build/docker:
 	@echo 'Building container...'
 	docker build --build-arg LINKER_FLAGS=${linker_flags} --tag token-tltv:latest .
 
-## build/cloud: build and push the token-tltv container to the cloud
-build/cloud:
-	docker build --platform linux/amd64 --push -t us-east4-docker.pkg.dev/token-tltv/token-tltv/token-tltv:latest .
+## mac/build/cloud: build and push the token-tltv container to the cloud
+mac/build/cloud:
+	docker build --platform linux/amd64 --push -t us-east4-docker.pkg.dev/{TALKTV_DB_DSN}/token-tltv/token-tltv:latest .
 
+## linux/build/cloud: build and push the token-tltv container to the cloud
+linux/build/cloud:
+	docker build --push -t us-east4-docker.pkg.dev/{TALKTV_DB_DSN}/token-tltv/token-tltv:latest .
 ## build/pack: build the talkliketv container using build pack
 build/pack:
 	@echo 'Building container with buildpack'

@@ -52,7 +52,7 @@ resource "google_logging_metric" "cloudrun_service_json_payload_error" {
   disabled         = false
   filter           = "resource.type = \"cloud_run_revision\"\nresource.labels.service_name = \"token-tltv-cloudrun-service\"\njsonPayload.level = \"ERROR\"\n"
   name             = "cloud-run-service-json-payload-error"
-  project          = "token-tltv"
+  project          = var.project_id
   metric_descriptor {
     metric_kind  = "DELTA"
     unit         = jsonencode(1)

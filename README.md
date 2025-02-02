@@ -42,6 +42,15 @@ cd ../..
 make run
 ```
 
+### Deploy to Google Cloud Platform
+- [Install Docker](https://docs.docker.com/engine/install/)
+- [Install GoLang](https://go.dev/doc/install)
+- Create [Google Cloud Account](https://console.cloud.google.com/getting-started?pli=1)
+- Install the [gcloud CLI](https://cloud.google.com/sdk/docs/install)
+- Setup [GCP ADC](https://cloud.google.com/docs/authentication/external/set-up-adc )
+- Create a [Google Cloud Project](https://developers.google.com/workspace/guides/create-project)
+- Install [Terraform](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli)
+
 ### To update voices or languages when google makes changes
 - [Create an api key](https://cloud.google.com/docs/authentication/api-keys) to load the voices in the database
 // todo

@@ -8,15 +8,10 @@ resource "google_artifact_registry_repository" "token_tltv" {
 
 # create locals data to store registry info for image name
 locals {
-  l = data.google_artifact_registry_repository.token_tltv.location
-  p = data.google_artifact_registry_repository.token_tltv.project
-  r = data.google_artifact_registry_repository.token_tltv.repository_id
+  l = google_artifact_registry_repository.token_tltv.location
+  p = google_artifact_registry_repository.token_tltv.project
+  r = google_artifact_registry_repository.token_tltv.repository_id
   image = "${local.l}-docker.pkg.dev/${local.p}/${local.r}/${var.image_name}:${var.image_version}"
-}
-
-data "google_artifact_registry_repository" "token_tltv" {
-  location      = var.region
-  repository_id = var.repository_id
 }
 
 # cloud run service to run container
