@@ -67,7 +67,7 @@ resource "google_monitoring_alert_policy" "cloud_run_service_json_payload_error"
   display_name          = "cloud_run_service_json_payload_error"
   enabled               = true
   notification_channels = [google_monitoring_notification_channel.email_notification.id]
-  project               = "token-tltv"
+  project               = var.project_id
   conditions {
     display_name = "token-tltv-cloud-run-service-json-payload-error"
     condition_threshold {

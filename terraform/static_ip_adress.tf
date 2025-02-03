@@ -19,12 +19,6 @@ resource "google_vpc_access_connector" "tltv_cr_conn" {
   subnet {
     name = google_compute_subnetwork.tltv_subnetwork.name
   }
-
-  # Wait for VPC API enablement
-  # before creating this resource
-  depends_on = [
-    google_project_service.vpc
-  ]
 }
 
 resource "google_compute_router" "tltv_cr_static_ip_router" {

@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
+	models "talkliketv.click/tltv/internal/models"
 )
 
 // MockTokensX is a mock of TokensX interface.
@@ -38,6 +39,20 @@ func NewMockTokensX(ctrl *gomock.Controller) *MockTokensX {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockTokensX) EXPECT() *MockTokensXMockRecorder {
 	return m.recorder
+}
+
+// AddToken mocks base method.
+func (m *MockTokensX) AddToken(ctx context.Context, token models.Token) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddToken", ctx, token)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddToken indicates an expected call of AddToken.
+func (mr *MockTokensXMockRecorder) AddToken(ctx, token any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddToken", reflect.TypeOf((*MockTokensX)(nil).AddToken), ctx, token)
 }
 
 // CheckToken mocks base method.

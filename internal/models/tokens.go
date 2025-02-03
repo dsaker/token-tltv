@@ -35,6 +35,7 @@ type Tokens struct {
 
 type TokensX interface {
 	CheckToken(c context.Context, token string) error
+	AddToken(ctx context.Context, token Token) error
 	UpdateField(c context.Context, value any, token string, path string) error
 }
 
@@ -49,11 +50,6 @@ func (t *Tokens) CheckToken(ctx context.Context, token string) error {
 	if err != nil {
 		return fmt.Errorf("get token check failed: %w", err)
 	}
-	data := tokenDoc.Data()
-	for d := range data {
-		log.Printf("type: %v, value: %v", d)
-	}
-	log.Printf("token: %v", tokenDoc.Data())
 	var tStruct Token
 	err = tokenDoc.DataTo(&tStruct)
 	if err != nil {
@@ -163,4 +159,17 @@ func GenerateToken() (*Token, string, error) {
 	token.Hash = hashString
 
 	return token, plaintext, nil
+}
+
+type LocalTokens struct{}
+
+func (l *LocalTokens) CheckToken(ctx context.Context, token string) error {
+	return nil
+}
+
+func (l *LocalTokens) AddToken(ctx context.Context, token Token) error {
+	return nil
+}
+func (l *LocalTokens) UpdateField(ctx context.Context, value any, token, path string) error {
+	return nil
 }

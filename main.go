@@ -58,9 +58,13 @@ func main() {
 
 	tokensColl := fClient.Collection(cfg.FirestoreTokenColl)
 	tokens := models.Tokens{Coll: tokensColl}
-
 	// create new server
 	e := api.NewServer(cfg, t, af, &tokens)
+
+	if cfg.Env == "local" {
+		localTokens := models.LocalTokens{}
+		e = api.NewServer(cfg, t, af, &localTokens)
+	}
 
 	e.Logger.Fatal(e.Start(net.JoinHostPort("0.0.0.0", cfg.Port)))
 }

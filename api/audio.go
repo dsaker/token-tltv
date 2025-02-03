@@ -53,12 +53,12 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 	// check token
 	if err := s.tokens.CheckToken(e.Request().Context(), token); err != nil {
 		e.Logger().Error(err)
-		return e.Render(http.StatusForbidden, "audio.gohtml", newTemplateData(err.Error()))
+		return e.String(http.StatusBadRequest, "invalid token: "+err.Error())
 	}
 
 	title, err := validateAudioRequest(e)
 	if err != nil {
-		return e.Render(http.StatusBadRequest, "audio.gohtml", newTemplateData(err.Error()))
+		return e.String(http.StatusBadRequest, "invalid request: "+err.Error())
 	}
 
 	// TODO put limit on characters
@@ -69,9 +69,9 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 		}
 		e.Logger().Error(err)
 		if strings.Contains(err.Error(), "unable to parse file") {
-			return e.Render(http.StatusBadRequest, "audio.gohtml", newTemplateData(err.Error()))
+			return e.String(http.StatusBadRequest, "unable to parse file: "+err.Error())
 		}
-		return e.Render(http.StatusInternalServerError, "audio.gohtml", newTemplateData(err.Error()))
+		return e.String(http.StatusInternalServerError, "unable to process file: "+err.Error())
 	}
 
 	title.TitlePhrases = phrases
@@ -79,14 +79,14 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 	zipFile, err := s.createAudioFromTitle(e, *title)
 	if err != nil {
 		e.Logger().Error(err)
-		return e.Render(http.StatusInternalServerError, "audio.gohtml", newTemplateData(err.Error()))
+		return e.String(http.StatusInternalServerError, "unable to create audio file: "+err.Error())
 	}
 
 	// change token status to Used
 	err = s.tokens.UpdateField(e.Request().Context(), true, token, "UploadUsed")
 	if err != nil {
 		e.Logger().Error(err)
-		return e.Render(http.StatusInternalServerError, "audio.gohtml", newTemplateData(err.Error()))
+		return e.String(http.StatusInternalServerError, "unable to update token: "+err.Error())
 	}
 
 	// TODO change Id's to language codes
@@ -269,7 +269,16 @@ func validateAudioRequest(e echo.Context) (*models.Title, error) {
 		return nil, pauseError
 	}
 
-	// pattern is the pattern used to build the audio files at /internal/pattern
+	// title-input
+	titleInput := e.FormValue("title_name")
+	// validate title name
+	if len(titleInput) < 5 || len(titleInput) > 32 {
+		titleInputError := errors.New("title_name must be between 5 and 32")
+		e.Logger().Error(titleInputError)
+		return nil, titleInputError
+	}
+
+	//
 	pattern, err := strconv.Atoi(e.FormValue("pattern"))
 	if err != nil {
 		e.Logger().Error(err)

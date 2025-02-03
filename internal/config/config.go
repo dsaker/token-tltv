@@ -28,7 +28,7 @@ func (cfg *Config) SetConfigs() error {
 	// get port and debug from commandline flags... if not present use defaults
 	flag.StringVar(&cfg.Port, "port", "8080", "API server port")
 
-	flag.StringVar(&cfg.Env, "env", "dev", "Environment (dev|stage|prod)")
+	flag.StringVar(&cfg.Env, "env", "", "Environment (local|dev|prod)")
 
 	flag.StringVar(&cfg.TTSBasePath, "tts-base-path", "/tmp/audio/", "text-to-speech base path temporary storage of mp3 audio files")
 

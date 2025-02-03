@@ -20,7 +20,7 @@ resource "google_cloud_run_v2_service" "token-tltv" {
   ingress              = "INGRESS_TRAFFIC_ALL"
   project              = var.project_id
   location             = google_compute_subnetwork.tltv_subnetwork.region
-
+  deletion_protection = false
   template {
     service_account = google_service_account.tltv_cloudrun_service_identity.email
     session_affinity                 = false

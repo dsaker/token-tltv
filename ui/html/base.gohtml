@@ -14,10 +14,7 @@
         </header>
         {{template "nav" .}}
         <main>
-            <!-- Display the error message if one exists -->
-            {{with .Error}}
-                <div class="flash" id="div-flash">{{.}}</div>
-            {{end}}
+            <div class="flash" id="div-flash" style="display: none"></div>
             {{template "content" .}}
         </main>
         <script src="/static/main.js" type="text/javascript"></script>
