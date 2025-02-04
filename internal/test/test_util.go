@@ -13,7 +13,9 @@ import (
 )
 
 var (
-	AudioBasePath = "/tmp/test/audio/"
+	AudioBasePath     = "/tmp/test/audio/"
+	GcpTestProject    = "token-tltv-test"
+	FirestoreTestColl = "token-tltv-test"
 )
 
 func RequireMatchAnyExcept(t *testing.T, model any, response any, skip []string, except string, shouldEqual any) {
@@ -51,7 +53,7 @@ const (
 	ValidLangId             = 16
 	alphabet                = "abcdefghijklmnopqrstuvwxyz"
 	FirestoreTestCollection = "token-tltv-test"
-	TestProject             = "token-tltv-test"
+	GcPTestProject          = "token-tltv-test"
 )
 
 // RandomString generates a random string of length n
@@ -85,7 +87,7 @@ func RandomVoice() models.Voice {
 	}
 }
 
-func RandomTitle() (title models.Title) {
+func RandomGoogleTitle() (title models.Title) {
 	return models.Title{
 		Name:        RandomString(8),
 		TitleLangId: ValidLangId,

@@ -250,7 +250,7 @@ func MakeAmazonMaps() {
 				ID:            i,
 				LanguageCodes: []string{voice.LanguageCode},
 				Gender:        voice.Gender,
-				VoiceName:     voice.Name,
+				VoiceName:     voice.Id,
 				LanguageName:  voice.LanguageName,
 				LangId:        langId,
 				Engine:        voice.SupportedEngines[0],

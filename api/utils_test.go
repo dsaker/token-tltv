@@ -9,9 +9,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"talkliketv.click/tltv/internal/models"
-	"talkliketv.click/tltv/internal/translates"
-
 	"testing"
 
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -52,11 +49,9 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 	testCfg.TTSBasePath = test.AudioBasePath
 
-	// create maps of voices and languages depending on platform
-	if translates.GlobalPlatform == translates.Google {
-		models.MakeGoogleMaps()
-	} else {
-		models.MakeAmazonMaps()
+	if util.Integration {
+		testCfg.GcpProjectID = test.GcpTestProject
+		testCfg.FirestoreTokenColl = test.FirestoreTestColl
 	}
 
 	// Run tests

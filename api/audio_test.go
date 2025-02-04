@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"math/rand"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -32,7 +33,7 @@ func TestAudioFromFile(t *testing.T) {
 
 	t.Parallel()
 
-	title := test.RandomTitle()
+	title := test.RandomGoogleTitle()
 
 	// create a base path for storing mp3 audio files
 	tmpAudioBasePath := test.AudioBasePath + title.Name + "/"
@@ -383,7 +384,7 @@ func TestGoogleIntegration(t *testing.T) {
 
 	e := NewServer(testCfg.Config, tr, af, &tokens)
 
-	title := test.RandomTitle()
+	title := test.RandomGoogleTitle()
 
 	//create a base path for storing mp3 audio files
 	tmpAudioBasePath := test.AudioBasePath + title.Name + "/"
@@ -507,7 +508,7 @@ func TestAmazonIntegration(t *testing.T) {
 	require.NoError(t, err)
 	e := NewServer(testCfg.Config, tr, af, &tokens)
 
-	title := test.RandomTitle()
+	title := test.RandomGoogleTitle()
 
 	//create a base path for storing mp3 audio files
 	tmpAudioBasePath := test.AudioBasePath + title.Name + "/"
@@ -519,11 +520,13 @@ func TestAmazonIntegration(t *testing.T) {
 
 	filename := tmpAudioBasePath + "TestAudioFromFile.txt"
 
+	voices := models.Voices
+	numVoices := len(voices)
 	okFormMap := map[string]string{
 		"file_language_id": strconv.Itoa(title.TitleLangId),
 		"title_name":       title.Name,
-		"from_voice_id":    strconv.Itoa(title.FromVoiceId),
-		"to_voice_id":      strconv.Itoa(title.ToVoiceId),
+		"from_voice_id":    strconv.Itoa(models.Voices[rand.Intn(numVoices)].ID), //nolint:gosec
+		"to_voice_id":      strconv.Itoa(models.Voices[rand.Intn(numVoices)].ID), //nolint:gosec
 		"token":            plaintext,
 		"pause":            "4",
 		"pattern":          "1",

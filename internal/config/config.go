@@ -8,7 +8,6 @@ import (
 	"flag"
 	_ "github.com/lib/pq"
 	"log"
-	"os"
 	"talkliketv.click/tltv/internal/test"
 	"talkliketv.click/tltv/internal/translates"
 )
@@ -28,7 +27,7 @@ func (cfg *Config) SetConfigs() error {
 	// get port and debug from commandline flags... if not present use defaults
 	flag.StringVar(&cfg.Port, "port", "8080", "API server port")
 
-	flag.StringVar(&cfg.Env, "env", "", "Environment (local|dev|prod)")
+	flag.StringVar(&cfg.Env, "env", "local", "Environment (local|dev|prod)")
 
 	flag.StringVar(&cfg.TTSBasePath, "tts-base-path", "/tmp/audio/", "text-to-speech base path temporary storage of mp3 audio files")
 
@@ -47,18 +46,10 @@ func (cfg *Config) SetConfigs() error {
 	}
 
 	// google cloud project id
-	flag.StringVar(&cfg.GcpProjectID, "gcp-project-id", test.TestProject, "project id for google cloud platform that contains firestore")
+	flag.StringVar(&cfg.GcpProjectID, "gcp-project-id", test.GcpTestProject, "project id for google cloud platform that contains firestore")
 	flag.StringVar(&cfg.FirestoreTokenColl, "firestore-token-collection", test.FirestoreTestCollection, "firestore collection name for tokens")
 
-	log.Printf("envinronment: %s", cfg.Env)
-	if cfg.Env == "prod" {
-		log.Print("inside cfg env")
-		cfg.GcpProjectID = os.Getenv("PROJECT_ID")
-		cfg.FirestoreTokenColl = os.Getenv("FIRESTORE_TOKENS")
-		if cfg.FirestoreTokenColl == "" || cfg.GcpProjectID == "" {
-			return errors.New("missing Firestore Token collection or Firestore project id")
-		}
-	}
+	log.Printf("environment: %s", cfg.Env)
 	return nil
 }
 

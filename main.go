@@ -31,6 +31,7 @@ func main() {
 			log.Fatal("missing Firestore Token collection or project id")
 		}
 	}
+
 	// if ffmpeg is not installed and in PATH of host machine fail immediately
 	cmd := exec.Command("ffmpeg", "-version")
 	output, err := cmd.CombinedOutput()

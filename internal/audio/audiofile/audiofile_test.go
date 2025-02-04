@@ -152,7 +152,7 @@ func TestBuildAudioInputFiles(t *testing.T) {
 	}
 	t.Parallel()
 
-	title := test.RandomTitle()
+	title := test.RandomGoogleTitle()
 	phrase1 := test.RandomPhrase()
 	phrase2 := test.RandomPhrase()
 	title.TitlePhrases = []models.Phrase{phrase1, phrase2}
@@ -209,7 +209,7 @@ func TestCreateMp3Zip(t *testing.T) {
 		{
 			name: "No error",
 			createTitle: func(t *testing.T) (models.Title, string) {
-				title := test.RandomTitle()
+				title := test.RandomGoogleTitle()
 				tmpDir := test.AudioBasePath + "TestCreateMp3ZipWithFfmpeg/" + title.Name + "/"
 				err := os.MkdirAll(tmpDir, 0777)
 				require.NoError(t, err)
@@ -233,7 +233,7 @@ func TestCreateMp3Zip(t *testing.T) {
 		{
 			name: "No files",
 			createTitle: func(t *testing.T) (models.Title, string) {
-				title := test.RandomTitle()
+				title := test.RandomGoogleTitle()
 				tmpDir := test.AudioBasePath + "TestCreateMp3ZipWithFfmpeg/" + title.Name + "/"
 				err := os.MkdirAll(tmpDir, 0777)
 				require.NoError(t, err)
@@ -288,7 +288,7 @@ func TestCreatePhrasesZip(t *testing.T) {
 		{
 			name: "3 files",
 			createTitle: func(t *testing.T) (models.Title, string) {
-				title := test.RandomTitle()
+				title := test.RandomGoogleTitle()
 				tmpDir := test.AudioBasePath + "TestCreatePhrasesZip/" + title.Name + "/"
 				err := os.MkdirAll(tmpDir, 0777)
 				require.NoError(t, err)
@@ -315,7 +315,7 @@ func TestCreatePhrasesZip(t *testing.T) {
 		{
 			name: "5 files",
 			createTitle: func(t *testing.T) (models.Title, string) {
-				title := test.RandomTitle()
+				title := test.RandomGoogleTitle()
 				tmpDir := test.AudioBasePath + "TestCreatePhrasesZip/" + title.Name + "/"
 				err := os.MkdirAll(tmpDir, 0777)
 				require.NoError(t, err)
@@ -342,7 +342,7 @@ func TestCreatePhrasesZip(t *testing.T) {
 		{
 			name: "No One File",
 			createTitle: func(t *testing.T) (models.Title, string) {
-				title := test.RandomTitle()
+				title := test.RandomGoogleTitle()
 				tmpDir := test.AudioBasePath + "TestCreatePhrasesZip/" + title.Name + "/"
 				err := os.MkdirAll(tmpDir, 0777)
 				require.NoError(t, err)

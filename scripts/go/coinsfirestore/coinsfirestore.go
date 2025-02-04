@@ -32,7 +32,7 @@ import (
 
 func main() {
 	filePath := flag.String("f", "", "filepath is required")
-	projectID := flag.String("p", test.TestProject, "project is required")
+	projectID := flag.String("p", test.GcpTestProject, "project is required")
 	collection := flag.String("c", test.FirestoreTestCollection, "collection is required. ")
 	flag.Parse()
 

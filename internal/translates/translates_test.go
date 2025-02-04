@@ -34,7 +34,7 @@ func TestGoogleTTS(t *testing.T) {
 	}
 	t.Parallel()
 
-	title := test.RandomTitle()
+	title := test.RandomGoogleTitle()
 
 	basepath := test.AudioBasePath + title.Name + "/"
 	err := os.MkdirAll(basepath, 0777)
@@ -106,7 +106,7 @@ func TestAmazonTTS(t *testing.T) {
 	}
 	t.Parallel()
 
-	title := test.RandomTitle()
+	title := test.RandomGoogleTitle()
 
 	basepath := test.AudioBasePath + title.Name + "/"
 	err := os.MkdirAll(basepath, 0777)
@@ -198,7 +198,7 @@ func TestGoogleTranslate(t *testing.T) {
 	translateText := "Esta es la primera oración."
 	returnedPhrase := []models.Phrase{{ID: 0, Text: translateText}, translate1}
 	translation := translate.Translation{Text: "Esta es la primera oración."}
-	title := test.RandomTitle()
+	title := test.RandomGoogleTitle()
 	title.TitlePhrases = []models.Phrase{{ID: 0, Text: text1}}
 
 	testCases := []translatesTestCase{

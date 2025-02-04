@@ -21,27 +21,18 @@ import (
 func (s *Server) ParseFile(e echo.Context) error {
 	stringsSlice, err := s.parseFile(e)
 	if err != nil {
-		return e.Render(http.StatusInternalServerError, "parse.gohtml", map[string]interface{}{
-			"MaxPhrases": s.config.MaxNumPhrases,
-			"Error":      err.Error(),
-		})
+		return e.String(http.StatusInternalServerError, "error parsing file"+err.Error())
 	}
 
 	// Get file handler for filename, size and headers
 	fh, err := e.FormFile("file_path")
 	if err != nil {
-		return e.Render(http.StatusBadRequest, "parse.gohtml", map[string]interface{}{
-			"MaxPhrases": s.config.MaxNumPhrases,
-			"Error":      err.Error(),
-		})
+		return e.String(http.StatusBadRequest, "error getting form file"+err.Error())
 	}
 
 	zippedFile, err := s.zipStringsSlice(e, stringsSlice, fh.Filename)
 	if err != nil {
-		return e.Render(http.StatusInternalServerError, "parse.gohtml", map[string]interface{}{
-			"MaxPhrases": s.config.MaxNumPhrases,
-			"Error":      err.Error(),
-		})
+		return e.String(http.StatusInternalServerError, "error zipping file"+err.Error())
 	}
 	return e.Attachment(zippedFile.Name(), fh.Filename+"_parsed.zip")
 }
@@ -53,7 +44,7 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 	// check token
 	if err := s.tokens.CheckToken(e.Request().Context(), token); err != nil {
 		e.Logger().Error(err)
-		return e.String(http.StatusBadRequest, "invalid token: "+err.Error())
+		return e.String(http.StatusForbidden, "invalid token: "+err.Error())
 	}
 
 	title, err := validateAudioRequest(e)
