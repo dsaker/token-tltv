@@ -6,6 +6,7 @@ import (
 	"flag"
 	"log"
 	"net"
+	"os"
 	"os/exec"
 	"strings"
 	"talkliketv.click/tltv/api"
@@ -17,11 +18,19 @@ import (
 
 func main() {
 	var cfg config.Config
-	err := config.SetConfigs(&cfg)
+	err := cfg.SetConfigs()
 	if err != nil {
 		log.Fatal(err)
 	}
 	flag.Parse()
+
+	if cfg.Env == "prod" {
+		cfg.GcpProjectID = os.Getenv("PROJECT_ID")
+		cfg.FirestoreTokenColl = os.Getenv("FIRESTORE_TOKENS")
+		if cfg.FirestoreTokenColl == "" || cfg.GcpProjectID == "" {
+			log.Fatal("missing Firestore Token collection or project id")
+		}
+	}
 
 	// if ffmpeg is not installed and in PATH of host machine fail immediately
 	cmd := exec.Command("ffmpeg", "-version")
@@ -43,8 +52,20 @@ func main() {
 		t = translates.New(translates.GoogleClients{}, *translates.NewAmazonClients(), &models.Models{})
 	}
 
+	fClient, err := cfg.FirestoreClient()
+	if err != nil {
+		log.Fatal("Error creating firestore client: ", err)
+	}
+
+	tokensColl := fClient.Collection(cfg.FirestoreTokenColl)
+	tokens := models.Tokens{Coll: tokensColl}
 	// create new server
-	e := api.NewServer(cfg, t, af)
+	e := api.NewServer(cfg, t, af, &tokens)
+
+	if cfg.Env == "local" {
+		localTokens := models.LocalTokens{}
+		e = api.NewServer(cfg, t, af, &localTokens)
+	}
 
 	e.Logger.Fatal(e.Start(net.JoinHostPort("0.0.0.0", cfg.Port)))
 }

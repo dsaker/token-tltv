@@ -36,9 +36,13 @@ generate:
 run:
 	go run .
 
-## run: run the docker container
+## run/docker: run the docker container
 run/docker:
 	docker run -d --name token-tltv token-tltv:latest
+
+## run/local: run locally with no token check
+run/local:
+	go run . -env=local
 
 # ==================================================================================== #
 # QUALITY CONTROL
@@ -62,9 +66,11 @@ audit/pipeline:
 ## audit/local: tidy dependencies and format, vet and test all code (race off)
 audit/local:
 	make audit
-	make report
+	go test -vet=off ./... -coverprofile=coverage.out
+	go tool cover -html=coverage.out -o cover.html
 	make ci-lint
 	make vuln
+	go test ./... -integration=true
 
 ## staticcheck:  detect bugs, suggest code simplifications, and point out dead code
 staticcheck:
@@ -113,7 +119,7 @@ build/docker:
 
 ## build/cloud: build and push the token-tltv container to the cloud
 build/cloud:
-	docker build --platform linux/amd64 --push -t us-east4-docker.pkg.dev/token-tltv/token-tltv/token-tltv:latest .
+	docker build --platform linux/amd64 --push -t us-east4-docker.pkg.dev/${PROJECT_ID}/token-tltv/token-tltv:latest .
 
 ## build/pack: build the talkliketv container using build pack
 build/pack:

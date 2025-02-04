@@ -3,6 +3,12 @@ variable "project_id" {
   default     = null
 }
 
+variable "firestore_tokens" {
+  type        = string
+  default     = null
+}
+
+
 variable "region" {
   type = string
   default = null

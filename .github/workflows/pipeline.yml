@@ -1,7 +1,7 @@
 name: CI Checks
 
 env:
-  go_version: '1.23.3'
+  go_version: '1.23.5'
   
 on:
   push:

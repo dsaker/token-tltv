@@ -9,10 +9,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"sync"
-	"talkliketv.click/tltv/internal/models"
-	"talkliketv.click/tltv/internal/translates"
-
 	"testing"
 
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -30,18 +26,11 @@ var (
 
 const (
 	audioBasePath = "/v1/audio"
-	tokenFilePath = "/tokens.json" //nolint:gosec
 )
 
 type TestConfig struct {
 	config.Config
 }
-
-var (
-	tokenStrings []string
-	tokenCount   int
-	mu           sync.RWMutex
-)
 
 // testCase struct groups together the fields necessary for running most of the test cases
 type testCase struct {
@@ -52,24 +41,28 @@ type testCase struct {
 }
 
 func TestMain(m *testing.M) {
-	_ = config.SetConfigs(&testCfg.Config)
-	flag.BoolVar(&util.Integration, "integration", false, "Run integration tests")
-	flag.Parse()
-	testCfg.TTSBasePath = test.AudioBasePath
-	plaintext, err := test.CreateTokensFile(test.AudioBasePath, tokenFilePath, 100)
+	err := testCfg.SetConfigs()
 	if err != nil {
 		log.Fatal(err)
 	}
-	tokenStrings = plaintext
-	testCfg.TokenFilePath = test.AudioBasePath + tokenFilePath
+	flag.BoolVar(&util.Integration, "integration", false, "Run integration tests")
+	flag.Parse()
+	testCfg.TTSBasePath = test.AudioBasePath
 
-	// create maps of voices and languages depending on platform
-	if translates.GlobalPlatform == translates.Google {
-		models.MakeGoogleMaps()
-	} else {
-		models.MakeAmazonMaps()
+	if util.Integration {
+		testCfg.GcpProjectID = test.GcpTestProject
+		testCfg.FirestoreTokenColl = test.FirestoreTestColl
 	}
-	os.Exit(m.Run())
+
+	// Run tests
+	exitCode := m.Run()
+
+	//if util.Integration {
+	//	// Code to run after tests
+	//	teardown()
+	//}
+
+	os.Exit(exitCode)
 }
 
 // readBody reads the http response body and returns it as a string
@@ -96,7 +89,7 @@ func setupServerTest(ctrl *gomock.Controller, tc testCase) *httptest.Server {
 	stubs := test.NewMockStubs(ctrl)
 	tc.buildStubs(stubs)
 
-	e := NewServer(testCfg.Config, stubs.TranslateX, stubs.AudioFileX)
+	e := NewServer(testCfg.Config, stubs.TranslateX, stubs.AudioFileX, stubs.TokensX)
 
 	ts := httptest.NewServer(e)
 

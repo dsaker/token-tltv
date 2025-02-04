@@ -3,7 +3,7 @@
 {{define "title"}}Parse{{end}}
 
 {{define "content"}}
-    <form id="parse_form" action='/v1/parse' method='POST' enctype="multipart/form-data" >
+    <form id="parse_form" type="POST" enctype="multipart/form-data">
         {{with .MaxPhrases}}
             <p>This will parse the file into the max number of phrases: {{.}}</p>
         {{end}}

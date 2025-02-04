@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"slices"
+	"talkliketv.click/tltv/internal/mock"
 	"talkliketv.click/tltv/internal/models"
 	"testing"
 
@@ -14,7 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	mocka "talkliketv.click/tltv/internal/mock/audiofile"
 	"talkliketv.click/tltv/internal/test"
 	"talkliketv.click/tltv/internal/util"
 )
@@ -25,7 +25,7 @@ type audioFileTestCase struct {
 	stringsSlice []string
 	buildFile    func(*testing.T) *os.File
 	checkLines   func([]string, error)
-	buildStubs   func(*mocka.MockcmdRunnerX)
+	buildStubs   func(*mock.MockcmdRunnerX)
 	createTitle  func(*testing.T) (models.Title, string)
 	checkReturn  func(*testing.T, *os.File, error)
 }
@@ -152,7 +152,7 @@ func TestBuildAudioInputFiles(t *testing.T) {
 	}
 	t.Parallel()
 
-	title := test.RandomTitle()
+	title := test.RandomGoogleTitle()
 	phrase1 := test.RandomPhrase()
 	phrase2 := test.RandomPhrase()
 	title.TitlePhrases = []models.Phrase{phrase1, phrase2}
@@ -209,7 +209,7 @@ func TestCreateMp3Zip(t *testing.T) {
 		{
 			name: "No error",
 			createTitle: func(t *testing.T) (models.Title, string) {
-				title := test.RandomTitle()
+				title := test.RandomGoogleTitle()
 				tmpDir := test.AudioBasePath + "TestCreateMp3ZipWithFfmpeg/" + title.Name + "/"
 				err := os.MkdirAll(tmpDir, 0777)
 				require.NoError(t, err)
@@ -220,7 +220,7 @@ func TestCreateMp3Zip(t *testing.T) {
 				require.FileExists(t, file.Name())
 				return title, tmpDir
 			},
-			buildStubs: func(ma *mocka.MockcmdRunnerX) {
+			buildStubs: func(ma *mock.MockcmdRunnerX) {
 				ma.EXPECT().
 					CombinedOutput(gomock.Any()).Times(1).
 					Return([]byte{}, nil)
@@ -233,13 +233,13 @@ func TestCreateMp3Zip(t *testing.T) {
 		{
 			name: "No files",
 			createTitle: func(t *testing.T) (models.Title, string) {
-				title := test.RandomTitle()
+				title := test.RandomGoogleTitle()
 				tmpDir := test.AudioBasePath + "TestCreateMp3ZipWithFfmpeg/" + title.Name + "/"
 				err := os.MkdirAll(tmpDir, 0777)
 				require.NoError(t, err)
 				return title, tmpDir
 			},
-			buildStubs: func(ma *mocka.MockcmdRunnerX) {
+			buildStubs: func(ma *mock.MockcmdRunnerX) {
 			},
 			checkReturn: func(t *testing.T, file *os.File, err error) {
 				require.Contains(t, err.Error(), "no files found in CreateMp3Zip")
@@ -250,7 +250,7 @@ func TestCreateMp3Zip(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			cmdX := mocka.NewMockcmdRunnerX(ctrl)
+			cmdX := mock.NewMockcmdRunnerX(ctrl)
 			tc.buildStubs(cmdX)
 			defer ctrl.Finish()
 
@@ -288,13 +288,13 @@ func TestCreatePhrasesZip(t *testing.T) {
 		{
 			name: "3 files",
 			createTitle: func(t *testing.T) (models.Title, string) {
-				title := test.RandomTitle()
+				title := test.RandomGoogleTitle()
 				tmpDir := test.AudioBasePath + "TestCreatePhrasesZip/" + title.Name + "/"
 				err := os.MkdirAll(tmpDir, 0777)
 				require.NoError(t, err)
 				return title, tmpDir
 			},
-			buildStubs: func(ma *mocka.MockcmdRunnerX) {
+			buildStubs: func(ma *mock.MockcmdRunnerX) {
 			},
 			checkReturn: func(t *testing.T, file *os.File, err error) {
 				require.NoError(t, err)
@@ -315,13 +315,13 @@ func TestCreatePhrasesZip(t *testing.T) {
 		{
 			name: "5 files",
 			createTitle: func(t *testing.T) (models.Title, string) {
-				title := test.RandomTitle()
+				title := test.RandomGoogleTitle()
 				tmpDir := test.AudioBasePath + "TestCreatePhrasesZip/" + title.Name + "/"
 				err := os.MkdirAll(tmpDir, 0777)
 				require.NoError(t, err)
 				return title, tmpDir
 			},
-			buildStubs: func(ma *mocka.MockcmdRunnerX) {
+			buildStubs: func(ma *mock.MockcmdRunnerX) {
 			},
 			checkReturn: func(t *testing.T, file *os.File, err error) {
 				require.NoError(t, err)
@@ -342,41 +342,26 @@ func TestCreatePhrasesZip(t *testing.T) {
 		{
 			name: "No One File",
 			createTitle: func(t *testing.T) (models.Title, string) {
-				title := test.RandomTitle()
+				title := test.RandomGoogleTitle()
 				tmpDir := test.AudioBasePath + "TestCreatePhrasesZip/" + title.Name + "/"
 				err := os.MkdirAll(tmpDir, 0777)
 				require.NoError(t, err)
 				return title, tmpDir
 			},
-			buildStubs: func(ma *mocka.MockcmdRunnerX) {
+			buildStubs: func(ma *mock.MockcmdRunnerX) {
 			},
 			checkReturn: func(t *testing.T, file *os.File, err error) {
-				require.Error(t, util.ErrOneFile)
+				require.Error(t, ErrOneFile)
 			},
 			values:       map[string]any{"size": 3},
 			stringsSlice: []string{},
 		},
-		//{
-		//	name: "No files",
-		//	createTitle: func(t *testing.T) (db.Title, string) {
-		//		title := test.RandomTitle()
-		//		tmpDir := test.AudioBasePath + "TestCreateMp3ZipWithFfmpeg/" + title.Title + "/"
-		//		err := os.MkdirAll(tmpDir, 0777)
-		//		require.NoError(t, err)
-		//		return title, tmpDir
-		//	},
-		//	buildStubs: func(ma *mocka.MockcmdRunnerX) {
-		//	},
-		//	checkReturn: func(t *testing.T, file *os.File, err error) {
-		//		require.Contains(t, err.Error(), "no files found in CreateMp3Zip")
-		//	},
-		//},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			cmdX := mocka.NewMockcmdRunnerX(ctrl)
+			cmdX := mock.NewMockcmdRunnerX(ctrl)
 			tc.buildStubs(cmdX)
 			defer ctrl.Finish()
 

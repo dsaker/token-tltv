@@ -1,32 +1,38 @@
 package config
 
 import (
+	"cloud.google.com/go/firestore"
+	"context"
 	"errors"
+	firebase "firebase.google.com/go"
 	"flag"
 	_ "github.com/lib/pq"
+	"log"
+	"talkliketv.click/tltv/internal/test"
 	"talkliketv.click/tltv/internal/translates"
 )
 
 // Config Update the config struct to hold the SMTP server settings.
 type Config struct {
-	Port            string
-	Env             string
-	MaxNumPhrases   int
-	TTSBasePath     string
-	FileUploadLimit int64
-	TokenFilePath   string
+	Port               string
+	Env                string
+	MaxNumPhrases      int
+	TTSBasePath        string
+	FileUploadLimit    int64
+	GcpProjectID       string
+	FirestoreTokenColl string
 }
 
-func SetConfigs(config *Config) error {
+func (cfg *Config) SetConfigs() error {
 	// get port and debug from commandline flags... if not present use defaults
-	flag.StringVar(&config.Port, "port", "8080", "API server port")
+	flag.StringVar(&cfg.Port, "port", "8080", "API server port")
 
-	flag.StringVar(&config.Env, "env", "development", "Environment (development|staging|cloud)")
+	flag.StringVar(&cfg.Env, "env", "local", "Environment (local|dev|prod)")
 
-	flag.StringVar(&config.TTSBasePath, "tts-base-path", "/tmp/audio/", "text-to-speech base path temporary storage of mp3 audio files")
+	flag.StringVar(&cfg.TTSBasePath, "tts-base-path", "/tmp/audio/", "text-to-speech base path temporary storage of mp3 audio files")
 
-	flag.Int64Var(&config.FileUploadLimit, "upload-size-limit", 8*8000, "File upload size limit in KB (default is 8)")
-	flag.IntVar(&config.MaxNumPhrases, "maximum-number-phrases", 500, "Maximum number of phrases to be turned into audio files")
+	flag.Int64Var(&cfg.FileUploadLimit, "upload-size-limit", 8*8000, "File upload size limit in KB (default is 8)")
+	flag.IntVar(&cfg.MaxNumPhrases, "maximum-number-phrases", 100, "Maximum number of phrases to be turned into audio files")
 
 	// set the global variable GlobalPlatform to google or amazon
 	var platform string
@@ -39,9 +45,26 @@ func SetConfigs(config *Config) error {
 		return errors.New("invalid platform (must be google|amazon)")
 	}
 
-	// get the token file path to make a map of tokens required to make a valid request
-	tokenUsageString := "file path where the tokens needed to make a valid request are stored (see scripts/go/generatecoins.go"
-	flag.StringVar(&config.TokenFilePath, "token-file-path", "", tokenUsageString)
+	// google cloud project id
+	flag.StringVar(&cfg.GcpProjectID, "gcp-project-id", test.GcpTestProject, "project id for google cloud platform that contains firestore")
+	flag.StringVar(&cfg.FirestoreTokenColl, "firestore-token-collection", test.FirestoreTestCollection, "firestore collection name for tokens")
 
+	log.Printf("environment: %s", cfg.Env)
 	return nil
+}
+
+func (cfg *Config) FirestoreClient() (*firestore.Client, error) {
+	// Use the application default credentials
+	ctx := context.Background()
+	conf := &firebase.Config{ProjectID: cfg.GcpProjectID}
+	app, err := firebase.NewApp(ctx, conf)
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
 }
