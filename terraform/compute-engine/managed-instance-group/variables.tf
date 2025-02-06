@@ -17,7 +17,7 @@ variable "instance_name" {
   default     = "token-tltv"
 }
 
-variable "talkliketv_machine_type" {
+variable "machine_type" {
   type = string
 }
 
