@@ -66,8 +66,8 @@ resource "google_compute_instance_template" "tltv_instance_template" {
     provisioning_model  = "STANDARD"
   }
   service_account {
-    email  = "default"
-    scopes = ["https://www.googleapis.com/auth/datastore", "https://www.googleapis.com/auth/pubsub", "https://www.googleapis.com/auth/devstorage.read_only", "https://www.googleapis.com/auth/logging.write", "https://www.googleapis.com/auth/monitoring.write","https://www.googleapis.com/auth/service.management.readonly", "https://www.googleapis.com/auth/servicecontrol", "https://www.googleapis.com/auth/trace.append"]
+    email  = google_service_account.tltv_cloudrun_service_identity.email
+    scopes = ["https://www.googleapis.com/auth/datastore", "https://www.googleapis.com/auth/cloud-platform", "https://www.googleapis.com/auth/devstorage.read_only", "https://www.googleapis.com/auth/logging.write", "https://www.googleapis.com/auth/monitoring.write","https://www.googleapis.com/auth/service.management.readonly", "https://www.googleapis.com/auth/servicecontrol", "https://www.googleapis.com/auth/trace.append"]
   }
   tags = ["allow-health-check"]
 }
@@ -102,7 +102,7 @@ resource "google_compute_firewall" "health_check_8080" {
 
 resource "google_compute_health_check" "tltv_basic_check" {
   name               = "tltv-basic-check"
-  check_interval_sec = 300
+  check_interval_sec = 30
   healthy_threshold  = 2
   http_health_check {
     port               = 8080

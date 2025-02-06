@@ -26,3 +26,15 @@ resource "google_project_iam_member" "tltv_cloud_datastore_user" {
   role    = "roles/datastore.user"
   member  = "serviceAccount:${google_service_account.tltv_cloudrun_service_identity.email}"
 }
+
+resource "google_project_iam_member" "tltv_artifactregistry_reader" {
+  project = var.project_id
+  role    = "roles/artifactregistry.reader"
+  member  = "serviceAccount:${google_service_account.tltv_cloudrun_service_identity.email}"
+}
+
+resource "google_project_iam_member" "tltv_logging_logWriter" {
+  project = var.project_id
+  role    = "roles/logging.logWriter"
+  member  = "serviceAccount:${google_service_account.tltv_cloudrun_service_identity.email}"
+}
