@@ -32,6 +32,8 @@ func main() {
 		}
 	}
 
+	log.Printf("environment: %s", cfg.Env)
+
 	// if ffmpeg is not installed and in PATH of host machine fail immediately
 	cmd := exec.Command("ffmpeg", "-version")
 	output, err := cmd.CombinedOutput()

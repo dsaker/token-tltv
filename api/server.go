@@ -40,11 +40,6 @@ func NewServer(c config.Config, t translates.TranslateX, af audiofile.AudioFileX
 		models.MakeAmazonMaps()
 	}
 
-	voices := models.Voices
-	log.Println(len(voices))
-	languages := models.Languages
-	log.Println(len(languages))
-
 	tempC, err := newTemplateCache()
 	if err != nil {
 		log.Fatal(err)

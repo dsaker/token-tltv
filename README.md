@@ -15,28 +15,23 @@ express myself more naturally. Practicing with these audio files not only enhanc
 of the shows but also provides an immersive, effective way to advance my language skills.
 
 token-tltv is a simplified version of [echo-oapi-tltv](https://github.com/dsaker/echo-oapi-tltv) 
-designed for deployment on GCP Cloud Run. It eliminates the need for a database and uses token-based 
-access. This approach reduces operational costs and provides the flexibility to share access by 
+can be deployed to GCP Cloud Run. This approach reduces operational costs and provides the flexibility to share access by 
 distributing tokens to selected users, removing the need for a formal authentication process.
 
 ### Required Tools
 
-- [Install Docker](https://docs.docker.com/engine/install/)
-- [Install GoLang](https://go.dev/doc/install)
+- Install [Docker](https://docs.docker.com/engine/install/)
+- Install [GoLang](https://go.dev/doc/install)
 - Create [Google Cloud Account](https://console.cloud.google.com/getting-started?pli=1)
-- Install the [gcloud CLI](https://cloud.google.com/sdk/docs/install)
+- Install [gcloud CLI](https://cloud.google.com/sdk/docs/install)
 - Setup [GCP ADC](https://cloud.google.com/docs/authentication/external/set-up-adc )
 - Create a [Google Cloud Project](https://developers.google.com/workspace/guides/create-project)
 - Install [ffmpeg](https://www.ffmpeg.org/download.html)
+- Install [make] 
 - Run below commands to sign in and enable the necessary Google Cloud API's
 ```
-gcloud init
-gcloud services enable artifactregistry.googleapis.com
 gcloud services enable texttospeech.googleapis.com
 gcloud services enable translate.googleapis.com
-gcloud services enable compute.googleapis.com
-gcloud services enable run.googleapis.com
-gcloud services enable vpcaccess.googleapis.com
 ```
 
 ### Run locally
@@ -46,28 +41,25 @@ cd token-tltv
 make run
 ```
 
-### Deploy to Google Cloud Platform
-
+### Deploy to Google Cloud Run
+- Install [terraform](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli)
 ```
+glcoud init
+gcloud services enable firestore.googleapis.com 
+gcloud services enable artifactregistry.googleapis.com
+gcloud services enable compute.googleapis.com
+gcloud services enable run.googleapis.com
 git clone git@github.com:dsaker/token-tltv.git
-cd token-tltv/terraform
+cd token-tltv/cloud-run/terraform
 cp terraform.tfvars.tmpl terraform.tfvars
 ```
 change project_id in terraform.tfvars to the project you just created
-you can delete static_ip_adress.tf if you do not need a static ip
-```
-gcloud init
-gcloud services enable artifactregistry.googleapis.com
-gcloud services enable translate.googleapis.com
-gcloud services enable texttospeech.googleapis.com
-gcloud services enable compute.googleapis.com
-gcloud services enable run.googleapis.com
-gcloud services enable vpcaccess.googleapis.com
+you can uncomment static_ip_adress.tf if you need a static ip
 
+```
 terraform init
 terraform plan
 terrafrom apply -target=google_artifact_registry_repository.token_tltv
-cd ..
 ```
 setup up docker auth - https://cloud.google.com/artifact-registry/docs/docker/authentication
 ```
@@ -75,7 +67,18 @@ gcloud auth configure-docker us-east4-docker.pkg.dev
 ```
 build and push the docker container to the artifact registry
 ```
-docker linux/build/cloud
+cd ../..
+cp .envrc.tmpl .envrc
+```
+change PROJECT_ID in .envrc to project you just created
+build docker image and push to artifactory registry in google cloud
+```
+make build/cloud
+```
+run docker container in cloud run
+cloud run url will be printed in the output
+```
+cd terraform/cloud-run
 terraform apply
 ```
 add tokens to firestore. 

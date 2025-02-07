@@ -3,7 +3,7 @@
     margin: 0;
     padding: 0;
     font-size: 18px;
-    font-family: "Ubuntu Mono", monospace;
+    font-family: 'MS Serif', 'New York', serif;
 }
 
 input:invalid {
@@ -72,7 +72,7 @@ a:hover {
 
 textarea, input:not([type="submit"]) {
     font-size: 18px;
-    font-family: "Ubuntu Mono", monospace;
+    font-family: 'MS Serif', 'New York', serif;
 }
 
 header {
@@ -251,8 +251,6 @@ table {
     border-collapse: collapse;
     width: 100%;
 }
-
-
 
 footer {
     border-top: 1px solid #E4E5E7;

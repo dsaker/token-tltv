@@ -1,6 +1,6 @@
 # service account to allow cloud run service to access necessary google api's
 resource "google_service_account" "tltv_cloudrun_service_identity" {
-  account_id = "token-tltv-service-account"
+  account_id = "token-tltv-cloudrun-sa"
 }
 
 resource "google_project_iam_member" "tltv_cloud_translate_user" {

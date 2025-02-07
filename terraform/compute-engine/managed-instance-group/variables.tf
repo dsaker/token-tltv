@@ -1,17 +1,29 @@
 variable "project_id" {
-  type        = string
-  default     = null
+  type = string
 }
-
-variable "firestore_tokens" {
-  type        = string
-  default     = null
-}
-
 
 variable "region" {
+  description = "The GCP region to deploy instances into"
   type = string
-  default = null
+}
+
+variable "tltv_sa_email" {
+  description = "service account email for tltv service"
+  type = string
+}
+
+variable "zone" {
+  description = "The GCP zone to deploy instances into"
+  type        = string
+}
+
+variable "instance_name" {
+  description = "The desired name to assign to the deployed instance"
+  default     = "token-tltv"
+}
+
+variable "machine_type" {
+  type = string
 }
 
 variable "repository_id" {
@@ -42,4 +54,9 @@ variable "email_notification" {
   type = string
   description = "email to be notified for cloud run job error"
   default = null
+}
+
+variable "firestore_tokens" {
+  type        = string
+  default     = null
 }

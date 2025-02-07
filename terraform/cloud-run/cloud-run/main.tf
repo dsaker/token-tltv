@@ -1,16 +1,21 @@
-resource "google_artifact_registry_repository" "token_tltv" {
+# resource "google_artifact_registry_repository" "token_tltv" {
+#   location      = var.region
+#   repository_id = var.repository_id
+#   description   = "docker repository for token-tltv project"
+#   format        = "DOCKER"
+#
+# }
+
+data "google_artifact_registry_repository" "token_tltv" {
   location      = var.region
   repository_id = var.repository_id
-  description   = "docker repository for token-tltv project"
-  format        = "DOCKER"
-
 }
 
-# create locals data to store registry info for image name
+# create local data to store registry info for image name
 locals {
-  l = google_artifact_registry_repository.token_tltv.location
-  p = google_artifact_registry_repository.token_tltv.project
-  r = google_artifact_registry_repository.token_tltv.repository_id
+  l = data.google_artifact_registry_repository.token_tltv.location
+  p = data.google_artifact_registry_repository.token_tltv.project
+  r = data.google_artifact_registry_repository.token_tltv.repository_id
   image = "${local.l}-docker.pkg.dev/${local.p}/${local.r}/${var.image_name}:${var.image_version}"
 }
 
@@ -57,10 +62,10 @@ resource "google_cloud_run_v2_service" "token-tltv" {
       max_instance_count = 2
       min_instance_count = 0
     }
-    vpc_access {
-      connector = google_vpc_access_connector.tltv_cr_conn.id
-      egress    = "ALL_TRAFFIC"
-    }
+    # vpc_access {
+    #   connector = google_vpc_access_connector.tltv_cr_conn.id
+    #   egress    = "ALL_TRAFFIC"
+    # }
   }
   traffic {
     percent  = 100
@@ -69,7 +74,7 @@ resource "google_cloud_run_v2_service" "token-tltv" {
   # Used in sample testing. These fields may change in 'terraform plan' output, which is expected and thus non-blocking.
   lifecycle {
     ignore_changes = [
-      ingress, template[0].vpc_access
+      ingress#, template[0].vpc_access
     ]
   }
 }
@@ -82,12 +87,4 @@ resource "google_cloud_run_service_iam_binding" "all-users" {
   members = [
     "allUsers"
   ]
-}
-
-resource "google_firestore_database" "database" {
-  project     = var.project_id
-  name        = "(default)"
-  location_id = var.region
-  type        = "FIRESTORE_NATIVE"
-  deletion_policy = "ABANDON"
 }

@@ -1,5 +1,5 @@
 # Local .terraform directories
-**/.terraform/*
+cloud-run/dont_destroy/.terraform/*
 
 # .tfstate files
 *.tfstate
@@ -35,3 +35,6 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+
+.terraform/
+terraform-provider-*

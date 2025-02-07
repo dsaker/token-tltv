@@ -7,7 +7,6 @@ import (
 	firebase "firebase.google.com/go"
 	"flag"
 	_ "github.com/lib/pq"
-	"log"
 	"talkliketv.click/tltv/internal/test"
 	"talkliketv.click/tltv/internal/translates"
 )
@@ -47,9 +46,8 @@ func (cfg *Config) SetConfigs() error {
 
 	// google cloud project id
 	flag.StringVar(&cfg.GcpProjectID, "gcp-project-id", test.GcpTestProject, "project id for google cloud platform that contains firestore")
-	flag.StringVar(&cfg.FirestoreTokenColl, "firestore-token-collection", test.FirestoreTestCollection, "firestore collection name for tokens")
+	flag.StringVar(&cfg.FirestoreTokenColl, "firestore-token-collection", "", "firestore collection name for tokens")
 
-	log.Printf("environment: %s", cfg.Env)
 	return nil
 }
 
