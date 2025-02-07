@@ -1,11 +1,3 @@
-# resource "google_artifact_registry_repository" "token_tltv" {
-#   location      = var.region
-#   repository_id = var.repository_id
-#   description   = "docker repository for token-tltv project"
-#   format        = "DOCKER"
-#
-# }
-
 data "google_artifact_registry_repository" "token_tltv" {
   location      = var.region
   repository_id = var.repository_id
@@ -19,15 +11,23 @@ locals {
   image = "${local.l}-docker.pkg.dev/${local.p}/${local.r}/${var.image_name}:${var.image_version}"
 }
 
+data "google_compute_subnetwork" "tltv_cr_subnetwork" {
+  name   = "tltv-cr-subnetwork"
+  region = var.region
+}
+
+data "google_service_account" "tltv_cloudrun_service_identity" {
+  account_id = "token-tltv-cloudrun-sa"
+}
+
 # cloud run service to run container
 resource "google_cloud_run_v2_service" "token-tltv" {
   name                 = "token-tltv-cloudrun-service"
   ingress              = "INGRESS_TRAFFIC_ALL"
   project              = var.project_id
-  location             = google_compute_subnetwork.tltv_subnetwork.region
-  deletion_protection = false
+  location             = data.google_compute_subnetwork.tltv_cr_subnetwork.region
   template {
-    service_account = google_service_account.tltv_cloudrun_service_identity.email
+    service_account = data.google_service_account.tltv_cloudrun_service_identity.email
     session_affinity                 = false
     timeout                          = "300s"
     containers {

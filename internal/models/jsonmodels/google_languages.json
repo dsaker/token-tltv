@@ -1,774 +1,774 @@
 [
   {
-    "language": "ab",
-    "name": "Abkhaz"
+    "Name": "Abkhaz",
+    "Tag": "ab"
   },
   {
-    "language": "ace",
-    "name": "Acehnese"
+    "Name": "Acehnese",
+    "Tag": "ace"
   },
   {
-    "language": "ach",
-    "name": "Acholi"
+    "Name": "Acholi",
+    "Tag": "ach"
   },
   {
-    "language": "af",
-    "name": "Afrikaans"
+    "Name": "Afrikaans",
+    "Tag": "af"
   },
   {
-    "language": "sq",
-    "name": "Albanian"
+    "Name": "Albanian",
+    "Tag": "sq"
   },
   {
-    "language": "alz",
-    "name": "Alur"
+    "Name": "Alur",
+    "Tag": "alz"
   },
   {
-    "language": "am",
-    "name": "Amharic"
+    "Name": "Amharic",
+    "Tag": "am"
   },
   {
-    "language": "ar",
-    "name": "Arabic"
+    "Name": "Arabic",
+    "Tag": "ar"
   },
   {
-    "language": "hy",
-    "name": "Armenian"
+    "Name": "Armenian",
+    "Tag": "hy"
   },
   {
-    "language": "as",
-    "name": "Assamese"
+    "Name": "Assamese",
+    "Tag": "as"
   },
   {
-    "language": "awa",
-    "name": "Awadhi"
+    "Name": "Awadhi",
+    "Tag": "awa"
   },
   {
-    "language": "ay",
-    "name": "Aymara"
+    "Name": "Aymara",
+    "Tag": "ay"
   },
   {
-    "language": "az",
-    "name": "Azerbaijani"
+    "Name": "Azerbaijani",
+    "Tag": "az"
   },
   {
-    "language": "ban",
-    "name": "Balinese"
+    "Name": "Balinese",
+    "Tag": "ban"
   },
   {
-    "language": "bm",
-    "name": "Bambara"
+    "Name": "Bambara",
+    "Tag": "bm"
   },
   {
-    "language": "ba",
-    "name": "Bashkir"
+    "Name": "Bashkir",
+    "Tag": "ba"
   },
   {
-    "language": "eu",
-    "name": "Basque"
+    "Name": "Basque",
+    "Tag": "eu"
   },
   {
-    "language": "btx",
-    "name": "Batak Karo"
+    "Name": "Batak Karo",
+    "Tag": "btx"
   },
   {
-    "language": "bts",
-    "name": "Batak Simalungun"
+    "Name": "Batak Simalungun",
+    "Tag": "bts"
   },
   {
-    "language": "bbc",
-    "name": "Batak Toba"
+    "Name": "Batak Toba",
+    "Tag": "bbc"
   },
   {
-    "language": "be",
-    "name": "Belarusian"
+    "Name": "Belarusian",
+    "Tag": "be"
   },
   {
-    "language": "bem",
-    "name": "Bemba"
+    "Name": "Bemba",
+    "Tag": "bem"
   },
   {
-    "language": "bn",
-    "name": "Bengali"
+    "Name": "Bengali",
+    "Tag": "bn"
   },
   {
-    "language": "bew",
-    "name": "Betawi"
+    "Name": "Betawi",
+    "Tag": "bew"
   },
   {
-    "language": "bho",
-    "name": "Bhojpuri"
+    "Name": "Bhojpuri",
+    "Tag": "bho"
   },
   {
-    "language": "bik",
-    "name": "Bikol"
+    "Name": "Bikol",
+    "Tag": "bik"
   },
   {
-    "language": "bs",
-    "name": "Bosnian"
+    "Name": "Bosnian",
+    "Tag": "bs"
   },
   {
-    "language": "br",
-    "name": "Breton"
+    "Name": "Breton",
+    "Tag": "br"
   },
   {
-    "language": "bg",
-    "name": "Bulgarian"
+    "Name": "Bulgarian",
+    "Tag": "bg"
   },
   {
-    "language": "bua",
-    "name": "Buryat"
+    "Name": "Buryat",
+    "Tag": "bua"
   },
   {
-    "language": "yue",
-    "name": "Cantonese"
+    "Name": "Cantonese",
+    "Tag": "yue"
   },
   {
-    "language": "ca",
-    "name": "Catalan"
+    "Name": "Catalan",
+    "Tag": "ca"
   },
   {
-    "language": "ceb",
-    "name": "Cebuano"
+    "Name": "Cebuano",
+    "Tag": "ceb"
   },
   {
-    "language": "ny",
-    "name": "Chichewa"
+    "Name": "Chichewa",
+    "Tag": "ny"
   },
   {
-    "language": "zh",
-    "name": "Chinese (Simplified)"
+    "Name": "Chinese (Simplified)",
+    "Tag": "zh"
   },
   {
-    "language": "zh-TW",
-    "name": "Chinese (Traditional)"
+    "Name": "Chinese (Traditional)",
+    "Tag": "zh-TW"
   },
   {
-    "language": "cv",
-    "name": "Chuvash"
+    "Name": "Chuvash",
+    "Tag": "cv"
   },
   {
-    "language": "co",
-    "name": "Corsican"
+    "Name": "Corsican",
+    "Tag": "co"
   },
   {
-    "language": "crh",
-    "name": "Crimean Tatar"
+    "Name": "Crimean Tatar",
+    "Tag": "crh"
   },
   {
-    "language": "hr",
-    "name": "Croatian"
+    "Name": "Croatian",
+    "Tag": "hr"
   },
   {
-    "language": "cs",
-    "name": "Czech"
+    "Name": "Czech",
+    "Tag": "cs"
   },
   {
-    "language": "da",
-    "name": "Danish"
+    "Name": "Danish",
+    "Tag": "da"
   },
   {
-    "language": "dv",
-    "name": "Dhivehi"
+    "Name": "Dhivehi",
+    "Tag": "dv"
   },
   {
-    "language": "din",
-    "name": "Dinka"
+    "Name": "Dinka",
+    "Tag": "din"
   },
   {
-    "language": "doi",
-    "name": "Dogri"
+    "Name": "Dogri",
+    "Tag": "doi"
   },
   {
-    "language": "dov",
-    "name": "Dombe"
+    "Name": "Dombe",
+    "Tag": "dov"
   },
   {
-    "language": "nl",
-    "name": "Dutch"
+    "Name": "Dutch",
+    "Tag": "nl"
   },
   {
-    "language": "dz",
-    "name": "Dzongkha"
+    "Name": "Dzongkha",
+    "Tag": "dz"
   },
   {
-    "language": "en",
-    "name": "English"
+    "Name": "English",
+    "Tag": "en"
   },
   {
-    "language": "eo",
-    "name": "Esperanto"
+    "Name": "Esperanto",
+    "Tag": "eo"
   },
   {
-    "language": "et",
-    "name": "Estonian"
+    "Name": "Estonian",
+    "Tag": "et"
   },
   {
-    "language": "ee",
-    "name": "Ewe"
+    "Name": "Ewe",
+    "Tag": "ee"
   },
   {
-    "language": "fj",
-    "name": "Fijian"
+    "Name": "Fijian",
+    "Tag": "fj"
   },
   {
-    "language": "tl",
-    "name": "Filipino"
+    "Name": "Filipino",
+    "Tag": "fil"
   },
   {
-    "language": "fi",
-    "name": "Finnish"
+    "Name": "Finnish",
+    "Tag": "fi"
   },
   {
-    "language": "fr",
-    "name": "French"
+    "Name": "French",
+    "Tag": "fr"
   },
   {
-    "language": "fy",
-    "name": "Frisian"
+    "Name": "Frisian",
+    "Tag": "fy"
   },
   {
-    "language": "ff",
-    "name": "Fulani"
+    "Name": "Fulani",
+    "Tag": "ff"
   },
   {
-    "language": "gaa",
-    "name": "Ga"
+    "Name": "Ga",
+    "Tag": "gaa"
   },
   {
-    "language": "gl",
-    "name": "Galician"
+    "Name": "Galician",
+    "Tag": "gl"
   },
   {
-    "language": "ka",
-    "name": "Georgian"
+    "Name": "Georgian",
+    "Tag": "ka"
   },
   {
-    "language": "de",
-    "name": "German"
+    "Name": "German",
+    "Tag": "de"
   },
   {
-    "language": "el",
-    "name": "Greek"
+    "Name": "Greek",
+    "Tag": "el"
   },
   {
-    "language": "gn",
-    "name": "Guarani"
+    "Name": "Guarani",
+    "Tag": "gn"
   },
   {
-    "language": "gu",
-    "name": "Gujarati"
+    "Name": "Gujarati",
+    "Tag": "gu"
   },
   {
-    "language": "ht",
-    "name": "Haitian Creole"
+    "Name": "Haitian Creole",
+    "Tag": "ht"
   },
   {
-    "language": "cnh",
-    "name": "Hakha Chin"
+    "Name": "Hakha Chin",
+    "Tag": "cnh"
   },
   {
-    "language": "ha",
-    "name": "Hausa"
+    "Name": "Hausa",
+    "Tag": "ha"
   },
   {
-    "language": "haw",
-    "name": "Hawaiian"
+    "Name": "Hawaiian",
+    "Tag": "haw"
   },
   {
-    "language": "iw",
-    "name": "Hebrew"
+    "Name": "Hebrew",
+    "Tag": "he"
   },
   {
-    "language": "hil",
-    "name": "Hiligaynon"
+    "Name": "Hiligaynon",
+    "Tag": "hil"
   },
   {
-    "language": "hi",
-    "name": "Hindi"
+    "Name": "Hindi",
+    "Tag": "hi"
   },
   {
-    "language": "hmn",
-    "name": "Hmong"
+    "Name": "Hmong",
+    "Tag": "hmn"
   },
   {
-    "language": "hu",
-    "name": "Hungarian"
+    "Name": "Hungarian",
+    "Tag": "hu"
   },
   {
-    "language": "hrx",
-    "name": "Hunsrik"
+    "Name": "Hunsrik",
+    "Tag": "hrx"
   },
   {
-    "language": "is",
-    "name": "Icelandic"
+    "Name": "Icelandic",
+    "Tag": "is"
   },
   {
-    "language": "ig",
-    "name": "Igbo"
+    "Name": "Igbo",
+    "Tag": "ig"
   },
   {
-    "language": "ilo",
-    "name": "Ilocano"
+    "Name": "Ilocano",
+    "Tag": "ilo"
   },
   {
-    "language": "id",
-    "name": "Indonesian"
+    "Name": "Indonesian",
+    "Tag": "id"
   },
   {
-    "language": "ga",
-    "name": "Irish"
+    "Name": "Irish",
+    "Tag": "ga"
   },
   {
-    "language": "it",
-    "name": "Italian"
+    "Name": "Italian",
+    "Tag": "it"
   },
   {
-    "language": "ja",
-    "name": "Japanese"
+    "Name": "Japanese",
+    "Tag": "ja"
   },
   {
-    "language": "jw",
-    "name": "Javanese"
+    "Name": "Javanese",
+    "Tag": "jv"
   },
   {
-    "language": "kn",
-    "name": "Kannada"
+    "Name": "Kannada",
+    "Tag": "kn"
   },
   {
-    "language": "pam",
-    "name": "Kapampangan"
+    "Name": "Kapampangan",
+    "Tag": "pam"
   },
   {
-    "language": "kk",
-    "name": "Kazakh"
+    "Name": "Kazakh",
+    "Tag": "kk"
   },
   {
-    "language": "km",
-    "name": "Khmer"
+    "Name": "Khmer",
+    "Tag": "km"
   },
   {
-    "language": "cgg",
-    "name": "Kiga"
+    "Name": "Kiga",
+    "Tag": "cgg"
   },
   {
-    "language": "rw",
-    "name": "Kinyarwanda"
+    "Name": "Kinyarwanda",
+    "Tag": "rw"
   },
   {
-    "language": "ktu",
-    "name": "Kituba"
+    "Name": "Kituba",
+    "Tag": "ktu"
   },
   {
-    "language": "gom",
-    "name": "Konkani"
+    "Name": "Konkani",
+    "Tag": "gom"
   },
   {
-    "language": "ko",
-    "name": "Korean"
+    "Name": "Korean",
+    "Tag": "ko"
   },
   {
-    "language": "kri",
-    "name": "Krio"
+    "Name": "Krio",
+    "Tag": "kri"
   },
   {
-    "language": "ku",
-    "name": "Kurdish (Kurmanji)"
+    "Name": "Kurdish (Kurmanji)",
+    "Tag": "ku"
   },
   {
-    "language": "ckb",
-    "name": "Kurdish (Sorani)"
+    "Name": "Kurdish (Sorani)",
+    "Tag": "ckb"
   },
   {
-    "language": "ky",
-    "name": "Kyrgyz"
+    "Name": "Kyrgyz",
+    "Tag": "ky"
   },
   {
-    "language": "lo",
-    "name": "Lao"
+    "Name": "Lao",
+    "Tag": "lo"
   },
   {
-    "language": "ltg",
-    "name": "Latgalian"
+    "Name": "Latgalian",
+    "Tag": "ltg"
   },
   {
-    "language": "la",
-    "name": "Latin"
+    "Name": "Latin",
+    "Tag": "la"
   },
   {
-    "language": "lv",
-    "name": "Latvian"
+    "Name": "Latvian",
+    "Tag": "lv"
   },
   {
-    "language": "lij",
-    "name": "Ligurian"
+    "Name": "Ligurian",
+    "Tag": "lij"
   },
   {
-    "language": "li",
-    "name": "Limburgish"
+    "Name": "Limburgish",
+    "Tag": "li"
   },
   {
-    "language": "ln",
-    "name": "Lingala"
+    "Name": "Lingala",
+    "Tag": "ln"
   },
   {
-    "language": "lt",
-    "name": "Lithuanian"
+    "Name": "Lithuanian",
+    "Tag": "lt"
   },
   {
-    "language": "lmo",
-    "name": "Lombard"
+    "Name": "Lombard",
+    "Tag": "lmo"
   },
   {
-    "language": "lg",
-    "name": "Luganda"
+    "Name": "Luganda",
+    "Tag": "lg"
   },
   {
-    "language": "luo",
-    "name": "Luo"
+    "Name": "Luo",
+    "Tag": "luo"
   },
   {
-    "language": "lb",
-    "name": "Luxembourgish"
+    "Name": "Luxembourgish",
+    "Tag": "lb"
   },
   {
-    "language": "mk",
-    "name": "Macedonian"
+    "Name": "Macedonian",
+    "Tag": "mk"
   },
   {
-    "language": "mai",
-    "name": "Maithili"
+    "Name": "Maithili",
+    "Tag": "mai"
   },
   {
-    "language": "mak",
-    "name": "Makassar"
+    "Name": "Makassar",
+    "Tag": "mak"
   },
   {
-    "language": "mg",
-    "name": "Malagasy"
+    "Name": "Malagasy",
+    "Tag": "mg"
   },
   {
-    "language": "ms",
-    "name": "Malay"
+    "Name": "Malay",
+    "Tag": "ms"
   },
   {
-    "language": "ms-Arab",
-    "name": "Malay (Jawi)"
+    "Name": "Malay (Jawi)",
+    "Tag": "ms-Arab"
   },
   {
-    "language": "ml",
-    "name": "Malayalam"
+    "Name": "Malayalam",
+    "Tag": "ml"
   },
   {
-    "language": "mt",
-    "name": "Maltese"
+    "Name": "Maltese",
+    "Tag": "mt"
   },
   {
-    "language": "mi",
-    "name": "Maori"
+    "Name": "Maori",
+    "Tag": "mi"
   },
   {
-    "language": "mr",
-    "name": "Marathi"
+    "Name": "Marathi",
+    "Tag": "mr"
   },
   {
-    "language": "chm",
-    "name": "Meadow Mari"
+    "Name": "Meadow Mari",
+    "Tag": "chm"
   },
   {
-    "language": "mni-Mtei",
-    "name": "Meiteilon (Manipuri)"
+    "Name": "Meiteilon (Manipuri)",
+    "Tag": "mni-Mtei"
   },
   {
-    "language": "min",
-    "name": "Minang"
+    "Name": "Minang",
+    "Tag": "min"
   },
   {
-    "language": "lus",
-    "name": "Mizo"
+    "Name": "Mizo",
+    "Tag": "lus"
   },
   {
-    "language": "mn",
-    "name": "Mongolian"
+    "Name": "Mongolian",
+    "Tag": "mn"
   },
   {
-    "language": "my",
-    "name": "Myanmar (Burmese)"
+    "Name": "Myanmar (Burmese)",
+    "Tag": "my"
   },
   {
-    "language": "nr",
-    "name": "Ndebele (South)"
+    "Name": "Ndebele (South)",
+    "Tag": "nr"
   },
   {
-    "language": "new",
-    "name": "Nepalbhasa (Newari)"
+    "Name": "Nepalbhasa (Newari)",
+    "Tag": "new"
   },
   {
-    "language": "ne",
-    "name": "Nepali"
+    "Name": "Nepali",
+    "Tag": "ne"
   },
   {
-    "language": "no",
-    "name": "Norwegian"
+    "Name": "Norwegian",
+    "Tag": "no"
   },
   {
-    "language": "nus",
-    "name": "Nuer"
+    "Name": "Nuer",
+    "Tag": "nus"
   },
   {
-    "language": "oc",
-    "name": "Occitan"
+    "Name": "Occitan",
+    "Tag": "oc"
   },
   {
-    "language": "or",
-    "name": "Odia (Oriya)"
+    "Name": "Odia (Oriya)",
+    "Tag": "or"
   },
   {
-    "language": "om",
-    "name": "Oromo"
+    "Name": "Oromo",
+    "Tag": "om"
   },
   {
-    "language": "pag",
-    "name": "Pangasinan"
+    "Name": "Pangasinan",
+    "Tag": "pag"
   },
   {
-    "language": "pap",
-    "name": "Papiamento"
+    "Name": "Papiamento",
+    "Tag": "pap"
   },
   {
-    "language": "ps",
-    "name": "Pashto"
+    "Name": "Pashto",
+    "Tag": "ps"
   },
   {
-    "language": "fa",
-    "name": "Persian"
+    "Name": "Persian",
+    "Tag": "fa"
   },
   {
-    "language": "pl",
-    "name": "Polish"
+    "Name": "Polish",
+    "Tag": "pl"
   },
   {
-    "language": "pt",
-    "name": "Portuguese (Brazil)"
+    "Name": "Portuguese (Brazil)",
+    "Tag": "pt"
   },
   {
-    "language": "pa",
-    "name": "Punjabi (Gurmukhi)"
+    "Name": "Punjabi (Gurmukhi)",
+    "Tag": "pa"
   },
   {
-    "language": "pa-Arab",
-    "name": "Punjabi (Shahmukhi)"
+    "Name": "Punjabi (Shahmukhi)",
+    "Tag": "pa-Arab"
   },
   {
-    "language": "qu",
-    "name": "Quechua"
+    "Name": "Quechua",
+    "Tag": "qu"
   },
   {
-    "language": "rom",
-    "name": "Romani"
+    "Name": "Romani",
+    "Tag": "rom"
   },
   {
-    "language": "ro",
-    "name": "Romanian"
+    "Name": "Romanian",
+    "Tag": "ro"
   },
   {
-    "language": "rn",
-    "name": "Rundi"
+    "Name": "Rundi",
+    "Tag": "rn"
   },
   {
-    "language": "ru",
-    "name": "Russian"
+    "Name": "Russian",
+    "Tag": "ru"
   },
   {
-    "language": "sm",
-    "name": "Samoan"
+    "Name": "Samoan",
+    "Tag": "sm"
   },
   {
-    "language": "sg",
-    "name": "Sango"
+    "Name": "Sango",
+    "Tag": "sg"
   },
   {
-    "language": "sa",
-    "name": "Sanskrit"
+    "Name": "Sanskrit",
+    "Tag": "sa"
   },
   {
-    "language": "gd",
-    "name": "Scots Gaelic"
+    "Name": "Scots Gaelic",
+    "Tag": "gd"
   },
   {
-    "language": "nso",
-    "name": "Sepedi"
+    "Name": "Sepedi",
+    "Tag": "nso"
   },
   {
-    "language": "sr",
-    "name": "Serbian"
+    "Name": "Serbian",
+    "Tag": "sr"
   },
   {
-    "language": "st",
-    "name": "Sesotho"
+    "Name": "Sesotho",
+    "Tag": "st"
   },
   {
-    "language": "crs",
-    "name": "Seychellois Creole"
+    "Name": "Seychellois Creole",
+    "Tag": "crs"
   },
   {
-    "language": "shn",
-    "name": "Shan"
+    "Name": "Shan",
+    "Tag": "shn"
   },
   {
-    "language": "sn",
-    "name": "Shona"
+    "Name": "Shona",
+    "Tag": "sn"
   },
   {
-    "language": "scn",
-    "name": "Sicilian"
+    "Name": "Sicilian",
+    "Tag": "scn"
   },
   {
-    "language": "szl",
-    "name": "Silesian"
+    "Name": "Silesian",
+    "Tag": "szl"
   },
   {
-    "language": "sd",
-    "name": "Sindhi"
+    "Name": "Sindhi",
+    "Tag": "sd"
   },
   {
-    "language": "si",
-    "name": "Sinhala"
+    "Name": "Sinhala",
+    "Tag": "si"
   },
   {
-    "language": "sk",
-    "name": "Slovak"
+    "Name": "Slovak",
+    "Tag": "sk"
   },
   {
-    "language": "sl",
-    "name": "Slovenian"
+    "Name": "Slovenian",
+    "Tag": "sl"
   },
   {
-    "language": "so",
-    "name": "Somali"
+    "Name": "Somali",
+    "Tag": "so"
   },
   {
-    "language": "es",
-    "name": "Spanish"
+    "Name": "Spanish",
+    "Tag": "es"
   },
   {
-    "language": "su",
-    "name": "Sundanese"
+    "Name": "Sundanese",
+    "Tag": "su"
   },
   {
-    "language": "sw",
-    "name": "Swahili"
+    "Name": "Swahili",
+    "Tag": "sw"
   },
   {
-    "language": "ss",
-    "name": "Swati"
+    "Name": "Swati",
+    "Tag": "ss"
   },
   {
-    "language": "sv",
-    "name": "Swedish"
+    "Name": "Swedish",
+    "Tag": "sv"
   },
   {
-    "language": "tg",
-    "name": "Tajik"
+    "Name": "Tajik",
+    "Tag": "tg"
   },
   {
-    "language": "ta",
-    "name": "Tamil"
+    "Name": "Tamil",
+    "Tag": "ta"
   },
   {
-    "language": "tt",
-    "name": "Tatar"
+    "Name": "Tatar",
+    "Tag": "tt"
   },
   {
-    "language": "te",
-    "name": "Telugu"
+    "Name": "Telugu",
+    "Tag": "te"
   },
   {
-    "language": "tet",
-    "name": "Tetum"
+    "Name": "Tetum",
+    "Tag": "tet"
   },
   {
-    "language": "th",
-    "name": "Thai"
+    "Name": "Thai",
+    "Tag": "th"
   },
   {
-    "language": "ti",
-    "name": "Tigrinya"
+    "Name": "Tigrinya",
+    "Tag": "ti"
   },
   {
-    "language": "ts",
-    "name": "Tsonga"
+    "Name": "Tsonga",
+    "Tag": "ts"
   },
   {
-    "language": "tn",
-    "name": "Tswana"
+    "Name": "Tswana",
+    "Tag": "tn"
   },
   {
-    "language": "tr",
-    "name": "Turkish"
+    "Name": "Turkish",
+    "Tag": "tr"
   },
   {
-    "language": "tk",
-    "name": "Turkmen"
+    "Name": "Turkmen",
+    "Tag": "tk"
   },
   {
-    "language": "ak",
-    "name": "Twi"
+    "Name": "Twi",
+    "Tag": "ak"
   },
   {
-    "language": "uk",
-    "name": "Ukrainian"
+    "Name": "Ukrainian",
+    "Tag": "uk"
   },
   {
-    "language": "ur",
-    "name": "Urdu"
+    "Name": "Urdu",
+    "Tag": "ur"
   },
   {
-    "language": "ug",
-    "name": "Uyghur"
+    "Name": "Uyghur",
+    "Tag": "ug"
   },
   {
-    "language": "uz",
-    "name": "Uzbek"
+    "Name": "Uzbek",
+    "Tag": "uz"
   },
   {
-    "language": "vi",
-    "name": "Vietnamese"
+    "Name": "Vietnamese",
+    "Tag": "vi"
   },
   {
-    "language": "cy",
-    "name": "Welsh"
+    "Name": "Welsh",
+    "Tag": "cy"
   },
   {
-    "language": "xh",
-    "name": "Xhosa"
+    "Name": "Xhosa",
+    "Tag": "xh"
   },
   {
-    "language": "yi",
-    "name": "Yiddish"
+    "Name": "Yiddish",
+    "Tag": "yi"
   },
   {
-    "language": "yo",
-    "name": "Yoruba"
+    "Name": "Yoruba",
+    "Tag": "yo"
   },
   {
-    "language": "yua",
-    "name": "Yucatec Maya"
+    "Name": "Yucatec Maya",
+    "Tag": "yua"
   },
   {
-    "language": "zu",
-    "name": "Zulu"
+    "Name": "Zulu",
+    "Tag": "zu"
   },
   {
-    "language": "he",
-    "name": "Hebrew"
+    "Name": "Hebrew",
+    "Tag": "he"
   },
   {
-    "language": "jv",
-    "name": "Javanese"
+    "Name": "Javanese",
+    "Tag": "jv"
   },
   {
-    "language": "zh-CN",
-    "name": "Chinese (Simplified)"
+    "Name": "Chinese (Simplified)",
+    "Tag": "zh-CN"
   }
 ]

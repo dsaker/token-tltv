@@ -53,7 +53,7 @@ git clone git@github.com:dsaker/token-tltv.git
 cd token-tltv/cloud-run/terraform
 cp terraform.tfvars.tmpl terraform.tfvars
 ```
-change project_id in terraform.tfvars to the project you just created
+change project_id in terraform.tfvars to the project you just created<br>
 you can uncomment static_ip_adress.tf if you need a static ip
 
 ```
@@ -70,25 +70,43 @@ build and push the docker container to the artifact registry
 cd ../..
 cp .envrc.tmpl .envrc
 ```
-change PROJECT_ID in .envrc to project you just created
+change PROJECT_ID in .envrc to project you just created<br>
 build docker image and push to artifactory registry in google cloud
 ```
 make build/cloud
 ```
-run docker container in cloud run
+run docker container in cloud run<br>
 cloud run url will be printed in the output
 ```
-cd terraform/cloud-run
+cd terraform/cloud-run/dont_destroy
+terraform init
+cp terraform.tfvars.tmpl terraform.tfvars
+```
+fill in PROJECT_ID in terraform.tfvars<br>
+if you want alerts set then add an email and phone number<br>
+if you don't want alerts set then comment out or delete alerts.tf
+```
+terraform apply
+cd ../cloud-run/
+terraform init
+cp terraform.tfvars.tmpl terraform.tfvars # fill in PROJECT_ID
 terraform apply
 ```
-add tokens to firestore. 
-when the tokens are output to the terminal copy them... these are what you will use to create mp3 files
+add tokens to firestore.<br>
+when the plaintext tokens are output to the terminal copy them...<br>these are what you will use to create mp3 files and will not be available after this step
 ```
-cd ..
-go run scripts/go/generatecoins/generatecoins.go -o /tmp/ -n 10
-go run scripts/go/coinsfirestore/coinsfirestore.go -f /tmp/tokens-* -p ${PROJECT_ID} -c tokens
+cd ../../..
+make coins number=10
 ```
 
-### To update voices or languages when google makes changes
-- [Create an api key](https://cloud.google.com/docs/authentication/api-keys) to load the voices in the database
-// todo
+### Update languages and voices
+- Google Cloud Platform
+```
+go run ./scripts/go/languages > internal/models/jsonmodels/google_languages.json
+go run ./scripts/go/voices > internal/models/jsonmodels/google_voices.json
+```
+- Amazon Web Services
+```
+aws translate list-Languages > internal/models/jsonmodels/aws_languages.json
+aws polly describe-Voices > internal/models/jsonmodels/aws_voices.json
+```

@@ -28,6 +28,11 @@ expvar:
 generate:
 	go generate ./...
 
+## coins number=$1: generate coins and upload them to firestore
+coins:
+	go run scripts/go/generatecoins/generatecoins.go -o /tmp/ -n ${number}
+	go run scripts/go/coinsfirestore/coinsfirestore.go -f /tmp/tokens-* -p ${PROJECT_ID} -c tokens
+
 # ==================================================================================== #
 # DEVELOPMENT
 # ==================================================================================== #
