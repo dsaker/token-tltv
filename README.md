@@ -99,13 +99,14 @@ cd ../../..
 make coins number=10
 ```
 
-### To update voices or languages when google makes changes
-- [Create an api key](https://cloud.google.com/docs/authentication/api-keys) to load the voices in the database
+### Update languages and voices
+- Google Cloud Platform
 ```
-export API_KEY="your_api_key"
 go run ./scripts/go/languages > internal/models/jsonmodels/google_languages.json
-
-pip install -r requirements.txt
-python supported_languages.py >> ../../internal/models/jsonmodels/google_languages.json
+go run ./scripts/go/voices > internal/models/jsonmodels/google_voices.json
 ```
-
+- Amazon Web Services
+```
+aws translate list-Languages > internal/models/jsonmodels/aws_languages.json
+aws polly describe-Voices > internal/models/jsonmodels/aws_voices.json
+```
