@@ -3,7 +3,7 @@
 {{define "title"}}Parse{{end}}
 
 {{define "content"}}
-    <form id="parse_form" type="POST" enctype="multipart/form-data">
+    <form id="parse-form" type="POST" enctype="multipart/form-data" >
         {{with .MaxPhrases}}
             <p>This will parse the file into the max number of phrases: {{.}}</p>
         {{end}}
@@ -11,10 +11,11 @@
             <input type="file" name="file_path" id="text-file" required/>
         </div>
         <div>
-            <input id="submit-form" type="submit">
+            <input id="submit-parse-form" type="submit">
         </div>
     </form>
     <div class="lds-div" id="lds-div">
         <div class="lds-roller"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
     </div>
+    <script src="/static/parse.js" type="text/javascript"></script>
 {{end}}

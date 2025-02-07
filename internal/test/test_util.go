@@ -81,7 +81,7 @@ func RandomVoice() models.Voice {
 	return models.Voice{
 		LangId:                 rand.Intn(MaxLanguages), //nolint:gosec
 		LanguageCodes:          []string{RandomString(8), RandomString(8)},
-		Gender:                 "FEMALE",
+		Gender:                 2,
 		VoiceName:              RandomString(8),
 		NaturalSampleRateHertz: 24000,
 	}
