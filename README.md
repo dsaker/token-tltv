@@ -53,7 +53,7 @@ git clone git@github.com:dsaker/token-tltv.git
 cd token-tltv/cloud-run/terraform
 cp terraform.tfvars.tmpl terraform.tfvars
 ```
-change project_id in terraform.tfvars to the project you just created
+change project_id in terraform.tfvars to the project you just created<br>
 you can uncomment static_ip_adress.tf if you need a static ip
 
 ```
@@ -70,20 +70,20 @@ build and push the docker container to the artifact registry
 cd ../..
 cp .envrc.tmpl .envrc
 ```
-change PROJECT_ID in .envrc to project you just created
+change PROJECT_ID in .envrc to project you just created<br>
 build docker image and push to artifactory registry in google cloud
 ```
 make build/cloud
 ```
-run docker container in cloud run
+run docker container in cloud run<br>
 cloud run url will be printed in the output
 ```
 cd terraform/cloud-run/dont_destroy
 terraform init
 cp terraform.tfvars.tmpl terraform.tfvars
 ```
-fill in PROJECT_ID in terraform.tfvars
-if you want alerts set then add an email and phone number
+fill in PROJECT_ID in terraform.tfvars<br>
+if you want alerts set then add an email and phone number<br>
 if you don't want alerts set then comment out or delete alerts.tf
 ```
 terraform apply
@@ -92,8 +92,8 @@ terraform init
 cp terraform.tfvars.tmpl terraform.tfvars # fill in PROJECT_ID
 terraform apply
 ```
-add tokens to firestore. 
-when the plaintext tokens are output to the terminal copy them... these are what you will use to create mp3 files and will not be available after this step
+add tokens to firestore.<br>
+when the plaintext tokens are output to the terminal copy them...<br>these are what you will use to create mp3 files and will not be available after this step
 ```
 cd ../../..
 make coins number=10
