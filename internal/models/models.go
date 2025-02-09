@@ -36,16 +36,24 @@ type Phrase struct {
 	Text string
 }
 
+type Gender int
+
+const (
+	MALE Gender = iota + 1
+	FEMALE
+	NEUTRAL
+)
+
 type GoogleJsonVoice struct {
-	LanguageCodes          []string
-	SsmlGender             string
-	Name                   string
-	NaturalSampleRateHertz int
+	LanguageCodes          []string `json:"language_codes"`
+	SsmlGender             Gender   `json:"ssml_gender"`
+	Name                   string   `json:"name"`
+	NaturalSampleRateHertz int      `json:"natural_sample_rate_hertz"`
 }
 
 type GoogleJsonLanguage struct {
-	Language string
-	Name     string
+	Language string `json:"Tag"`
+	Name     string `json:"Name"`
 }
 
 type AmazonLanguageArray struct {
@@ -78,7 +86,7 @@ type Language struct {
 type Voice struct {
 	ID                     int
 	LanguageCodes          []string
-	Gender                 string
+	Gender                 Gender
 	VoiceName              string
 	LanguageName           string
 	NaturalSampleRateHertz int
@@ -246,10 +254,14 @@ func MakeAmazonMaps() {
 		} else {
 			usedLangs[langId] = true
 			// add to VoiceLangId map
+			var gender = MALE
+			if voice.Gender == "Female" {
+				gender = FEMALE
+			}
 			Voices[i] = Voice{
 				ID:            i,
 				LanguageCodes: []string{voice.LanguageCode},
-				Gender:        voice.Gender,
+				Gender:        gender,
 				VoiceName:     voice.Id,
 				LanguageName:  voice.LanguageName,
 				LangId:        langId,

@@ -3,7 +3,7 @@ output "google_compute_managed_ssl_certificate_id" {
 }
 
 output "google_compute_global_address_id" {
-  value = google_compute_global_address.tltv_global_address.id
+  value = google_compute_global_address.tltv_global_address.address
 }
 
 output "google_service_account_email" {

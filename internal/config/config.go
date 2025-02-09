@@ -7,6 +7,7 @@ import (
 	firebase "firebase.google.com/go"
 	"flag"
 	_ "github.com/lib/pq"
+	"slices"
 	"talkliketv.click/tltv/internal/test"
 	"talkliketv.click/tltv/internal/translates"
 )
@@ -26,7 +27,7 @@ func (cfg *Config) SetConfigs() error {
 	// get port and debug from commandline flags... if not present use defaults
 	flag.StringVar(&cfg.Port, "port", "8080", "API server port")
 
-	flag.StringVar(&cfg.Env, "env", "local", "Environment (local|dev|prod)")
+	flag.StringVar(&cfg.Env, "env", "dev", "Environment (local|dev|prod)")
 
 	flag.StringVar(&cfg.TTSBasePath, "tts-base-path", "/tmp/audio/", "text-to-speech base path temporary storage of mp3 audio files")
 
@@ -42,6 +43,10 @@ func (cfg *Config) SetConfigs() error {
 		translates.GlobalPlatform = translates.Amazon
 	} else {
 		return errors.New("invalid platform (must be google|amazon)")
+	}
+
+	if !slices.Contains([]string{"local", "dev", "prod"}, cfg.Env) {
+		return errors.New("environment variable must be [local|dev|prod]")
 	}
 
 	// google cloud project id

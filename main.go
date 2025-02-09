@@ -14,6 +14,7 @@ import (
 	"talkliketv.click/tltv/internal/config"
 	"talkliketv.click/tltv/internal/models"
 	"talkliketv.click/tltv/internal/translates"
+	"talkliketv.click/tltv/internal/util"
 )
 
 func main() {
@@ -31,8 +32,6 @@ func main() {
 			log.Fatal("missing Firestore Token collection or project id")
 		}
 	}
-
-	log.Printf("environment: %s", cfg.Env)
 
 	// if ffmpeg is not installed and in PATH of host machine fail immediately
 	cmd := exec.Command("ffmpeg", "-version")
@@ -64,10 +63,13 @@ func main() {
 	// create new server
 	e := api.NewServer(cfg, t, af, &tokens)
 
+	// running in local mode allows you to create audio without using tokens
+	// this should never be used in the cloud
 	if cfg.Env == "local" {
 		localTokens := models.LocalTokens{}
 		e = api.NewServer(cfg, t, af, &localTokens)
 	}
 
+	log.Printf(util.StarString + "environment: " + cfg.Env + "\n" + util.StarString)
 	e.Logger.Fatal(e.Start(net.JoinHostPort("0.0.0.0", cfg.Port)))
 }

@@ -1,40 +1,11 @@
-const fromLangSelect = document.getElementById("from-lang-select");
-const fromVoiceDiv = document.getElementById("from-voice-div");
-const fromVoiceOptions = document.getElementsByName("from-voice-option");
-const toLangSelect = document.getElementById("to-lang-select");
-const toVoiceDiv = document.getElementById("to-voice-div");
-const toVoiceOptions = document.getElementsByName("to-voice-option");
-const audioForm = document.getElementById("audio-form");
 const ldsDiv = document.getElementById("lds-div");
 const divFlash = document.getElementById("div-flash")
-const parseForm = document.getElementById("parse-form");
-
-fromLangSelect.addEventListener("change", () => {
-	let langId = fromLangSelect.value;
-	fromVoiceOptions.forEach((elem) => {
-		if (elem.classList.contains(langId)) {
-			elem.style.display = "block";
-		}
-	})
-	fromVoiceDiv.style.display = "block";
-})
-
-toLangSelect.addEventListener("change", () => {
-	let langId = toLangSelect.value;
-	toVoiceOptions.forEach((elem) => {
-		if (elem.classList.contains(langId)) {
-			elem.style.display = "block";
-		}
-	})
-	toVoiceDiv.style.display = "block";
-})
 
 let filename = ""
-function sendData(url) {
+function sendData(url, formData) {
 	divFlash.style.display = "none";
 	divFlash.innerHTML = "";
 	// Associate the FormData object with the form element
-	const formData = new FormData(audioForm);
 	fetch(url, {
 		method: "POST",
 		// Set the FormData instance as the request body
@@ -58,8 +29,6 @@ function sendData(url) {
 				a.click();
 				a.remove();
 			}
-			audioForm.style.display = "none";
-			ldsDiv.style.display = "block";
 		})
 		.catch((message) => {
 			divFlash.style.display = "block";
@@ -68,14 +37,3 @@ function sendData(url) {
 
 }
 
-// Take over form submission
-audioForm.addEventListener("submit", (event) => {
-	event.preventDefault();
-	sendData("/v1/audio")
-});
-
-// Take over form submission
-parseForm.addEventListener("submit", (event) => {
-	event.preventDefault();
-	sendData("/v1/parse")
-});

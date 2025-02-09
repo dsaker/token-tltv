@@ -4,12 +4,12 @@ FROM golang:latest AS build
 WORKDIR /app
 
 # Download Go modules
-COPY go.mod go.sum ./
+COPY ../../go.mod go.sum ./
 RUN go mod download
 
 # Copy the source code. Note the slash at the end, as explained in
 # https://docs.docker.com/reference/dockerfile/#copy
-COPY . .
+COPY ../.. .
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o /api
 
@@ -21,9 +21,9 @@ RUN apk upgrade
 RUN apk add --no-cache ffmpeg
 
 # copy static files to container
-COPY ui/ ui/
-COPY --from=build api /app/api
+COPY ../../ui ui/
+COPY --from=build ../../api /app/api
 
 EXPOSE 8080
 
-CMD ["/app/api", "-maximum-number-phrases=500", "-env=prod"]
+CMD ["/app/api", "-maximum-number-phrases=500", "-env=local"]

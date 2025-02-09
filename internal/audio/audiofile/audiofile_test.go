@@ -494,7 +494,5 @@ func createFile(t *testing.T, filename, fileString string) *os.File {
 func TestMain(m *testing.M) {
 	flag.BoolVar(&util.Integration, "integration", false, "Run integration tests")
 	flag.Parse()
-	// Run the tests
-	exitCode := m.Run()
-	os.Exit(exitCode)
+	os.Exit(m.Run())
 }

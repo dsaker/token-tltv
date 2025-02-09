@@ -147,7 +147,7 @@ func (t *Translate) TextToSpeech(e echo.Context, ts []models.Phrase, voice model
 		SsmlGender:   texttospeechpb.SsmlVoiceGender_MALE,
 		Name:         voice.VoiceName,
 	}
-	if voice.Gender == "FEMALE" {
+	if voice.Gender == 2 {
 		voiceSelectionParams.SsmlGender = texttospeechpb.SsmlVoiceGender_FEMALE
 	}
 
