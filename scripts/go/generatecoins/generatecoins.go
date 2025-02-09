@@ -23,19 +23,19 @@ import (
 	"flag"
 	"log"
 	"talkliketv.click/tltv/internal/models"
-	"time"
 )
 
 func main() {
 	var outputPath string
+	var fileName string
 	var numTokens int
 
-	filename := "tokens-" + time.Now().Format("20060102150405") + ".json"
 	flag.StringVar(&outputPath, "o", "/tmp/", "file path where you want json token file")
+	flag.StringVar(&fileName, "f", "tokens.json", "file name")
 	flag.IntVar(&numTokens, "n", 0, "the number of tokens to generate")
 	flag.Parse()
 
-	plaintexts, err := models.CreateTokensFile(outputPath, filename, numTokens)
+	plaintexts, err := models.CreateTokensFile(outputPath, fileName, numTokens)
 	if err != nil {
 		log.Fatal(err)
 	}
