@@ -117,14 +117,14 @@ build:
 	go build -ldflags=${linker_flags} -o=./bin/tltv ./api
 	GOOS=linux GOARCH=amd64 go build -ldflags=${linker_flags} -o=./bin/linux_amd64/tltv ./api
 
-## build/docker: build the talkliketv container
-build/docker:
+## build/local: build the toekn-tltv container for local use (does not connect to firestore)
+build/local:
 	@echo 'Building container...'
 	docker build --build-arg LINKER_FLAGS=${linker_flags} --tag token-tltv:latest .
 
 ## build/cloud: build and push the token-tltv container to the cloud
 build/cloud:
-	docker build --platform linux/amd64 --push -t us-east4-docker.pkg.dev/${PROJECT_ID}/token-tltv/token-tltv:latest .
+	docker build -f docker/prod/Dockerfile --platform linux/amd64 --push -t us-east4-docker.pkg.dev/${PROJECT_ID}/token-tltv/token-tltv:latest .
 
 ## build/pack: build the talkliketv container using build pack
 build/pack:

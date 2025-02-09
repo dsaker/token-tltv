@@ -42,7 +42,7 @@ func TestGoogleTTS(t *testing.T) {
 	defer os.RemoveAll(basepath)
 
 	voice := test.RandomVoice()
-	voice.Gender = "MALE"
+	voice.Gender = models.MALE
 	text1 := "This is sentence one."
 
 	testCases := []translatesTestCase{
@@ -114,7 +114,7 @@ func TestAmazonTTS(t *testing.T) {
 	defer os.RemoveAll(basepath)
 
 	voice := test.RandomVoice()
-	voice.Gender = "MALE"
+	voice.Gender = models.MALE
 	text1 := "This is sentence one."
 
 	testCases := []translatesTestCase{
@@ -256,6 +256,5 @@ func IsDirectoryEmpty(dirPath string) (bool, error) {
 
 func TestMain(m *testing.M) {
 	flag.BoolVar(&util.Integration, "integration", false, "Run integration tests")
-	flag.Parse()
 	os.Exit(m.Run())
 }

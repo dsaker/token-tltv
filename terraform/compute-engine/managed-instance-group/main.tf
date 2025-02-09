@@ -50,12 +50,15 @@ resource "google_compute_health_check" "tltv_basic_check" {
   name               = "tltv-basic-check"
   check_interval_sec = 300
   healthy_threshold  = 2
-  http_health_check {
-    port               = 8080
-    port_specification = "USE_FIXED_PORT"
-    proxy_header       = "NONE"
-    request_path       = "/"
+  tcp_health_check {
+    port = "8080"
   }
+  # http_health_check {
+  #   port               = 8080
+  #   port_specification = "USE_FIXED_PORT"
+  #   proxy_header       = "NONE"
+  #   request_path       = "/"
+  # }
   timeout_sec         = 5
   unhealthy_threshold = 2
 }
@@ -114,6 +117,10 @@ resource "google_compute_url_map" "tltv_url_map" {
   default_service = google_compute_backend_service.tltv_backend_service.id
 }
 
+# resource "google_compute_target_pool" "tltv_target_pool" {
+#   name = "tltv-target-pool"
+# }
+
 resource "google_compute_instance_group_manager" "tltv_instance_group_manager" {
   name = "tltv-instance-group-manager"
   zone = var.zone
@@ -122,8 +129,9 @@ resource "google_compute_instance_group_manager" "tltv_instance_group_manager" {
     port = 8080
   }
   version {
-    instance_template = google_compute_instance_template.tltv_instance_template_a.id
+    instance_template = google_compute_instance_template.tltv_instance_template_b.id
     name              = "primary"
   }
+  # target_pools       = [google_compute_target_pool.tltv_target_pool.id]
   base_instance_name = "vm"
 }

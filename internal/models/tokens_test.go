@@ -54,6 +54,5 @@ func TestTokenGenerate(t *testing.T) {
 
 func TestMain(m *testing.M) {
 	flag.BoolVar(&util.Integration, "integration", false, "Run integration tests")
-	flag.Parse()
 	os.Exit(m.Run())
 }

@@ -48,31 +48,13 @@ func NewAmazonClients() *AmazonClients {
 	// Create a Polly client
 	ttsClient := polly.NewFromConfig(cfg)
 
-	//// Input text to translate
-	//text := "Hello, how are you?"
-	//sourceLanguage := "en" // Source language code (e.g., "en" for English)
-	//targetLanguage := "es" // Target language code (e.g., "es" for Spanish)
-
-	// Call the TranslateText API
-	//output, err := translateClient.TranslateText(context.TODO(), &translate.TranslateTextInput{
-	//	Text:               &text,
-	//	SourceLanguageCode: &sourceLanguage,
-	//	TargetLanguageCode: &targetLanguage,
-	//})
-	//if err != nil {
-	//	log.Fatalf("Failed to translate text: %v", err)
-	//}
-	//
-	//// Print the translated text
-	//fmt.Printf("Original text: %s\n", text)
-	//fmt.Printf("Translated text: %s\n", *output.TranslatedText)
 	return &AmazonClients{atc: translateClient, atts: ttsClient}
 }
 
 // GetTranslate is a helper function for TranslatePhrases that allows concurrent calls to
-// google translate.Translate.
+// aws translate.Translate.
 // It receives a context.CancelFunc that is invoked on an error so all subsequent calls to
-// google translate.Translate can be aborted
+// aws translate.Translate can be aborted
 func (g *AmazonClients) GetTranslate(e echo.Context,
 	ctx context.Context,
 	cancel context.CancelFunc,

@@ -87,7 +87,6 @@ type Voice struct {
 	ID                     int
 	LanguageCodes          []string
 	Gender                 Gender
-	GenderString           string
 	VoiceName              string
 	LanguageName           string
 	NaturalSampleRateHertz int
@@ -255,10 +254,14 @@ func MakeAmazonMaps() {
 		} else {
 			usedLangs[langId] = true
 			// add to VoiceLangId map
+			var gender = MALE
+			if voice.Gender == "Female" {
+				gender = FEMALE
+			}
 			Voices[i] = Voice{
 				ID:            i,
 				LanguageCodes: []string{voice.LanguageCode},
-				GenderString:  voice.Gender,
+				Gender:        gender,
 				VoiceName:     voice.Id,
 				LanguageName:  voice.LanguageName,
 				LangId:        langId,
