@@ -6,6 +6,7 @@ import (
 	"cloud.google.com/go/firestore"
 	"context"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"io"
 	"maps"
 	"math/rand"
@@ -13,6 +14,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"talkliketv.click/tltv/internal/audio/audiofile"
@@ -20,8 +22,12 @@ import (
 	"talkliketv.click/tltv/internal/translates"
 	"talkliketv.click/tltv/internal/util"
 	"testing"
+	"time"
 
+	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"go.uber.org/mock/gomock"
 	"talkliketv.click/tltv/internal/test"
 )
@@ -563,4 +569,94 @@ func TestAmazonIntegration(t *testing.T) {
 			require.NoError(t, err)
 		})
 	}
+}
+
+func TestEndToEnd(t *testing.T) {
+	ctx := context.Background()
+	container := startContainer(ctx, t)
+	runOption := &playwright.RunOptions{
+		SkipInstallBrowsers: true,
+	}
+	err := playwright.Install(runOption)
+	require.NoError(t, err)
+	pw, err := playwright.Run()
+	defer pw.Stop()
+	assert.NoError(t, err)
+	option := playwright.BrowserTypeLaunchOptions{
+		Channel: playwright.String("chrome"),
+	}
+	browser, err := pw.Chromium.Launch(option)
+	defer browser.Close()
+	assert.NoError(t, err)
+	page, err := browser.NewPage()
+	assert.NoError(t, err)
+	_, err = page.Goto(container.URI)
+	assert.NoError(t, err)
+}
+
+type tltvContainer struct {
+	testcontainers.Container
+	URI string
+}
+
+type StdoutLogConsumer struct{}
+
+// Accept prints the log to stdout
+func (lc *StdoutLogConsumer) Accept(l testcontainers.Log) {
+	fmt.Print(string(l.Content))
+}
+
+func startContainer(ctx context.Context, t *testing.T) *tltvContainer {
+	g := StdoutLogConsumer{}
+
+	absPath, err := filepath.Abs("/tmp/secrets/token-tltv-test-7053dcf2e89d.json")
+	require.NoError(t, err)
+
+	r, err := os.Open(absPath)
+	require.NoError(t, err)
+
+	req := testcontainers.ContainerRequest{
+		FromDockerfile: testcontainers.FromDockerfile{
+			Context:    "../",
+			Dockerfile: "docker/dev/Dockerfile",
+			KeepImage:  true,
+		},
+		ExposedPorts: []string{"8080/tcp"},
+		Env: map[string]string{
+			"TEST_PROJECT_ID":                testCfg.ProjectId,
+			"GOOGLE_APPLICATION_CREDENTIALS": "/secrets/acp/application_default_credentials.json",
+		},
+		Files: []testcontainers.ContainerFile{
+			{
+				Reader:            r,
+				HostFilePath:      absPath, // will be discarded internally
+				ContainerFilePath: "/secrets/acp/application_default_credentials.json",
+				FileMode:          0o400,
+			},
+		},
+		WaitingFor: wait.ForHTTP("/").WithPort("8080/tcp"),
+		LogConsumerCfg: &testcontainers.LogConsumerConfig{
+			Opts: []testcontainers.LogProductionOption{
+				testcontainers.WithLogProductionTimeout(10 * time.Second)},
+			Consumers: []testcontainers.LogConsumer{&g},
+		},
+	}
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	var nginxC *tltvContainer
+	if container != nil {
+		nginxC = &tltvContainer{Container: container}
+	}
+	require.NoError(t, err)
+
+	ip, err := container.Host(ctx)
+	require.NoError(t, err)
+
+	mappedPort, err := container.MappedPort(ctx, "8080")
+	require.NoError(t, err)
+
+	nginxC.URI = fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
+	return nginxC
 }

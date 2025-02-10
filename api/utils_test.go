@@ -47,12 +47,8 @@ func TestMain(m *testing.M) {
 	}
 	flag.BoolVar(&util.Integration, "integration", false, "Run integration tests")
 	flag.Parse()
-	testCfg.TTSBasePath = test.AudioBasePath
 
-	if util.Integration {
-		testCfg.GcpProjectID = test.GcpTestProject
-		testCfg.FirestoreTokenColl = test.FirestoreTestColl
-	}
+	testCfg.TTSBasePath = test.AudioBasePath
 
 	// Run tests
 	exitCode := m.Run()

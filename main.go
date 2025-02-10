@@ -25,14 +25,19 @@ func main() {
 	}
 	flag.Parse()
 
-	if cfg.Env == "prod" {
-		cfg.GcpProjectID = os.Getenv("PROJECT_ID")
-		cfg.FirestoreTokenColl = os.Getenv("FIRESTORE_TOKENS")
-		if cfg.FirestoreTokenColl == "" || cfg.GcpProjectID == "" {
-			log.Fatal("missing Firestore Token collection or project id")
-		}
+	if cfg.Env == "dev" {
+		cfg.ProjectId = os.Getenv("TEST_PROJECT_ID")
 	}
 
+	if cfg.Env == "prod" {
+		cfg.ProjectId = os.Getenv("PROJECT_ID")
+	}
+
+	if cfg.ProjectId == "" {
+		log.Fatal("PROJECT_ID env var not set")
+	}
+
+	log.Print("PROJECT_ID: " + cfg.ProjectId)
 	// if ffmpeg is not installed and in PATH of host machine fail immediately
 	cmd := exec.Command("ffmpeg", "-version")
 	output, err := cmd.CombinedOutput()
@@ -58,7 +63,7 @@ func main() {
 		log.Fatal("Error creating firestore client: ", err)
 	}
 
-	tokensColl := fClient.Collection(cfg.FirestoreTokenColl)
+	tokensColl := fClient.Collection(util.TokenColl)
 	tokens := models.Tokens{Coll: tokensColl}
 	// create new server
 	e := api.NewServer(cfg, t, af, &tokens)
@@ -70,6 +75,14 @@ func main() {
 		e = api.NewServer(cfg, t, af, &localTokens)
 	}
 
-	log.Printf(util.StarString + "environment: " + cfg.Env + "\n" + util.StarString)
+	log.Printf("\n" + util.StarString + "environment: " + cfg.Env + "\n" + util.StarString)
 	e.Logger.Fatal(e.Start(net.JoinHostPort("0.0.0.0", cfg.Port)))
+}
+
+func readSecretFromFile(path string) (string, error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	return string(content), nil
 }

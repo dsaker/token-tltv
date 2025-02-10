@@ -16,6 +16,7 @@ var (
 
 const (
 	StarString = "************************************************************\n"
+	TokenColl  = "tokens"
 )
 
 // PathExists returns whether the given file or directory exists
