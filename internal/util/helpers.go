@@ -11,11 +11,11 @@ import (
 )
 
 var (
-	Integration = false
+	Test string
 )
 
 const (
-	StarString = "************************************************************\n"
+	StarString = "*********************************************\n"
 	TokenColl  = "tokens"
 )
 

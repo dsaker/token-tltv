@@ -1,15 +1,25 @@
 package test
 
 import (
+	"context"
+	"fmt"
+	"github.com/playwright-community/playwright-go"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"go.uber.org/mock/gomock"
+	"log"
 	"math/rand"
+	"os"
+	"path/filepath"
 	"reflect"
 	"slices"
 	"strings"
 	"talkliketv.click/tltv/internal/mock"
 	"talkliketv.click/tltv/internal/models"
 	"testing"
+	"time"
 )
 
 var (
@@ -53,7 +63,6 @@ const (
 	ValidLangId             = 16
 	alphabet                = "abcdefghijklmnopqrstuvwxyz"
 	FirestoreTestCollection = "token-tltv-test"
-	GcPTestProject          = "token-tltv-test"
 )
 
 // RandomString generates a random string of length n
@@ -121,4 +130,109 @@ func NewMockStubs(ctrl *gomock.Controller) MockStubs {
 		TokensX:                mock.NewMockTokensX(ctrl),
 		ModelsX:                mock.NewMockModelsX(ctrl),
 	}
+}
+
+type TltvContainer struct {
+	testcontainers.Container
+	URI string
+}
+
+type StdoutLogConsumer struct{}
+
+// Accept prints the log to stdout
+func (lc *StdoutLogConsumer) Accept(l testcontainers.Log) {
+	fmt.Print(string(l.Content))
+}
+
+func StartContainer(ctx context.Context, projectId string) *TltvContainer {
+	g := StdoutLogConsumer{}
+
+	absPath, err := filepath.Abs("/tmp/secrets/token-tltv-test-7053dcf2e89d.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	r, err := os.Open(absPath)
+	if er
+
+	req := testcontainers.ContainerRequest{
+		FromDockerfile: testcontainers.FromDockerfile{
+			Context:    "../",
+			Dockerfile: "docker/dev/Dockerfile",
+			KeepImage:  true,
+		},
+		ExposedPorts: []string{"8080/tcp"},
+		Env: map[string]string{
+			"TEST_PROJECT_ID":                projectId,
+			"GOOGLE_APPLICATION_CREDENTIALS": "/secrets/acp/application_default_credentials.json",
+		},
+		Files: []testcontainers.ContainerFile{
+			{
+				Reader:            r,
+				HostFilePath:      absPath, // will be discarded internally
+				ContainerFilePath: "/secrets/acp/application_default_credentials.json",
+				FileMode:          0o400,
+			},
+		},
+		WaitingFor: wait.ForHTTP("/").WithPort("8080/tcp"),
+		LogConsumerCfg: &testcontainers.LogConsumerConfig{
+			Opts: []testcontainers.LogProductionOption{
+				testcontainers.WithLogProductionTimeout(10 * time.Second)},
+			Consumers: []testcontainers.LogConsumer{&g},
+		},
+	}
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+
+	var tltvC *TltvContainer
+	if container != nil {
+		tltvC = &TltvContainer{Container: container}
+	}
+	require.NoError(t, err)
+
+	ip, err := container.Host(ctx)
+	require.NoError(t, err)
+
+	mappedPort, err := container.MappedPort(ctx, "8080")
+	require.NoError(t, err)
+
+	tltvC.URI = fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
+	return tltvC
+}
+
+func GetBrowserContest() error {
+	var url = "http://localhost:8080"
+	if !local {
+		ctx := context.Background()
+		container := test.StartContainer(ctx, t, testCfg.ProjectId)
+		defer func(container *test.TltvContainer, ctx context.Context, opts ...testcontainers.TerminateOption) {
+			if err := container.Terminate(ctx, opts...); err != nil {
+				require.NoError(t, err)
+			}
+		}(container, ctx)
+		url = container.URI
+	}
+
+	runOption := &playwright.RunOptions{
+		SkipInstallBrowsers: true,
+	}
+	err := playwright.Install(runOption)
+	require.NoError(t, err)
+	pw, err := playwright.Run()
+	assert.NoError(t, err)
+	defer func(pw *playwright.Playwright) {
+		err = pw.Stop()
+		require.NoError(t, err)
+	}(pw)
+
+	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
+		Headless: playwright.Bool(false),
+	})
+	assert.NoError(t, err)
+	defer func(browser playwright.Browser, options ...playwright.BrowserCloseOptions) {
+		err = browser.Close(options...)
+		require.NoError(t, err)
+	}(browser)
 }

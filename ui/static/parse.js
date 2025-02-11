@@ -5,5 +5,6 @@ parseForm.addEventListener("submit", (event) => {
     const formData = new FormData(parseForm);
     sendData("/v1/parse", formData);
     parseForm.style.display = "none";
-    ldsDiv.style.display = "block";
+    divFlash.style.display = "block";
+    divFlash.innerHTML = "file parsed successfully";
 });

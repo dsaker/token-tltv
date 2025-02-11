@@ -31,7 +31,7 @@ type audioFileTestCase struct {
 }
 
 func TestGetLines(t *testing.T) {
-	if util.Integration {
+	if util.Test != "unit" {
 		t.Skip("skipping unit test")
 	}
 	t.Parallel()
@@ -147,7 +147,7 @@ func TestGetLines(t *testing.T) {
 }
 
 func TestBuildAudioInputFiles(t *testing.T) {
-	if util.Integration {
+	if util.Test != "unit" {
 		t.Skip("skipping unit test")
 	}
 	t.Parallel()
@@ -201,7 +201,7 @@ func TestBuildAudioInputFiles(t *testing.T) {
 }
 
 func TestCreateMp3Zip(t *testing.T) {
-	if util.Integration {
+	if util.Test != "unit" {
 		t.Skip("skipping unit test")
 	}
 	t.Parallel()
@@ -268,7 +268,7 @@ func TestCreateMp3Zip(t *testing.T) {
 }
 
 func TestCreatePhrasesZip(t *testing.T) {
-	if util.Integration {
+	if util.Test != "unit" {
 		t.Skip("skipping unit test")
 	}
 	t.Parallel()
@@ -385,7 +385,7 @@ func TestCreatePhrasesZip(t *testing.T) {
 }
 
 func TestSplitBigPhrases(t *testing.T) {
-	if util.Integration {
+	if util.Test != "unit" {
 		t.Skip("skipping unit test")
 	}
 	t.Parallel()
@@ -492,7 +492,9 @@ func createFile(t *testing.T, filename, fileString string) *os.File {
 }
 
 func TestMain(m *testing.M) {
-	flag.BoolVar(&util.Integration, "integration", false, "Run integration tests")
+	flag.StringVar(&util.Test, "test", "test", "type of tests to run [unit|integration|end-to-end]")
+	var projectId string
+	flag.StringVar(&projectId, "project-id", "", "project id for google cloud platform that contains firestore")
 	flag.Parse()
 	os.Exit(m.Run())
 }

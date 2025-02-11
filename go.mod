@@ -1,6 +1,6 @@
 module talkliketv.click/tltv
 
-go 1.23.5
+go 1.23.6
 
 require (
 	cloud.google.com/go/firestore v1.16.0

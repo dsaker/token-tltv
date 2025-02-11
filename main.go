@@ -25,19 +25,20 @@ func main() {
 	}
 	flag.Parse()
 
-	if cfg.Env == "dev" {
+	if cfg.Env == "dev" && cfg.ProjectId == "" {
 		cfg.ProjectId = os.Getenv("TEST_PROJECT_ID")
+		if cfg.ProjectId == "" {
+			log.Fatal("In dev mode you must provide PROJECT_ID as environment variable or command argument")
+		}
 	}
 
 	if cfg.Env == "prod" {
 		cfg.ProjectId = os.Getenv("PROJECT_ID")
+		if cfg.ProjectId == "" {
+			log.Fatal("In prod mode you must provide PROJECT_ID as environment variable")
+		}
 	}
 
-	if cfg.ProjectId == "" {
-		log.Fatal("PROJECT_ID env var not set")
-	}
-
-	log.Print("PROJECT_ID: " + cfg.ProjectId)
 	// if ffmpeg is not installed and in PATH of host machine fail immediately
 	cmd := exec.Command("ffmpeg", "-version")
 	output, err := cmd.CombinedOutput()
@@ -75,14 +76,6 @@ func main() {
 		e = api.NewServer(cfg, t, af, &localTokens)
 	}
 
-	log.Printf("\n" + util.StarString + "environment: " + cfg.Env + "\n" + util.StarString)
+	log.Print("\n\n" + util.StarString + "environment: " + cfg.Env + "\n" + util.StarString)
 	e.Logger.Fatal(e.Start(net.JoinHostPort("0.0.0.0", cfg.Port)))
-}
-
-func readSecretFromFile(path string) (string, error) {
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return "", err
-	}
-	return string(content), nil
 }

@@ -6,7 +6,11 @@ import (
 	"cloud.google.com/go/firestore"
 	"context"
 	"fmt"
+	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
+	"go.uber.org/mock/gomock"
 	"io"
 	"maps"
 	"math/rand"
@@ -19,21 +23,15 @@ import (
 	"strings"
 	"talkliketv.click/tltv/internal/audio/audiofile"
 	"talkliketv.click/tltv/internal/models"
+	"talkliketv.click/tltv/internal/test"
 	"talkliketv.click/tltv/internal/translates"
 	"talkliketv.click/tltv/internal/util"
 	"testing"
 	"time"
-
-	"github.com/playwright-community/playwright-go"
-	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
-	"go.uber.org/mock/gomock"
-	"talkliketv.click/tltv/internal/test"
 )
 
 func TestAudioFromFile(t *testing.T) {
-	if util.Integration {
+	if util.Test != "unit" {
 		t.Skip("skipping unit test")
 	}
 
@@ -312,7 +310,7 @@ func TestAudioFromFile(t *testing.T) {
 			buildStubs: func(stubs test.MockStubs) {
 				stubs.TokensX.EXPECT().
 					CheckToken(gomock.Any(), randomToken).
-					Return(models.UsedTokenError)
+					Return(models.ErrUsedToken)
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
@@ -349,7 +347,7 @@ func TestAudioFromFile(t *testing.T) {
 }
 
 func TestGoogleIntegration(t *testing.T) {
-	if !util.Integration {
+	if util.Test != "integration" {
 		t.Skip("skipping integration test")
 	}
 	t.Parallel()
@@ -373,10 +371,10 @@ func TestGoogleIntegration(t *testing.T) {
 	testToken, plaintext, err := models.GenerateToken()
 	require.NoError(t, err)
 
-	collName := strings.Split(t.Name(), "/")[0]
+	//collName := strings.Split(t.Name(), "/")[0]
 
 	// get the tokens collection from the database
-	testColl := client.Collection(collName)
+	testColl := client.Collection("tokens")
 
 	tokens := models.Tokens{Coll: testColl}
 	// defer deleting the collection
@@ -474,7 +472,7 @@ func TestGoogleIntegration(t *testing.T) {
 }
 
 func TestAmazonIntegration(t *testing.T) {
-	if !util.Integration {
+	if util.Test != "integration" {
 		t.Skip("skipping integration test")
 	}
 
@@ -571,92 +569,103 @@ func TestAmazonIntegration(t *testing.T) {
 	}
 }
 
-func TestEndToEnd(t *testing.T) {
-	ctx := context.Background()
-	container := startContainer(ctx, t)
+func TestEndToEndParse(t *testing.T) {
+	if util.Test != "end-to-end" {
+		t.Skip("skipping end-to-end test")
+	}
+
+	var url = "http://localhost:8080"
+	if !local {
+		ctx := context.Background()
+		container := test.StartContainer(ctx, t, testCfg.ProjectId)
+		defer func(container *test.TltvContainer, ctx context.Context, opts ...testcontainers.TerminateOption) {
+			if err := container.Terminate(ctx, opts...); err != nil {
+				require.NoError(t, err)
+			}
+		}(container, ctx)
+		url = container.URI
+	}
+
 	runOption := &playwright.RunOptions{
 		SkipInstallBrowsers: true,
 	}
 	err := playwright.Install(runOption)
 	require.NoError(t, err)
 	pw, err := playwright.Run()
-	defer pw.Stop()
 	assert.NoError(t, err)
-	option := playwright.BrowserTypeLaunchOptions{
-		Channel: playwright.String("chrome"),
-	}
-	browser, err := pw.Chromium.Launch(option)
-	defer browser.Close()
-	assert.NoError(t, err)
-	page, err := browser.NewPage()
-	assert.NoError(t, err)
-	_, err = page.Goto(container.URI)
-	assert.NoError(t, err)
-}
+	defer func(pw *playwright.Playwright) {
+		err = pw.Stop()
+		require.NoError(t, err)
+	}(pw)
 
-type tltvContainer struct {
-	testcontainers.Container
-	URI string
-}
-
-type StdoutLogConsumer struct{}
-
-// Accept prints the log to stdout
-func (lc *StdoutLogConsumer) Accept(l testcontainers.Log) {
-	fmt.Print(string(l.Content))
-}
-
-func startContainer(ctx context.Context, t *testing.T) *tltvContainer {
-	g := StdoutLogConsumer{}
-
-	absPath, err := filepath.Abs("/tmp/secrets/token-tltv-test-7053dcf2e89d.json")
-	require.NoError(t, err)
-
-	r, err := os.Open(absPath)
-	require.NoError(t, err)
-
-	req := testcontainers.ContainerRequest{
-		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    "../",
-			Dockerfile: "docker/dev/Dockerfile",
-			KeepImage:  true,
-		},
-		ExposedPorts: []string{"8080/tcp"},
-		Env: map[string]string{
-			"TEST_PROJECT_ID":                testCfg.ProjectId,
-			"GOOGLE_APPLICATION_CREDENTIALS": "/secrets/acp/application_default_credentials.json",
-		},
-		Files: []testcontainers.ContainerFile{
-			{
-				Reader:            r,
-				HostFilePath:      absPath, // will be discarded internally
-				ContainerFilePath: "/secrets/acp/application_default_credentials.json",
-				FileMode:          0o400,
-			},
-		},
-		WaitingFor: wait.ForHTTP("/").WithPort("8080/tcp"),
-		LogConsumerCfg: &testcontainers.LogConsumerConfig{
-			Opts: []testcontainers.LogProductionOption{
-				testcontainers.WithLogProductionTimeout(10 * time.Second)},
-			Consumers: []testcontainers.LogConsumer{&g},
-		},
-	}
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
+		Headless: playwright.Bool(false),
 	})
-	var nginxC *tltvContainer
-	if container != nil {
-		nginxC = &tltvContainer{Container: container}
+	assert.NoError(t, err)
+	defer func(browser playwright.Browser, options ...playwright.BrowserCloseOptions) {
+		err = browser.Close(options...)
+		require.NoError(t, err)
+	}(browser)
+
+	// Create a new browser context
+	browserContext, err := browser.NewContext(playwright.BrowserNewContextOptions{
+		AcceptDownloads: playwright.Bool(true), // Ensure downloads are enabled
+	})
+	assert.NoError(t, err)
+
+	page, err := browserContext.NewPage()
+	assert.NoError(t, err)
+	defer func(browserContext playwright.BrowserContext, options ...playwright.BrowserContextCloseOptions) {
+		err = browserContext.Close(options...)
+		require.NoError(t, err)
+	}(browserContext)
+
+	resp, err := page.Goto(url)
+	//resp, err := page.Goto(container.URI)
+	assert.NoError(t, err)
+	assert.Contains(t, resp.StatusText(), http.StatusText(http.StatusOK))
+	// sleep between clicks or echo golang rate limiter gets triggered
+	time.Sleep(time.Second * 1)
+	// Get element by ID
+	err = page.GetByText("ParseFile").Click()
+	assert.NoError(t, err)
+
+	time.Sleep(time.Second * 1)
+	pageTitle, err := page.Title()
+	require.Contains(t, pageTitle, "Parse - TalkLikeTV")
+
+	err = page.Click("#text-file")
+	assert.NoError(t, err)
+
+	// Trigger the file input, for example, by clicking a button
+	fileChooser, err := page.ExpectFileChooser(func() error {
+		err = page.Click("#text-file")
+		require.NoError(t, err)
+		return nil
+	})
+
+	err = fileChooser.SetFiles("../internal/test/sample.srt")
+	require.NoError(t, err)
+
+	// Wait for the download event
+	downloadChan := make(chan playwright.Download)
+	page.On("download", func(d playwright.Download) {
+		downloadChan <- d
+	})
+
+	err = page.Locator("#submit-parse-form").Click()
+	require.NoError(t, err)
+	download, ok := <-downloadChan
+	if !ok {
+		t.Fatal("download channel closed")
 	}
+
+	savePath := filepath.Join("downloads", download.SuggestedFilename())
+	err = download.SaveAs(savePath)
 	require.NoError(t, err)
 
-	ip, err := container.Host(ctx)
+	fileInfo, err := os.Stat(savePath)
 	require.NoError(t, err)
 
-	mappedPort, err := container.MappedPort(ctx, "8080")
-	require.NoError(t, err)
-
-	nginxC.URI = fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
-	return nginxC
+	require.Equal(t, fileInfo.Size(), int64(274))
 }

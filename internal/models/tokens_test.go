@@ -7,13 +7,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"os"
 	"strings"
-	//"talkliketv.click/tltv/internal/test"
 	"talkliketv.click/tltv/internal/util"
 	"testing"
 )
 
 func TestTokenGenerate(t *testing.T) {
-	if !util.Integration {
+	if util.Test != "integration" {
 		t.Skip("skipping integration test")
 	}
 
@@ -53,6 +52,9 @@ func TestTokenGenerate(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	flag.BoolVar(&util.Integration, "integration", false, "Run integration tests")
+	flag.StringVar(&util.Test, "test", "test", "type of tests to run [unit|integration|end-to-end]")
+	var projectId string
+	flag.StringVar(&projectId, "project-id", "", "project id for google cloud platform that contains firestore")
+	flag.Parse()
 	os.Exit(m.Run())
 }

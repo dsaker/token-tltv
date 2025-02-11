@@ -40,7 +40,7 @@ type TokensX interface {
 }
 
 var (
-	UsedTokenError = errors.New("token already used")
+	ErrUsedToken = errors.New("token already used")
 )
 
 func (t *Tokens) CheckToken(ctx context.Context, token string) error {
@@ -56,7 +56,7 @@ func (t *Tokens) CheckToken(ctx context.Context, token string) error {
 		return fmt.Errorf("token data to struct failed: %w", err)
 	}
 	if tStruct.UploadUsed {
-		return UsedTokenError
+		return ErrUsedToken
 	}
 	return err
 }

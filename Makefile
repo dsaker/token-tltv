@@ -71,16 +71,17 @@ audit:
 ## audit/pipeline: tidy dependencies and format, vet and test all code (race on)
 audit/pipeline:
 	make audit
-	go test -race -vet=off ./... -coverprofile=coverage.out
+	go test -race -vet=off ./... -test=unit -coverprofile=coverage.out
 
 ## audit/local: tidy dependencies and format, vet and test all code (race off)
 audit/local:
 	make audit
-	go test -vet=off ./... -coverprofile=coverage.out
-	go tool cover -html=coverage.out -o cover.html
 	make ci-lint
 	make vuln
-	go test ./... -integration=true
+	go test -vet=off ./... -test=unit -coverprofile=coverage.out
+	go tool cover -html=coverage.out -o cover.html
+	go test ./... -test=integration -project-id=token-tltv-test
+	go test ./... -test=end-to-end -project-id=token-tltv-test
 
 ## staticcheck:  detect bugs, suggest code simplifications, and point out dead code
 staticcheck:

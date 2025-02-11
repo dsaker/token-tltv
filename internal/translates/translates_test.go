@@ -29,7 +29,7 @@ type translatesTestCase struct {
 }
 
 func TestGoogleTTS(t *testing.T) {
-	if util.Integration {
+	if util.Test != "unit" {
 		t.Skip("skipping unit test")
 	}
 	t.Parallel()
@@ -101,7 +101,7 @@ func TestGoogleTTS(t *testing.T) {
 }
 
 func TestAmazonTTS(t *testing.T) {
-	if util.Integration {
+	if util.Test != "unit" {
 		t.Skip("skipping unit test")
 	}
 	t.Parallel()
@@ -187,9 +187,10 @@ func TestAmazonTTS(t *testing.T) {
 }
 
 func TestGoogleTranslate(t *testing.T) {
-	if util.Integration {
+	if util.Test != "unit" {
 		t.Skip("skipping unit test")
 	}
+
 	t.Parallel()
 
 	modelsLang := models.Language{ID: 0, Code: "es", Name: "Spanish"}
@@ -255,6 +256,9 @@ func IsDirectoryEmpty(dirPath string) (bool, error) {
 }
 
 func TestMain(m *testing.M) {
-	flag.BoolVar(&util.Integration, "integration", false, "Run integration tests")
+	flag.StringVar(&util.Test, "test", "test", "type of tests to run [unit|integration|end-to-end]")
+	var projectId string
+	flag.StringVar(&projectId, "project-id", "", "project id for google cloud platform that contains firestore")
+	flag.Parse()
 	os.Exit(m.Run())
 }

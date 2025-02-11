@@ -2,7 +2,11 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"flag"
+	"github.com/playwright-community/playwright-go"
+	"github.com/stretchr/testify/assert"
+	"github.com/testcontainers/testcontainers-go"
 	"io"
 	"log"
 	"mime/multipart"
@@ -28,8 +32,14 @@ const (
 	audioBasePath = "/v1/audio"
 )
 
+var (
+	local = false
+)
+
 type TestConfig struct {
 	config.Config
+	browserContext *playwright.BrowserContext
+	url            string
 }
 
 // testCase struct groups together the fields necessary for running most of the test cases
@@ -45,8 +55,11 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	flag.BoolVar(&util.Integration, "integration", false, "Run integration tests")
+	flag.StringVar(&util.Test, "test", "unit", "type of tests to run [unit|integration|end-to-end]")
+	flag.BoolVar(&local, "local", false, "if true end-to-end tests will be run in local mode")
 	flag.Parse()
+
+	testCfg.browserContext, testCfg.url = getBrowserContext()
 
 	testCfg.TTSBasePath = test.AudioBasePath
 
@@ -59,6 +72,47 @@ func TestMain(m *testing.M) {
 	//}
 
 	os.Exit(exitCode)
+}
+
+func getBrowserContext() (*playwright.BrowserContext, string) {
+	var url = "http://localhost:8080"
+	if !local {
+		ctx := context.Background()
+		container := test.StartContainer(ctx, t, testCfg.ProjectId)
+		defer func(container *test.TltvContainer, ctx context.Context, opts ...testcontainers.TerminateOption) {
+			if err := container.Terminate(ctx, opts...); err != nil {
+				require.NoError(t, err)
+			}
+		}(container, ctx)
+		url = container.URI
+	}
+
+	runOption := &playwright.RunOptions{
+		SkipInstallBrowsers: true,
+	}
+	err := playwright.Install(runOption)
+	require.NoError(t, err)
+	pw, err := playwright.Run()
+	assert.NoError(t, err)
+	defer func(pw *playwright.Playwright) {
+		err = pw.Stop()
+		require.NoError(t, err)
+	}(pw)
+
+	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
+		Headless: playwright.Bool(false),
+	})
+	assert.NoError(t, err)
+	defer func(browser playwright.Browser, options ...playwright.BrowserCloseOptions) {
+		err = browser.Close(options...)
+		require.NoError(t, err)
+	}(browser)
+
+	// Create a new browser context
+	browserContext, err := browser.NewContext(playwright.BrowserNewContextOptions{
+		AcceptDownloads: playwright.Bool(true), // Ensure downloads are enabled
+	})
+	assert.NoError(t, err)
 }
 
 // readBody reads the http response body and returns it as a string
