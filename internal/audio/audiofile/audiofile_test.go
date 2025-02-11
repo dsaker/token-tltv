@@ -30,6 +30,10 @@ type audioFileTestCase struct {
 	checkReturn  func(*testing.T, *os.File, error)
 }
 
+var (
+	voicesMap map[int]models.Voice
+)
+
 func TestGetLines(t *testing.T) {
 	if util.Test != "unit" {
 		t.Skip("skipping unit test")
@@ -152,7 +156,7 @@ func TestBuildAudioInputFiles(t *testing.T) {
 	}
 	t.Parallel()
 
-	title := test.RandomGoogleTitle()
+	title := test.RandomTitle(voicesMap)
 	phrase1 := test.RandomPhrase()
 	phrase2 := test.RandomPhrase()
 	title.TitlePhrases = []models.Phrase{phrase1, phrase2}
@@ -209,7 +213,7 @@ func TestCreateMp3Zip(t *testing.T) {
 		{
 			name: "No error",
 			createTitle: func(t *testing.T) (models.Title, string) {
-				title := test.RandomGoogleTitle()
+				title := test.RandomTitle(voicesMap)
 				tmpDir := test.AudioBasePath + "TestCreateMp3ZipWithFfmpeg/" + title.Name + "/"
 				err := os.MkdirAll(tmpDir, 0777)
 				require.NoError(t, err)
@@ -233,7 +237,7 @@ func TestCreateMp3Zip(t *testing.T) {
 		{
 			name: "No files",
 			createTitle: func(t *testing.T) (models.Title, string) {
-				title := test.RandomGoogleTitle()
+				title := test.RandomTitle(voicesMap)
 				tmpDir := test.AudioBasePath + "TestCreateMp3ZipWithFfmpeg/" + title.Name + "/"
 				err := os.MkdirAll(tmpDir, 0777)
 				require.NoError(t, err)
@@ -288,7 +292,7 @@ func TestCreatePhrasesZip(t *testing.T) {
 		{
 			name: "3 files",
 			createTitle: func(t *testing.T) (models.Title, string) {
-				title := test.RandomGoogleTitle()
+				title := test.RandomTitle(voicesMap)
 				tmpDir := test.AudioBasePath + "TestCreatePhrasesZip/" + title.Name + "/"
 				err := os.MkdirAll(tmpDir, 0777)
 				require.NoError(t, err)
@@ -315,7 +319,7 @@ func TestCreatePhrasesZip(t *testing.T) {
 		{
 			name: "5 files",
 			createTitle: func(t *testing.T) (models.Title, string) {
-				title := test.RandomGoogleTitle()
+				title := test.RandomTitle(voicesMap)
 				tmpDir := test.AudioBasePath + "TestCreatePhrasesZip/" + title.Name + "/"
 				err := os.MkdirAll(tmpDir, 0777)
 				require.NoError(t, err)
@@ -342,7 +346,7 @@ func TestCreatePhrasesZip(t *testing.T) {
 		{
 			name: "No One File",
 			createTitle: func(t *testing.T) (models.Title, string) {
-				title := test.RandomGoogleTitle()
+				title := test.RandomTitle(voicesMap)
 				tmpDir := test.AudioBasePath + "TestCreatePhrasesZip/" + title.Name + "/"
 				err := os.MkdirAll(tmpDir, 0777)
 				require.NoError(t, err)
@@ -492,6 +496,7 @@ func createFile(t *testing.T, filename, fileString string) *os.File {
 }
 
 func TestMain(m *testing.M) {
+	_, voicesMap = models.MakeGoogleMaps()
 	flag.StringVar(&util.Test, "test", "test", "type of tests to run [unit|integration|end-to-end]")
 	var projectId string
 	flag.StringVar(&projectId, "project-id", "", "project id for google cloud platform that contains firestore")

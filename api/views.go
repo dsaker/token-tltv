@@ -10,8 +10,8 @@ func homeView(e echo.Context) error {
 }
 
 // audioView renders the frontend html page to upload a file for mp3 creation
-func audioView(e echo.Context) error {
-	return e.Render(http.StatusOK, "audio.gohtml", newTemplateData(""))
+func (s *Server) audioView(e echo.Context) error {
+	return e.Render(http.StatusOK, "audio.gohtml", newTemplateData(s.m.GetLanguages(), s.m.GetVoices(), ""))
 }
 
 // parseView renders the frontend html page to upload a file to parse it

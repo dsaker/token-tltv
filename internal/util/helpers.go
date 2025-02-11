@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	Test string
+	Test = "unit"
 )
 
 const (

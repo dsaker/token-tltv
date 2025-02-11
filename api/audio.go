@@ -47,7 +47,7 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 		return e.String(http.StatusForbidden, "invalid token: "+err.Error())
 	}
 
-	title, err := validateAudioRequest(e)
+	title, err := s.validateAudioRequest(e)
 	if err != nil {
 		return e.String(http.StatusBadRequest, "invalid request: "+err.Error())
 	}
@@ -208,7 +208,7 @@ func (s *Server) createAudioFromTitle(e echo.Context, title models.Title) (*os.F
 	return s.af.CreateMp3Zip(e, title, tmpDirPath)
 }
 
-func validateAudioRequest(e echo.Context) (*models.Title, error) {
+func (s *Server) validateAudioRequest(e echo.Context) (*models.Title, error) {
 	// get values from multipart form
 	titleName := e.FormValue("title_name")
 	// convert strings from multipart form to int
@@ -219,20 +219,20 @@ func validateAudioRequest(e echo.Context) (*models.Title, error) {
 	}
 
 	// validate fileLangId
-	_, ok := models.Languages[fileLangId]
-
-	if !ok {
+	_, err = s.m.GetLanguage(fileLangId)
+	if err != nil {
 		e.Logger().Error(models.ErrLanguageIdInvalid)
 		return nil, models.ErrLanguageIdInvalid
 	}
+
 	toVoiceId, err := strconv.Atoi(e.FormValue("to_voice_id"))
 	if err != nil {
 		e.Logger().Error(err)
 		return nil, fmt.Errorf("error converting to_voice_id to int: %s", err.Error())
 	}
 	// validate toVoiceId
-	_, ok = models.Voices[toVoiceId]
-	if !ok {
+	_, err = s.m.GetVoice(toVoiceId)
+	if err != nil {
 		e.Logger().Error(models.ErrVoiceIdInvalid)
 		return nil, models.ErrVoiceIdInvalid
 	}
@@ -242,8 +242,8 @@ func validateAudioRequest(e echo.Context) (*models.Title, error) {
 		return nil, fmt.Errorf("error converting from_voice_id to int: %s", err.Error())
 	}
 	// valid fromVoiceId
-	_, ok = models.Voices[fromVoiceId]
-	if !ok {
+	_, err = s.m.GetVoice(fromVoiceId)
+	if err != nil {
 		e.Logger().Error(models.ErrVoiceIdInvalid)
 		return nil, models.ErrVoiceIdInvalid
 	}

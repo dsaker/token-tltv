@@ -8,7 +8,6 @@ import (
 	"flag"
 	_ "github.com/lib/pq"
 	"slices"
-	"talkliketv.click/tltv/internal/translates"
 )
 
 // Config Update the config struct to hold the SMTP server settings.
@@ -19,6 +18,7 @@ type Config struct {
 	TTSBasePath     string
 	FileUploadLimit int64
 	ProjectId       string
+	Platform        string
 }
 
 func (cfg *Config) SetConfigs() error {
@@ -32,15 +32,9 @@ func (cfg *Config) SetConfigs() error {
 	flag.Int64Var(&cfg.FileUploadLimit, "upload-size-limit", 8*8000, "File upload size limit in KB (default is 8)")
 	flag.IntVar(&cfg.MaxNumPhrases, "maximum-number-phrases", 100, "Maximum number of phrases to be turned into audio files")
 
-	// set the global variable GlobalPlatform to google or amazon
-	var platform string
-	flag.StringVar(&platform, "platform", "google", "which platform you are using [google|amazon]")
-	if platform == "google" {
-		translates.GlobalPlatform = translates.Google
-	} else if platform == "amazon" {
-		translates.GlobalPlatform = translates.Amazon
-	} else {
-		return errors.New("invalid platform (must be google|amazon)")
+	flag.StringVar(&cfg.Platform, "platform", "google", "which platform you are using [google|amazon]")
+	if !slices.Contains([]string{"google", "amazon"}, cfg.Platform) {
+		return errors.New("platform variable must be [google|amazon]")
 	}
 
 	if !slices.Contains([]string{"local", "dev", "prod"}, cfg.Env) {

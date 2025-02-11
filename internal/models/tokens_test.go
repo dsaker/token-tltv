@@ -52,6 +52,8 @@ func TestTokenGenerate(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
+	var platform string
+	flag.StringVar(&platform, "platform", "google", "which platform you are using [google|amazon]")
 	flag.StringVar(&util.Test, "test", "test", "type of tests to run [unit|integration|end-to-end]")
 	var projectId string
 	flag.StringVar(&projectId, "project-id", "", "project id for google cloud platform that contains firestore")

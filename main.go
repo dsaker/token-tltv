@@ -53,10 +53,16 @@ func main() {
 	af := audiofile.New(&audiofile.RealCmdRunner{})
 
 	// create translates with google or amazon clients depending on the flag set in conifg
-	// I also set a global platform since this will not be changed during execution
-	t := translates.New(*translates.NewGoogleClients(), translates.AmazonClients{}, &models.Models{})
-	if translates.GlobalPlatform == translates.Amazon {
-		t = translates.New(translates.GoogleClients{}, *translates.NewAmazonClients(), &models.Models{})
+	// create maps of voices and languages depending on platform
+	langs, voices := models.MakeGoogleMaps()
+	if cfg.Platform == "amazon" {
+		langs, voices = models.MakeAmazonMaps()
+	}
+
+	mods := models.Models{Languages: langs, Voices: voices}
+	t := translates.New(*translates.NewGoogleClients(), translates.AmazonClients{}, &mods, translates.Google)
+	if cfg.Platform == "amazon" {
+		t = translates.New(translates.GoogleClients{}, *translates.NewAmazonClients(), &mods, translates.Amazon)
 	}
 
 	fClient, err := cfg.FirestoreClient()
@@ -67,13 +73,13 @@ func main() {
 	tokensColl := fClient.Collection(util.TokenColl)
 	tokens := models.Tokens{Coll: tokensColl}
 	// create new server
-	e := api.NewServer(cfg, t, af, &tokens)
+	e := api.NewServer(cfg, t, af, &tokens, &mods)
 
 	// running in local mode allows you to create audio without using tokens
 	// this should never be used in the cloud
 	if cfg.Env == "local" {
 		localTokens := models.LocalTokens{}
-		e = api.NewServer(cfg, t, af, &localTokens)
+		e = api.NewServer(cfg, t, af, &localTokens, &mods)
 	}
 
 	log.Print("\n\n" + util.StarString + "environment: " + cfg.Env + "\n" + util.StarString)

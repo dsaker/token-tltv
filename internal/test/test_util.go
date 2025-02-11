@@ -95,12 +95,12 @@ func RandomVoice() models.Voice {
 	}
 }
 
-func RandomGoogleTitle() (title models.Title) {
+func RandomTitle(voices map[int]models.Voice) (title models.Title) {
 	return models.Title{
 		Name:        RandomString(8),
 		TitleLangId: ValidLangId,
-		ToVoiceId:   models.Voices[rand.Intn(MaxVoices)].ID, //nolint:gosec
-		FromVoiceId: models.Voices[rand.Intn(MaxVoices)].ID, //nolint:gosec
+		ToVoiceId:   voices[rand.Intn(MaxVoices)].ID, //nolint:gosec
+		FromVoiceId: voices[rand.Intn(MaxVoices)].ID, //nolint:gosec
 		Pause:       DefaultPause,
 		Pattern:     DefaultPattern,
 	}
@@ -186,6 +186,9 @@ func StartContainer(ctx context.Context, projectId string) (*TltvContainer, erro
 		ContainerRequest: req,
 		Started:          true,
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	var tltvC *TltvContainer
 	if container == nil {

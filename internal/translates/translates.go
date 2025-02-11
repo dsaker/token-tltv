@@ -19,19 +19,19 @@ const (
 	Amazon
 )
 
-var GlobalPlatform Platform
-
 type Translate struct {
 	googleClients GoogleClients
 	amazonClients AmazonClients
 	m             models.ModelsX
+	platform      Platform
 }
 
-func New(gc GoogleClients, ac AmazonClients, m models.ModelsX) *Translate {
+func New(gc GoogleClients, ac AmazonClients, m models.ModelsX, p Platform) *Translate {
 	return &Translate{
 		googleClients: gc,
 		amazonClients: ac,
 		m:             m,
+		platform:      p,
 	}
 }
 
@@ -67,7 +67,7 @@ func (t *Translate) TranslatePhrases(e echo.Context, title models.Title, lang mo
 		}
 		wg.Add(1)
 		// get responses concurrently with go routines depending on platform
-		if GlobalPlatform == Google {
+		if t.platform == Google {
 			go t.googleClients.GetTranslate(e, newCtx, cancel, nextTranslate, &wg, langTag, responses, i)
 		} else {
 			titleLang, err := t.m.GetLanguage(title.TitleLangId)
@@ -158,7 +158,7 @@ func (t *Translate) TextToSpeech(e echo.Context, ts []models.Phrase, voice model
 		}
 		wg.Add(1)
 		//get responses concurrently with go routines depending on the platform
-		if GlobalPlatform == Google {
+		if t.platform == Google {
 			go t.googleClients.GetSpeech(e, newCtx, cancel, nextText, &wg, voiceSelectionParams, bp)
 		} else {
 			go t.amazonClients.GetSpeech(e, newCtx, cancel, nextText, voice, &wg, bp)
