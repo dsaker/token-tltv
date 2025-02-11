@@ -2,9 +2,8 @@ package test
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"github.com/playwright-community/playwright-go"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -144,7 +143,7 @@ func (lc *StdoutLogConsumer) Accept(l testcontainers.Log) {
 	fmt.Print(string(l.Content))
 }
 
-func StartContainer(ctx context.Context, projectId string) *TltvContainer {
+func StartContainer(ctx context.Context, projectId string) (*TltvContainer, error) {
 	g := StdoutLogConsumer{}
 
 	absPath, err := filepath.Abs("/tmp/secrets/token-tltv-test-7053dcf2e89d.json")
@@ -153,7 +152,9 @@ func StartContainer(ctx context.Context, projectId string) *TltvContainer {
 	}
 
 	r, err := os.Open(absPath)
-	if er
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	req := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
@@ -187,52 +188,21 @@ func StartContainer(ctx context.Context, projectId string) *TltvContainer {
 	})
 
 	var tltvC *TltvContainer
-	if container != nil {
-		tltvC = &TltvContainer{Container: container}
+	if container == nil {
+		return nil, errors.New("container is nil")
 	}
-	require.NoError(t, err)
 
+	tltvC = &TltvContainer{Container: container}
 	ip, err := container.Host(ctx)
-	require.NoError(t, err)
+	if err != nil {
+		return nil, err
+	}
 
 	mappedPort, err := container.MappedPort(ctx, "8080")
-	require.NoError(t, err)
+	if err != nil {
+		return nil, err
+	}
 
 	tltvC.URI = fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
-	return tltvC
-}
-
-func GetBrowserContest() error {
-	var url = "http://localhost:8080"
-	if !local {
-		ctx := context.Background()
-		container := test.StartContainer(ctx, t, testCfg.ProjectId)
-		defer func(container *test.TltvContainer, ctx context.Context, opts ...testcontainers.TerminateOption) {
-			if err := container.Terminate(ctx, opts...); err != nil {
-				require.NoError(t, err)
-			}
-		}(container, ctx)
-		url = container.URI
-	}
-
-	runOption := &playwright.RunOptions{
-		SkipInstallBrowsers: true,
-	}
-	err := playwright.Install(runOption)
-	require.NoError(t, err)
-	pw, err := playwright.Run()
-	assert.NoError(t, err)
-	defer func(pw *playwright.Playwright) {
-		err = pw.Stop()
-		require.NoError(t, err)
-	}(pw)
-
-	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
-		Headless: playwright.Bool(false),
-	})
-	assert.NoError(t, err)
-	defer func(browser playwright.Browser, options ...playwright.BrowserCloseOptions) {
-		err = browser.Close(options...)
-		require.NoError(t, err)
-	}(browser)
+	return tltvC, nil
 }

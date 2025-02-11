@@ -5,8 +5,6 @@ import (
 	"context"
 	"flag"
 	"github.com/playwright-community/playwright-go"
-	"github.com/stretchr/testify/assert"
-	"github.com/testcontainers/testcontainers-go"
 	"io"
 	"log"
 	"mime/multipart"
@@ -38,8 +36,10 @@ var (
 
 type TestConfig struct {
 	config.Config
-	browserContext *playwright.BrowserContext
-	url            string
+	browser *playwright.Browser
+	url     string
+	tc      *test.TltvContainer
+	pw      *playwright.Playwright
 }
 
 // testCase struct groups together the fields necessary for running most of the test cases
@@ -59,60 +59,64 @@ func TestMain(m *testing.M) {
 	flag.BoolVar(&local, "local", false, "if true end-to-end tests will be run in local mode")
 	flag.Parse()
 
-	testCfg.browserContext, testCfg.url = getBrowserContext()
+	testCfg.url = "http://localhost:8080"
+	if util.Test == "end-to-end" {
+		getBrowserContext()
+	}
 
 	testCfg.TTSBasePath = test.AudioBasePath
 
 	// Run tests
 	exitCode := m.Run()
 
-	//if util.Integration {
-	//	// Code to run after tests
-	//	teardown()
+	//if util.Test == "end-to-end" {
+	//	err = testCfg.tc.Terminate(context.Background())
+	//	if err != nil {
+	//		log.Fatal(err)
+	//	}
+	//	err = testCfg.pw.Stop()
+	//	if err != nil {
+	//		log.Fatal(err)
+	//	}
 	//}
 
 	os.Exit(exitCode)
 }
 
-func getBrowserContext() (*playwright.BrowserContext, string) {
-	var url = "http://localhost:8080"
+func getBrowserContext() {
 	if !local {
 		ctx := context.Background()
-		container := test.StartContainer(ctx, t, testCfg.ProjectId)
-		defer func(container *test.TltvContainer, ctx context.Context, opts ...testcontainers.TerminateOption) {
-			if err := container.Terminate(ctx, opts...); err != nil {
-				require.NoError(t, err)
-			}
-		}(container, ctx)
-		url = container.URI
+		container, err := test.StartContainer(ctx, testCfg.ProjectId)
+		testCfg.tc = container
+		if err != nil {
+			log.Fatal(err)
+		}
+		testCfg.url = testCfg.tc.URI
 	}
 
 	runOption := &playwright.RunOptions{
 		SkipInstallBrowsers: true,
 	}
 	err := playwright.Install(runOption)
-	require.NoError(t, err)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	pw, err := playwright.Run()
-	assert.NoError(t, err)
-	defer func(pw *playwright.Playwright) {
-		err = pw.Stop()
-		require.NoError(t, err)
-	}(pw)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	testCfg.pw = pw
 
 	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
 		Headless: playwright.Bool(false),
 	})
-	assert.NoError(t, err)
-	defer func(browser playwright.Browser, options ...playwright.BrowserCloseOptions) {
-		err = browser.Close(options...)
-		require.NoError(t, err)
-	}(browser)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// Create a new browser context
-	browserContext, err := browser.NewContext(playwright.BrowserNewContextOptions{
-		AcceptDownloads: playwright.Bool(true), // Ensure downloads are enabled
-	})
-	assert.NoError(t, err)
+	testCfg.browser = &browser
 }
 
 // readBody reads the http response body and returns it as a string

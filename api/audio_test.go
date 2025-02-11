@@ -9,7 +9,6 @@ import (
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
 	"go.uber.org/mock/gomock"
 	"io"
 	"maps"
@@ -574,54 +573,54 @@ func TestEndToEndParse(t *testing.T) {
 		t.Skip("skipping end-to-end test")
 	}
 
-	var url = "http://localhost:8080"
-	if !local {
-		ctx := context.Background()
-		container := test.StartContainer(ctx, t, testCfg.ProjectId)
-		defer func(container *test.TltvContainer, ctx context.Context, opts ...testcontainers.TerminateOption) {
-			if err := container.Terminate(ctx, opts...); err != nil {
-				require.NoError(t, err)
-			}
-		}(container, ctx)
-		url = container.URI
-	}
-
-	runOption := &playwright.RunOptions{
-		SkipInstallBrowsers: true,
-	}
-	err := playwright.Install(runOption)
-	require.NoError(t, err)
-	pw, err := playwright.Run()
-	assert.NoError(t, err)
-	defer func(pw *playwright.Playwright) {
-		err = pw.Stop()
-		require.NoError(t, err)
-	}(pw)
-
-	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
-		Headless: playwright.Bool(false),
-	})
-	assert.NoError(t, err)
-	defer func(browser playwright.Browser, options ...playwright.BrowserCloseOptions) {
-		err = browser.Close(options...)
-		require.NoError(t, err)
-	}(browser)
-
+	//var url = "http://localhost:8080"
+	//if !local {
+	//	ctx := context.Background()
+	//	container := test.StartContainer(ctx, t, testCfg.ProjectId)
+	//	defer func(container *test.TltvContainer, ctx context.Context, opts ...testcontainers.TerminateOption) {
+	//		if err := container.Terminate(ctx, opts...); err != nil {
+	//			require.NoError(t, err)
+	//		}
+	//	}(container, ctx)
+	//	url = container.URI
+	//}
+	//
+	//runOption := &playwright.RunOptions{
+	//	SkipInstallBrowsers: true,
+	//}
+	//err := playwright.Install(runOption)
+	//require.NoError(t, err)
+	//pw, err := playwright.Run()
+	//assert.NoError(t, err)
+	//defer func(pw *playwright.Playwright) {
+	//	err = pw.Stop()
+	//	require.NoError(t, err)
+	//}(pw)
+	//
+	//browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
+	//	Headless: playwright.Bool(false),
+	//})
+	//assert.NoError(t, err)
+	//defer func(browser playwright.Browser, options ...playwright.BrowserCloseOptions) {
+	//	err = browser.Close(options...)
+	//	require.NoError(t, err)
+	//}(browser)
+	b := *testCfg.browser
 	// Create a new browser context
-	browserContext, err := browser.NewContext(playwright.BrowserNewContextOptions{
+	browserContext, err := b.NewContext(playwright.BrowserNewContextOptions{
 		AcceptDownloads: playwright.Bool(true), // Ensure downloads are enabled
 	})
-	assert.NoError(t, err)
-
-	page, err := browserContext.NewPage()
 	assert.NoError(t, err)
 	defer func(browserContext playwright.BrowserContext, options ...playwright.BrowserContextCloseOptions) {
 		err = browserContext.Close(options...)
 		require.NoError(t, err)
 	}(browserContext)
 
-	resp, err := page.Goto(url)
-	//resp, err := page.Goto(container.URI)
+	page, err := browserContext.NewPage()
+	assert.NoError(t, err)
+
+	resp, err := page.Goto(testCfg.url)
+
 	assert.NoError(t, err)
 	assert.Contains(t, resp.StatusText(), http.StatusText(http.StatusOK))
 	// sleep between clicks or echo golang rate limiter gets triggered
