@@ -79,13 +79,8 @@ audit/local:
 	make ci-lint
 	make vuln
 	go test -vet=off ./... -coverprofile=coverage.out
-	go tool cover -html=coverage.out -o cover.html
 	go test ./... -test=integration -project-id=token-tltv-test
 	go test ./... -test=end-to-end -project-id=token-tltv-test
-
-## staticcheck:  detect bugs, suggest code simplifications, and point out dead code
-staticcheck:
-	staticcheck ./...
 
 ## coverage
 coverage:
