@@ -1,4 +1,4 @@
-name: CI Checks
+name: ci
 
 env:
   go_version: '1.23.6'
@@ -9,25 +9,15 @@ on:
       - 'main'
 jobs:
   audit:
-    name: Audit
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-go@v5
       with:
         go-version: ${{env.go_version}}
+        cache: 'true'
     - name: Run Audit
       run: make audit/pipeline
-  build:
-    name: Build App
-    runs-on: ubuntu-latest
-    needs:
-      - audit
-    steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-go@v5
-      with:
-        go-version: ${{env.go_version}}
     - name: Build
       run: make build
     - name: Copy Files
