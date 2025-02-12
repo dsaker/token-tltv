@@ -1,15 +1,24 @@
 package test
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"go.uber.org/mock/gomock"
+	"log"
 	"math/rand"
+	"os"
+	"path/filepath"
 	"reflect"
 	"slices"
 	"strings"
 	"talkliketv.click/tltv/internal/mock"
 	"talkliketv.click/tltv/internal/models"
 	"testing"
+	"time"
 )
 
 var (
@@ -53,7 +62,6 @@ const (
 	ValidLangId             = 16
 	alphabet                = "abcdefghijklmnopqrstuvwxyz"
 	FirestoreTestCollection = "token-tltv-test"
-	GcPTestProject          = "token-tltv-test"
 )
 
 // RandomString generates a random string of length n
@@ -87,12 +95,12 @@ func RandomVoice() models.Voice {
 	}
 }
 
-func RandomGoogleTitle() (title models.Title) {
+func RandomTitle(voices map[int]models.Voice) (title models.Title) {
 	return models.Title{
 		Name:        RandomString(8),
 		TitleLangId: ValidLangId,
-		ToVoiceId:   models.Voices[rand.Intn(MaxVoices)].ID, //nolint:gosec
-		FromVoiceId: models.Voices[rand.Intn(MaxVoices)].ID, //nolint:gosec
+		ToVoiceId:   voices[rand.Intn(MaxVoices)].ID, //nolint:gosec
+		FromVoiceId: voices[rand.Intn(MaxVoices)].ID, //nolint:gosec
 		Pause:       DefaultPause,
 		Pattern:     DefaultPattern,
 	}
@@ -121,4 +129,83 @@ func NewMockStubs(ctrl *gomock.Controller) MockStubs {
 		TokensX:                mock.NewMockTokensX(ctrl),
 		ModelsX:                mock.NewMockModelsX(ctrl),
 	}
+}
+
+type TltvContainer struct {
+	testcontainers.Container
+	URI string
+}
+
+type StdoutLogConsumer struct{}
+
+// Accept prints the log to stdout
+func (lc *StdoutLogConsumer) Accept(l testcontainers.Log) {
+	fmt.Print(string(l.Content))
+}
+
+func StartContainer(ctx context.Context, projectId string) (*TltvContainer, error) {
+	g := StdoutLogConsumer{}
+
+	absPath, err := filepath.Abs("/tmp/secrets/token-tltv-test-7053dcf2e89d.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	r, err := os.Open(absPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	req := testcontainers.ContainerRequest{
+		FromDockerfile: testcontainers.FromDockerfile{
+			Context:    "../",
+			Dockerfile: "docker/dev/Dockerfile",
+			KeepImage:  true,
+		},
+		ExposedPorts: []string{"8080/tcp"},
+		Env: map[string]string{
+			"TEST_PROJECT_ID":                projectId,
+			"GOOGLE_APPLICATION_CREDENTIALS": "/secrets/acp/application_default_credentials.json",
+		},
+		Files: []testcontainers.ContainerFile{
+			{
+				Reader:            r,
+				HostFilePath:      absPath, // will be discarded internally
+				ContainerFilePath: "/secrets/acp/application_default_credentials.json",
+				FileMode:          0o400,
+			},
+		},
+		WaitingFor: wait.ForHTTP("/").WithPort("8080/tcp"),
+		LogConsumerCfg: &testcontainers.LogConsumerConfig{
+			Opts: []testcontainers.LogProductionOption{
+				testcontainers.WithLogProductionTimeout(10 * time.Second)},
+			Consumers: []testcontainers.LogConsumer{&g},
+		},
+	}
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var tltvC *TltvContainer
+	if container == nil {
+		return nil, errors.New("container is nil")
+	}
+
+	tltvC = &TltvContainer{Container: container}
+	ip, err := container.Host(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	mappedPort, err := container.MappedPort(ctx, "8080")
+	if err != nil {
+		return nil, err
+	}
+
+	tltvC.URI = fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
+	return tltvC, nil
 }

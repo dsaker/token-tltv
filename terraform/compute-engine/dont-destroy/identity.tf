@@ -1,6 +1,7 @@
 # service account to allow cloud run service to access necessary google api's
 resource "google_service_account" "tltv_mig_service_identity" {
   account_id = "token-tltv-mig-service-account"
+  project    = var.project_id
 }
 
 resource "google_project_iam_member" "tltv_cloud_translate_user" {

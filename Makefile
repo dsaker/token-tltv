@@ -29,18 +29,24 @@ generate:
 	go generate ./...
 
 file_name = tokens-$(shell date +%s).json
-## upload-coins number=$1: generate coins and upload them to firestore
-upload-coins:
+
+## upload-coins/prod number=$1: generate coins and upload them to firestore
+upload-coins/prod:
 	go run scripts/go/generatecoins/generatecoins.go -o /tmp/ -f ${file_name} -n ${number}
 	go run scripts/go/coinsfirestore/coinsfirestore.go -f /tmp/${file_name} -p ${PROJECT_ID} -c tokens
+
+## upload-coins/dev number=$1: generate coins and upload them to firestore
+upload-coins/dev:
+	go run scripts/go/generatecoins/generatecoins.go -o /tmp/ -f ${file_name} -n ${number}
+	go run scripts/go/coinsfirestore/coinsfirestore.go -f /tmp/${file_name} -p ${TEST_PROJECT_ID} -c tokens
 
 # ==================================================================================== #
 # DEVELOPMENT
 # ==================================================================================== #
 
-## run: run the api application
-run:
-	go run .
+## run/dev: run the api application in dev mode
+run/dev:
+	go run . -project-id=${TEST_PROJECT_ID}
 
 ## run/docker: run the docker container
 run/docker:
@@ -48,7 +54,7 @@ run/docker:
 
 ## run/local: run locally with no token check
 run/local:
-	go run . -env=local
+	go run . -env=local -project-id=${TEST_PROJECT_ID}
 
 # ==================================================================================== #
 # QUALITY CONTROL
@@ -67,20 +73,16 @@ audit:
 ## audit/pipeline: tidy dependencies and format, vet and test all code (race on)
 audit/pipeline:
 	make audit
-	go test -race -vet=off ./... -coverprofile=coverage.out
+	go test -race -vet=off ./... -test=unit -coverprofile=coverage.out
 
 ## audit/local: tidy dependencies and format, vet and test all code (race off)
 audit/local:
 	make audit
-	go test -vet=off ./... -coverprofile=coverage.out
-	go tool cover -html=coverage.out -o cover.html
 	make ci-lint
 	make vuln
-	go test ./... -integration=true
-
-## staticcheck:  detect bugs, suggest code simplifications, and point out dead code
-staticcheck:
-	staticcheck ./...
+	go test -vet=off ./... -coverprofile=coverage.out
+	go test ./... -test=integration -project-id=token-tltv-test
+	go test ./... -test=end-to-end -project-id=token-tltv-test
 
 ## coverage
 coverage:
@@ -118,10 +120,16 @@ build:
 	go build -ldflags=${linker_flags} -o=./bin/tltv ./api
 	GOOS=linux GOARCH=amd64 go build -ldflags=${linker_flags} -o=./bin/linux_amd64/tltv ./api
 
-## build/local: build the toekn-tltv container for local use (does not connect to firestore)
+## build/local: build the token-tltv container for local use (does not connect to firestore)
 build/local:
 	@echo 'Building container...'
-	docker build --build-arg LINKER_FLAGS=${linker_flags} --tag token-tltv:latest .
+	docker build -f docker/local/Dockerfile  --tag token-tltv:latest .
+
+## build/dev: build the token-tltv container for local use (does not connect to firestore)
+build/dev:
+	@echo 'Building container...'
+	export TEST_PROJECT_ID=testprojectid
+	docker build -f docker/dev/Dockerfile --secret id=test-project-id,env=TEST_PROJECT_ID --tag token-tltv:latest .
 
 ## build/cloud: build and push the token-tltv container to the cloud
 build/cloud:

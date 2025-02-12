@@ -11,7 +11,12 @@ import (
 )
 
 var (
-	Integration = false
+	Test = "unit"
+)
+
+const (
+	StarString = "*********************************************\n"
+	TokenColl  = "tokens"
 )
 
 const (

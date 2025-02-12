@@ -23,22 +23,16 @@ type Server struct {
 	sync.RWMutex
 	translate translates.TranslateX
 	af        audiofile.AudioFileX
+	m         models.ModelsX
 	tokens    models.TokensX
 	config    config.Config
 }
 
 // NewServer creates a new HTTP server and sets up routing.
-func NewServer(c config.Config, t translates.TranslateX, af audiofile.AudioFileX, tok models.TokensX) *echo.Echo {
+func NewServer(c config.Config, t translates.TranslateX, af audiofile.AudioFileX, tok models.TokensX, m models.ModelsX) *echo.Echo {
 	e := echo.New()
 	// make sure silence mp3s exist in your base path
 	initSilence(c)
-
-	// create maps of voices and languages depending on platform
-	if translates.GlobalPlatform == translates.Google {
-		models.MakeGoogleMaps()
-	} else {
-		models.MakeAmazonMaps()
-	}
 
 	tempC, err := newTemplateCache()
 	if err != nil {
@@ -68,12 +62,13 @@ func NewServer(c config.Config, t translates.TranslateX, af audiofile.AudioFileX
 		config:    c,
 		af:        af,
 		tokens:    tok,
+		m:         m,
 	}
 
 	uiGrp := e.Group("")
 	uiGrp.Static("/static", "ui/static")
 	uiGrp.GET("/", homeView)
-	uiGrp.GET("/audio", audioView)
+	uiGrp.GET("/audio", srv.audioView)
 	uiGrp.GET("/parse", srv.parseView)
 
 	oapi.RegisterHandlersWithBaseURL(apiGrp, srv, "")

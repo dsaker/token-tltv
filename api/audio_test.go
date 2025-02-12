@@ -6,6 +6,8 @@ import (
 	"cloud.google.com/go/firestore"
 	"context"
 	"fmt"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 	"io"
 	"maps"
 	"math/rand"
@@ -14,26 +16,22 @@ import (
 	"net/http/httptest"
 	"os"
 	"strconv"
-	"strings"
 	"talkliketv.click/tltv/internal/audio/audiofile"
 	"talkliketv.click/tltv/internal/models"
+	"talkliketv.click/tltv/internal/test"
 	"talkliketv.click/tltv/internal/translates"
 	"talkliketv.click/tltv/internal/util"
 	"testing"
-
-	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
-	"talkliketv.click/tltv/internal/test"
 )
 
 func TestAudioFromFile(t *testing.T) {
-	if util.Integration {
+	if util.Test != "unit" {
 		t.Skip("skipping unit test")
 	}
 
 	t.Parallel()
 
-	title := test.RandomGoogleTitle()
+	title := test.RandomTitle(voicesMap)
 
 	// create a base path for storing mp3 audio files
 	tmpAudioBasePath := test.AudioBasePath + title.Name + "/"
@@ -82,6 +80,15 @@ func TestAudioFromFile(t *testing.T) {
 				stubs.TokensX.EXPECT().
 					CheckToken(gomock.Any(), randomToken).
 					Return(nil)
+				stubs.ModelsX.EXPECT().
+					GetLanguage(title.TitleLangId).
+					Return(models.Language{}, nil)
+				stubs.ModelsX.EXPECT().
+					GetVoice(title.ToVoiceId).
+					Return(models.Voice{}, nil)
+				stubs.ModelsX.EXPECT().
+					GetVoice(title.FromVoiceId).
+					Return(models.Voice{}, nil)
 				stubs.AudioFileX.EXPECT().
 					GetLines(gomock.Any(), gomock.Any()).
 					Return(stringsSlice, nil)
@@ -117,6 +124,15 @@ func TestAudioFromFile(t *testing.T) {
 				stubs.TokensX.EXPECT().
 					CheckToken(gomock.Any(), randomToken).
 					Return(nil)
+				stubs.ModelsX.EXPECT().
+					GetLanguage(title.TitleLangId).
+					Return(models.Language{}, nil)
+				stubs.ModelsX.EXPECT().
+					GetVoice(title.ToVoiceId).
+					Return(models.Voice{}, nil)
+				stubs.ModelsX.EXPECT().
+					GetVoice(title.FromVoiceId).
+					Return(models.Voice{}, nil)
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
@@ -136,6 +152,9 @@ func TestAudioFromFile(t *testing.T) {
 				stubs.TokensX.EXPECT().
 					CheckToken(gomock.Any(), randomToken).
 					Return(nil)
+				stubs.ModelsX.EXPECT().
+					GetLanguage(9999).
+					Return(models.Language{}, models.ErrLanguageIdInvalid)
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
@@ -174,6 +193,12 @@ func TestAudioFromFile(t *testing.T) {
 				stubs.TokensX.EXPECT().
 					CheckToken(gomock.Any(), randomToken).
 					Return(nil)
+				stubs.ModelsX.EXPECT().
+					GetLanguage(title.TitleLangId).
+					Return(models.Language{}, nil)
+				stubs.ModelsX.EXPECT().
+					GetVoice(9999).
+					Return(models.Voice{}, models.ErrVoiceIdInvalid)
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
@@ -193,6 +218,15 @@ func TestAudioFromFile(t *testing.T) {
 				stubs.TokensX.EXPECT().
 					CheckToken(gomock.Any(), randomToken).
 					Return(nil)
+				stubs.ModelsX.EXPECT().
+					GetLanguage(title.TitleLangId).
+					Return(models.Language{}, nil)
+				stubs.ModelsX.EXPECT().
+					GetVoice(title.ToVoiceId).
+					Return(models.Voice{}, nil)
+				stubs.ModelsX.EXPECT().
+					GetVoice(title.FromVoiceId).
+					Return(models.Voice{}, nil)
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
@@ -263,6 +297,15 @@ func TestAudioFromFile(t *testing.T) {
 				stubs.TokensX.EXPECT().
 					CheckToken(gomock.Any(), randomToken).
 					Return(nil)
+				stubs.ModelsX.EXPECT().
+					GetLanguage(title.TitleLangId).
+					Return(models.Language{}, nil)
+				stubs.ModelsX.EXPECT().
+					GetVoice(title.ToVoiceId).
+					Return(models.Voice{}, nil)
+				stubs.ModelsX.EXPECT().
+					GetVoice(title.FromVoiceId).
+					Return(models.Voice{}, nil)
 			},
 			checkResponse: func(res *http.Response) {
 				require.Equal(t, http.StatusBadRequest, res.StatusCode)
@@ -285,6 +328,15 @@ func TestAudioFromFile(t *testing.T) {
 				stubs.TokensX.EXPECT().
 					CheckToken(gomock.Any(), randomToken).
 					Return(nil)
+				stubs.ModelsX.EXPECT().
+					GetLanguage(title.TitleLangId).
+					Return(models.Language{}, nil)
+				stubs.ModelsX.EXPECT().
+					GetVoice(title.ToVoiceId).
+					Return(models.Voice{}, nil)
+				stubs.ModelsX.EXPECT().
+					GetVoice(title.FromVoiceId).
+					Return(models.Voice{}, nil)
 				stubs.AudioFileX.EXPECT().
 					GetLines(gomock.Any(), gomock.Any()).
 					Return(stringsSlice, nil)
@@ -306,7 +358,7 @@ func TestAudioFromFile(t *testing.T) {
 			buildStubs: func(stubs test.MockStubs) {
 				stubs.TokensX.EXPECT().
 					CheckToken(gomock.Any(), randomToken).
-					Return(models.UsedTokenError)
+					Return(models.ErrUsedToken)
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
@@ -342,20 +394,18 @@ func TestAudioFromFile(t *testing.T) {
 	}
 }
 
+// TestGoogleIntegration tests the audio from file endpoint with the google tts client
+// Program arguments: -test=integration -project-id=token-tltv-test
 func TestGoogleIntegration(t *testing.T) {
-	if !util.Integration {
+	if util.Test != "integration" {
 		t.Skip("skipping integration test")
 	}
-	t.Parallel()
 
+	mods := models.Models{Languages: langsMap, Voices: voicesMap}
 	//initialize audiofile with the real command runner
 	af := audiofile.New(&audiofile.RealCmdRunner{})
 	// create translates with google or amazon clients depending on the flag set in conifg
-	// I also set a global platform since this will not be changed during execution
-	tr := translates.New(*translates.NewGoogleClients(), translates.AmazonClients{}, &models.Models{})
-	if translates.GlobalPlatform == translates.Amazon {
-		tr = translates.New(translates.GoogleClients{}, *translates.NewAmazonClients(), &models.Models{})
-	}
+	tr := translates.New(*translates.NewGoogleClients(), translates.AmazonClients{}, &mods, translates.Google)
 
 	// Use the application default credentials
 	ctx := context.Background()
@@ -363,28 +413,18 @@ func TestGoogleIntegration(t *testing.T) {
 	require.NoError(t, err)
 	defer client.Close()
 
-	// generate new token
-	testToken, plaintext, err := models.GenerateToken()
-	require.NoError(t, err)
+	// generate new token and add it to the collection
+	plaintext, tokens := addTokenFirestore(t, client, ctx)
 
-	collName := strings.Split(t.Name(), "/")[0]
-
-	// get the tokens collection from the database
-	testColl := client.Collection(collName)
-
-	tokens := models.Tokens{Coll: testColl}
 	// defer deleting the collection
 	defer func(ctx context.Context, client *firestore.Client, coll *firestore.CollectionRef) {
 		err = util.DeleteFirestoreCollection(ctx, client, coll)
 		require.NoError(t, err)
-	}(ctx, client, testColl)
-	// add test token to the collection
-	err = tokens.AddToken(ctx, *testToken)
-	require.NoError(t, err)
+	}(ctx, client, tokens.Coll)
 
-	e := NewServer(testCfg.Config, tr, af, &tokens)
+	e := NewServer(testCfg.Config, tr, af, &tokens, &mods)
 
-	title := test.RandomGoogleTitle()
+	title := test.RandomTitle(voicesMap)
 
 	//create a base path for storing mp3 audio files
 	tmpAudioBasePath := test.AudioBasePath + title.Name + "/"
@@ -401,7 +441,7 @@ func TestGoogleIntegration(t *testing.T) {
 		"title_name":       title.Name,
 		"from_voice_id":    strconv.Itoa(title.FromVoiceId),
 		"to_voice_id":      strconv.Itoa(title.ToVoiceId),
-		"token":            plaintext,
+		"token":            *plaintext,
 		"pause":            "4",
 		"pattern":          "1",
 	}
@@ -467,48 +507,43 @@ func TestGoogleIntegration(t *testing.T) {
 	}
 }
 
+// TestAmazonIntegration tests the audio from file endpoint with the amazon tts client
+// Program arguments: -test=integration -project-id=token-tltv-test
 func TestAmazonIntegration(t *testing.T) {
-	if !util.Integration {
-		t.Skip("skipping integration test")
+	if util.Test != "integration" {
+		t.Skip("skipping amazon integration test")
 	}
 
-	translates.GlobalPlatform = translates.Amazon
+	ctx := context.Background()
+
+	langs, voices := models.MakeAmazonMaps()
+
 	//initialize audiofile with the real command runner
 	af := audiofile.New(&audiofile.RealCmdRunner{})
-	// create translates with google or amazon clients depending on the flag set in conifg
-	// I also set a global platform since this will not be changed during execution
-	tr := translates.New(*translates.NewGoogleClients(), translates.AmazonClients{}, &models.Models{})
-	if translates.GlobalPlatform == translates.Amazon {
-		tr = translates.New(translates.GoogleClients{}, *translates.NewAmazonClients(), &models.Models{})
+	model := models.Models{
+		Languages: langs,
+		Voices:    voices,
 	}
+	tr := translates.New(translates.GoogleClients{}, *translates.NewAmazonClients(), &model, translates.Amazon)
 
 	// Use the application default credentials
-	ctx := context.Background()
 	client, err := testCfg.FirestoreClient()
 	require.NoError(t, err)
 	defer client.Close()
 
-	// generate new token
-	testToken, plaintext, err := models.GenerateToken()
-	require.NoError(t, err)
+	// generate new token and add it to the collection
+	plaintext, tokens := addTokenFirestore(t, client, ctx)
 
-	collName := strings.Split(t.Name(), "/")[0]
-
-	// get the tokens collection from the database
-	testColl := client.Collection(collName)
-
-	tokens := models.Tokens{Coll: testColl}
 	// defer deleting the collection
 	defer func(ctx context.Context, client *firestore.Client, coll *firestore.CollectionRef) {
 		err = util.DeleteFirestoreCollection(ctx, client, coll)
 		require.NoError(t, err)
-	}(ctx, client, testColl)
-	// add test token to the collection
-	err = tokens.AddToken(ctx, *testToken)
-	require.NoError(t, err)
-	e := NewServer(testCfg.Config, tr, af, &tokens)
+	}(ctx, client, tokens.Coll)
 
-	title := test.RandomGoogleTitle()
+	testCfg.Platform = "amazon"
+	e := NewServer(testCfg.Config, tr, af, &tokens, &model)
+
+	title := test.RandomTitle(voicesMap)
 
 	//create a base path for storing mp3 audio files
 	tmpAudioBasePath := test.AudioBasePath + title.Name + "/"
@@ -520,14 +555,13 @@ func TestAmazonIntegration(t *testing.T) {
 
 	filename := tmpAudioBasePath + "TestAudioFromFile.txt"
 
-	voices := models.Voices
 	numVoices := len(voices)
 	okFormMap := map[string]string{
 		"file_language_id": strconv.Itoa(title.TitleLangId),
 		"title_name":       title.Name,
-		"from_voice_id":    strconv.Itoa(models.Voices[rand.Intn(numVoices)].ID), //nolint:gosec
-		"to_voice_id":      strconv.Itoa(models.Voices[rand.Intn(numVoices)].ID), //nolint:gosec
-		"token":            plaintext,
+		"from_voice_id":    strconv.Itoa(voices[rand.Intn(numVoices)].ID), //nolint:gosec
+		"to_voice_id":      strconv.Itoa(voices[rand.Intn(numVoices)].ID), //nolint:gosec
+		"token":            *plaintext,
 		"pause":            "4",
 		"pattern":          "1",
 	}

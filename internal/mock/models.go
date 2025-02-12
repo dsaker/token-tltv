@@ -55,6 +55,20 @@ func (mr *MockModelsXMockRecorder) GetLanguage(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLanguage", reflect.TypeOf((*MockModelsX)(nil).GetLanguage), arg0)
 }
 
+// GetLanguages mocks base method.
+func (m *MockModelsX) GetLanguages() map[int]models.Language {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLanguages")
+	ret0, _ := ret[0].(map[int]models.Language)
+	return ret0
+}
+
+// GetLanguages indicates an expected call of GetLanguages.
+func (mr *MockModelsXMockRecorder) GetLanguages() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLanguages", reflect.TypeOf((*MockModelsX)(nil).GetLanguages))
+}
+
 // GetVoice mocks base method.
 func (m *MockModelsX) GetVoice(arg0 int) (models.Voice, error) {
 	m.ctrl.T.Helper()
@@ -68,4 +82,18 @@ func (m *MockModelsX) GetVoice(arg0 int) (models.Voice, error) {
 func (mr *MockModelsXMockRecorder) GetVoice(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVoice", reflect.TypeOf((*MockModelsX)(nil).GetVoice), arg0)
+}
+
+// GetVoices mocks base method.
+func (m *MockModelsX) GetVoices() map[int]models.Voice {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVoices")
+	ret0, _ := ret[0].(map[int]models.Voice)
+	return ret0
+}
+
+// GetVoices indicates an expected call of GetVoices.
+func (mr *MockModelsXMockRecorder) GetVoices() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVoices", reflect.TypeOf((*MockModelsX)(nil).GetVoices))
 }

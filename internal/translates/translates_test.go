@@ -22,6 +22,10 @@ import (
 	"talkliketv.click/tltv/internal/util"
 )
 
+var (
+	voicesMap map[int]models.Voice
+)
+
 type translatesTestCase struct {
 	name           string
 	buildStubs     func(stubs test.MockStubs)
@@ -29,12 +33,12 @@ type translatesTestCase struct {
 }
 
 func TestGoogleTTS(t *testing.T) {
-	if util.Integration {
+	if util.Test != "unit" {
 		t.Skip("skipping unit test")
 	}
 	t.Parallel()
 
-	title := test.RandomGoogleTitle()
+	title := test.RandomTitle(voicesMap)
 
 	basepath := test.AudioBasePath + title.Name + "/"
 	err := os.MkdirAll(basepath, 0777)
@@ -93,7 +97,7 @@ func TestGoogleTTS(t *testing.T) {
 				gtc:  stubs.GoogleTranslateClientX,
 				gtts: stubs.GoogleTTsClientX,
 			}
-			translates := New(clients, AmazonClients{}, stubs.ModelsX)
+			translates := New(clients, AmazonClients{}, stubs.ModelsX, Google)
 			err = translates.TextToSpeech(newE, []models.Phrase{{ID: 0, Text: text1}}, voice, basepath)
 			tc.checkTranslate(nil, err)
 		})
@@ -101,12 +105,12 @@ func TestGoogleTTS(t *testing.T) {
 }
 
 func TestAmazonTTS(t *testing.T) {
-	if util.Integration {
+	if util.Test != "unit" {
 		t.Skip("skipping unit test")
 	}
 	t.Parallel()
 
-	title := test.RandomGoogleTitle()
+	title := test.RandomTitle(voicesMap)
 
 	basepath := test.AudioBasePath + title.Name + "/"
 	err := os.MkdirAll(basepath, 0777)
@@ -174,12 +178,11 @@ func TestAmazonTTS(t *testing.T) {
 			rec := httptest.NewRecorder()
 			newE := e.NewContext(req, rec)
 
-			GlobalPlatform = Amazon
 			clients := AmazonClients{
 				atc:  stubs.AmazonTranslateClientX,
 				atts: stubs.AmazonTTsClientX,
 			}
-			translates := New(GoogleClients{}, clients, stubs.ModelsX)
+			translates := New(GoogleClients{}, clients, stubs.ModelsX, Amazon)
 			err = translates.TextToSpeech(newE, []models.Phrase{{ID: 0, Text: text1}}, voice, basepath)
 			tc.checkTranslate(nil, err)
 		})
@@ -187,9 +190,10 @@ func TestAmazonTTS(t *testing.T) {
 }
 
 func TestGoogleTranslate(t *testing.T) {
-	if util.Integration {
+	if util.Test != "unit" {
 		t.Skip("skipping unit test")
 	}
+
 	t.Parallel()
 
 	modelsLang := models.Language{ID: 0, Code: "es", Name: "Spanish"}
@@ -198,7 +202,7 @@ func TestGoogleTranslate(t *testing.T) {
 	translateText := "Esta es la primera oración."
 	returnedPhrase := []models.Phrase{{ID: 0, Text: translateText}, translate1}
 	translation := translate.Translation{Text: "Esta es la primera oración."}
-	title := test.RandomGoogleTitle()
+	title := test.RandomTitle(voicesMap)
 	title.TitlePhrases = []models.Phrase{{ID: 0, Text: text1}}
 
 	testCases := []translatesTestCase{
@@ -232,7 +236,7 @@ func TestGoogleTranslate(t *testing.T) {
 				gtc:  stubs.GoogleTranslateClientX,
 				gtts: stubs.GoogleTTsClientX,
 			}
-			translates := New(clients, AmazonClients{}, stubs.ModelsX)
+			translates := New(clients, AmazonClients{}, stubs.ModelsX, Google)
 			translatesRow, err := translates.TranslatePhrases(c, title, modelsLang)
 			tc.checkTranslate(translatesRow, err)
 		})
@@ -255,6 +259,13 @@ func IsDirectoryEmpty(dirPath string) (bool, error) {
 }
 
 func TestMain(m *testing.M) {
-	flag.BoolVar(&util.Integration, "integration", false, "Run integration tests")
+	_, voicesMap = models.MakeGoogleMaps()
+	var platform string
+	flag.StringVar(&platform, "platform", "google", "which platform you are using [google|amazon]")
+	flag.StringVar(&util.Test, "test", "test", "type of tests to run [unit|integration|end-to-end]")
+	var projectId string
+	flag.StringVar(&projectId, "project-id", "", "project id for google cloud platform that contains firestore")
+	flag.Parse()
+  
 	os.Exit(m.Run())
 }

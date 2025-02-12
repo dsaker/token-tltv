@@ -67,10 +67,10 @@ func newTemplateCache() (map[string]*template.Template, error) {
 }
 
 // newTemplateDatachecks if the user is authenticated and adds the base data needed for the templates
-func newTemplateData(err string) *templateData {
+func newTemplateData(l map[int]models.Language, v map[int]models.Voice, err string) *templateData {
 	return &templateData{
-		Languages: models.Languages,
-		Voices:    models.Voices,
+		Languages: l,
+		Voices:    v,
 		Error:     err,
 	}
 }

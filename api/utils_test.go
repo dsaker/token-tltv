@@ -2,13 +2,18 @@ package api
 
 import (
 	"bytes"
+	"cloud.google.com/go/firestore"
+	"context"
 	"flag"
+	"github.com/playwright-community/playwright-go"
 	"io"
 	"log"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
+	"talkliketv.click/tltv/internal/models"
 	"testing"
 
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -21,15 +26,25 @@ import (
 )
 
 var (
-	testCfg TestConfig
+	testCfg   TestConfig
+	voicesMap map[int]models.Voice
+	langsMap  map[int]models.Language
 )
 
 const (
 	audioBasePath = "/v1/audio"
 )
 
+var (
+	local    = false
+	headless = true
+)
+
 type TestConfig struct {
 	config.Config
+	browser *playwright.Browser
+	url     string
+	tc      *test.TltvContainer
 }
 
 // testCase struct groups together the fields necessary for running most of the test cases
@@ -45,24 +60,77 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	flag.BoolVar(&util.Integration, "integration", false, "Run integration tests")
+	flag.StringVar(&util.Test, "test", "unit", "type of tests to run [unit|integration|end-to-end]")
+	flag.BoolVar(&local, "local", false, "if true end-to-end tests will be run in local mode")
+	flag.BoolVar(&headless, "headless", true, "if true browser will be headless")
 	flag.Parse()
-	testCfg.TTSBasePath = test.AudioBasePath
 
-	if util.Integration {
-		testCfg.GcpProjectID = test.GcpTestProject
-		testCfg.FirestoreTokenColl = test.FirestoreTestColl
+	langsMap, voicesMap = models.MakeGoogleMaps()
+
+	testCfg.url = "http://localhost:8080"
+	if util.Test == "end-to-end" {
+		getBrowserContext(headless)
 	}
+
+	testCfg.TTSBasePath = test.AudioBasePath
 
 	// Run tests
 	exitCode := m.Run()
 
-	//if util.Integration {
-	//	// Code to run after tests
-	//	teardown()
-	//}
-
 	os.Exit(exitCode)
+}
+
+func addTokenFirestore(t *testing.T, client *firestore.Client, ctx context.Context) (*string, models.Tokens) {
+	// generate new token
+	testToken, plaintext, err := models.GenerateToken()
+	require.NoError(t, err)
+
+	testName := strings.Split(t.Name(), "/")[0]
+	// get the tokens collection from the database
+	testColl := client.Collection(testName)
+
+	tokens := models.Tokens{Coll: testColl}
+
+	// add test token to the collection
+	err = tokens.AddToken(ctx, *testToken)
+	require.NoError(t, err)
+
+	return &plaintext, tokens
+}
+
+// getBrowserContext sets up the playwright browser context
+func getBrowserContext(headless bool) {
+	if !local {
+		ctx := context.Background()
+		container, err := test.StartContainer(ctx, testCfg.ProjectId)
+		testCfg.tc = container
+		if err != nil {
+			log.Fatal(err)
+		}
+		testCfg.url = testCfg.tc.URI
+	}
+
+	runOption := &playwright.RunOptions{
+		SkipInstallBrowsers: true,
+	}
+	err := playwright.Install(runOption)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	pw, err := playwright.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
+		Headless: playwright.Bool(headless),
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	testCfg.browser = &browser
 }
 
 // readBody reads the http response body and returns it as a string
@@ -89,7 +157,7 @@ func setupServerTest(ctrl *gomock.Controller, tc testCase) *httptest.Server {
 	stubs := test.NewMockStubs(ctrl)
 	tc.buildStubs(stubs)
 
-	e := NewServer(testCfg.Config, stubs.TranslateX, stubs.AudioFileX, stubs.TokensX)
+	e := NewServer(testCfg.Config, stubs.TranslateX, stubs.AudioFileX, stubs.TokensX, stubs.ModelsX)
 
 	ts := httptest.NewServer(e)
 

@@ -101,18 +101,20 @@ const (
 	Used
 )
 
-var Languages = make(map[int]Language)
-var Voices = make(map[int]Voice)
-
 type ModelsX interface {
 	GetLanguage(int) (Language, error)
 	GetVoice(int) (Voice, error)
+	GetLanguages() map[int]Language
+	GetVoices() map[int]Voice
 }
 
-type Models struct{}
+type Models struct {
+	Languages map[int]Language
+	Voices    map[int]Voice
+}
 
 func (m *Models) GetLanguage(id int) (Language, error) {
-	lang, ok := Languages[id]
+	lang, ok := m.Languages[id]
 	if !ok {
 		return Language{}, ErrLanguageIdInvalid
 	}
@@ -120,14 +122,22 @@ func (m *Models) GetLanguage(id int) (Language, error) {
 }
 
 func (m *Models) GetVoice(id int) (Voice, error) {
-	voice, ok := Voices[id]
+	voice, ok := m.Voices[id]
 	if !ok {
 		return Voice{}, ErrVoiceIdInvalid
 	}
 	return voice, nil
 }
 
-func MakeGoogleMaps() {
+func (m *Models) GetLanguages() map[int]Language {
+	return m.Languages
+}
+
+func (m *Models) GetVoices() map[int]Voice {
+	return m.Voices
+}
+
+func MakeGoogleMaps() (map[int]Language, map[int]Voice) {
 	languageFile, err := JsonModels.Open("jsonmodels/google_languages.json")
 	if err != nil {
 		log.Fatal(err)
@@ -153,6 +163,7 @@ func MakeGoogleMaps() {
 	}
 
 	usedLangs := make(map[int]bool)
+	voiceMap := make(map[int]Voice)
 	for i, voice := range voices {
 		langCode := voice.LanguageCodes[0]
 		// get the language id for the voice from the language tag
@@ -184,7 +195,7 @@ func MakeGoogleMaps() {
 		} else {
 			usedLangs[langId] = true
 			// add to VoiceLangId map
-			Voices[i] = Voice{
+			voiceMap[i] = Voice{
 				ID:                     i,
 				LanguageCodes:          voice.LanguageCodes,
 				Gender:                 voice.SsmlGender,
@@ -194,21 +205,23 @@ func MakeGoogleMaps() {
 			}
 		}
 	}
+	languageMap := make(map[int]Language)
 	// only add google language to models.Language if it has a voice
 	for i, lang := range glangs {
 		_, ok := usedLangs[i]
 		// If the key exists
 		if ok {
-			Languages[i] = Language{
+			languageMap[i] = Language{
 				ID:   i,
 				Code: lang.Language,
 				Name: lang.Name,
 			}
 		}
 	}
+	return languageMap, voiceMap
 }
 
-func MakeAmazonMaps() {
+func MakeAmazonMaps() (map[int]Language, map[int]Voice) {
 	languageFile, err := JsonModels.Open("jsonmodels/aws_languages.json")
 	if err != nil {
 		log.Fatal(err)
@@ -235,6 +248,7 @@ func MakeAmazonMaps() {
 	}
 
 	usedLangs := make(map[int]bool)
+	voiceMap := make(map[int]Voice)
 	for i, voice := range voices.Voices {
 		langCode := voice.LanguageCode
 		// get the language id for the voice from the language tag
@@ -258,7 +272,7 @@ func MakeAmazonMaps() {
 			if voice.Gender == "Female" {
 				gender = FEMALE
 			}
-			Voices[i] = Voice{
+			voiceMap[i] = Voice{
 				ID:            i,
 				LanguageCodes: []string{voice.LanguageCode},
 				Gender:        gender,
@@ -270,16 +284,18 @@ func MakeAmazonMaps() {
 		}
 	}
 
+	langaugeMap := make(map[int]Language)
 	// only add the language to models.Language if it has a voice
 	for i, lang := range languages {
 		_, ok := usedLangs[i]
 		// If the key exists
 		if ok {
-			Languages[i] = Language{
+			langaugeMap[i] = Language{
 				ID:   i,
 				Code: lang.LanguageCode,
 				Name: lang.LanguageName,
 			}
 		}
 	}
+	return langaugeMap, voiceMap
 }
