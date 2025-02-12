@@ -29,6 +29,7 @@ generate:
 	go generate ./...
 
 file_name = tokens-$(shell date +%s).json
+
 ## upload-coins/prod number=$1: generate coins and upload them to firestore
 upload-coins/prod:
 	go run scripts/go/generatecoins/generatecoins.go -o /tmp/ -f ${file_name} -n ${number}
@@ -38,6 +39,7 @@ upload-coins/prod:
 upload-coins/dev:
 	go run scripts/go/generatecoins/generatecoins.go -o /tmp/ -f ${file_name} -n ${number}
 	go run scripts/go/coinsfirestore/coinsfirestore.go -f /tmp/${file_name} -p ${TEST_PROJECT_ID} -c tokens
+
 # ==================================================================================== #
 # DEVELOPMENT
 # ==================================================================================== #

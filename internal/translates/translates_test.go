@@ -265,7 +265,7 @@ func TestMain(m *testing.M) {
 	flag.StringVar(&util.Test, "test", "test", "type of tests to run [unit|integration|end-to-end]")
 	var projectId string
 	flag.StringVar(&projectId, "project-id", "", "project id for google cloud platform that contains firestore")
-
 	flag.Parse()
+  
 	os.Exit(m.Run())
 }

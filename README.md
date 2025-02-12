@@ -91,6 +91,7 @@ terraform init
 cp terraform.tfvars.tmpl terraform.tfvars # fill in PROJECT_ID
 terraform apply
 ```
+
 ### Add Tokens to Firestore
 when the plaintext tokens are output to the terminal copy them...<br>
 these are what you will use to create mp3 files and will not be available after this step
@@ -109,6 +110,16 @@ make build/local
 kubectl apply -f docker/deployment.yaml
 minikube image load token-tltv:latest
 minikube service tltv-svc --url 
+```
+
+### Run Container Locally
+- Set up [ADC](https://cloud.google.com/docs/authentication/set-up-adc-containerized-environment)
+- Install [minikube](https://minikube.sigs.k8s.io/docs/handbook/addons/gcp-auth/)
+```
+minikube start
+minikube addons enable gcp-auth
+make build/local
+kubectl apply -f docker/deployment.yaml
 ```
 
 ### Update Languages and Voices

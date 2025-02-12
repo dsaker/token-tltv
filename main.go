@@ -83,5 +83,6 @@ func main() {
 	}
 
 	log.Print("\n\n" + util.StarString + "environment: " + cfg.Env + "\n" + util.StarString)
+
 	e.Logger.Fatal(e.Start(net.JoinHostPort("0.0.0.0", cfg.Port)))
 }
