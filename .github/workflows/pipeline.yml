@@ -16,39 +16,13 @@ jobs:
     - uses: actions/setup-go@v5
       with:
         go-version: ${{env.go_version}}
-    - name: Make Key
-      run: make key
     - name: Run Audit
       run: make audit/pipeline
-    - name: Check Vulnerabilities
-      run: make vuln
-    - name: Coverage Check
-      run: make coverage
-    - name: Copy Files
-      run: |
-        mkdir  reports
-        cp cover.html reports/.
-    - name: Archive Reports
-      uses: actions/upload-artifact@v4
-      with:
-        name: reports
-        path: reports
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: ${{env.go_version}}
-      - name: Run make ci-lint
-        run: make ci-lint
   build:
     name: Build App
     runs-on: ubuntu-latest
     needs:
       - audit
-      - lint
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-go@v5

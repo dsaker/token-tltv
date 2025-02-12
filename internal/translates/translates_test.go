@@ -266,6 +266,6 @@ func TestMain(m *testing.M) {
 	var projectId string
 	flag.StringVar(&projectId, "project-id", "", "project id for google cloud platform that contains firestore")
 	flag.Parse()
-  
+
 	os.Exit(m.Run())
 }
