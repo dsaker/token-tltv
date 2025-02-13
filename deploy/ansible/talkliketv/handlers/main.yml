@@ -1,0 +1,8 @@
+---
+# handlers file for talkliketv
+- name: Restart tltv
+  service:
+    name: tltv
+    state: restarted
+    daemon_reload: yes
+    enabled: yes

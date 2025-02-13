@@ -119,7 +119,9 @@ minikube service tltv-svc --url
 minikube start
 minikube addons enable gcp-auth
 make build/local
+minikube cache add token-tltv:latest
 kubectl apply -f docker/deployment.yaml
+minikube service tltv-svc --url
 ```
 
 ### Update Languages and Voices

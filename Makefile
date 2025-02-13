@@ -117,25 +117,32 @@ linker_flags = '-s -X main.buildTime=${current_time} -X main.version=${git_descr
 ## build: build the cmd/api application
 build:
 	@echo 'Building api...'
-	go build -ldflags=${linker_flags} -o=./bin/tltv ./api
-	GOOS=linux GOARCH=amd64 go build -ldflags=${linker_flags} -o=./bin/linux_amd64/tltv ./api
+	go build -ldflags=${linker_flags} -o=./bin/tltv ./
+	GOOS=linux GOARCH=amd64 go build -ldflags=${linker_flags} -o=./bin/linux_amd64/tltv ./
 
-## build/local: build the token-tltv container for local use (does not connect to firestore)
-build/local:
+## docker/local: build the token-tltv container for local use (does not connect to firestore)
+docker/local:
 	@echo 'Building container...'
-	docker build -f docker/local/Dockerfile  --tag token-tltv:latest .
+	docker build -f docker/local/Dockerfile  --build-arg PROJECT_ID=${TEST_PROJECT_ID}  --tag token-tltv:latest .
 
-## build/dev: build the token-tltv container for local use (does not connect to firestore)
-build/dev:
+## docker/dev: build the token-tltv container for local use (does not connect to firestore)
+docker/dev:
 	@echo 'Building container...'
-	export TEST_PROJECT_ID=testprojectid
-	docker build -f docker/dev/Dockerfile --secret id=test-project-id,env=TEST_PROJECT_ID --tag token-tltv:latest .
+	docker build -f docker/dev/Dockerfile  --tag token-tltv:latest .
 
-## build/cloud: build and push the token-tltv container to the cloud
-build/cloud:
-	docker build -f docker/prod/Dockerfile --platform linux/amd64 --push -t us-east4-docker.pkg.dev/${PROJECT_ID}/token-tltv/token-tltv:latest .
+## docker/cloud: build and push the token-tltv container to the cloud
+docker/cloud:
+	docker build -f docker/prod/Dockerfile --platform linux/amd64 --push -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/token-tltv/token-tltv-443:latest .
 
 ## build/pack: build the talkliketv container using build pack
 build/pack:
 	@echo 'Building container with buildpack'
 	pack build token-tltv --env "LINKER_FLAGS=${linker_flags}" --builder paketobuildpacks/builder-jammy-base
+
+# ==================================================================================== #
+# CLOUD
+# ==================================================================================== #
+
+## connect: connect to the cloud server
+connect:
+	ssh ${CLOUD_HOST_USERNAME}@${CLOUD_HOST_IP}

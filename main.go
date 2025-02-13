@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"runtime/pprof"
 	"strings"
 	"talkliketv.click/tltv/api"
 	"talkliketv.click/tltv/internal/audio/audiofile"
@@ -18,8 +19,17 @@ import (
 )
 
 func main() {
+	// start cpu profiling
+	f, _ := os.Create("cpu.prof")
+	err := pprof.StartCPUProfile(f)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer pprof.StopCPUProfile()
+
+	// load config
 	var cfg config.Config
-	err := cfg.SetConfigs()
+	err = cfg.SetConfigs()
 	if err != nil {
 		log.Fatal(err)
 	}

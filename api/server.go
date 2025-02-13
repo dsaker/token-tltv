@@ -7,6 +7,7 @@ import (
 	echomw "github.com/labstack/echo/v4/middleware"
 	middleware "github.com/oapi-codegen/echo-middleware"
 	"golang.org/x/time/rate"
+	"io/fs"
 	"log"
 	"os"
 	"sync"
@@ -17,6 +18,7 @@ import (
 	"talkliketv.click/tltv/internal/oapi"
 	"talkliketv.click/tltv/internal/translates"
 	"talkliketv.click/tltv/internal/util"
+	"talkliketv.click/tltv/ui"
 )
 
 type Server struct {
@@ -66,7 +68,12 @@ func NewServer(c config.Config, t translates.TranslateX, af audiofile.AudioFileX
 	}
 
 	uiGrp := e.Group("")
-	uiGrp.Static("/static", "ui/static")
+	// Serve static files from the "static" directory
+	staticFiles, err := fs.Sub(ui.Files, "static")
+	if err != nil {
+		log.Fatal(err)
+	}
+	uiGrp.StaticFS("/static", staticFiles)
 	uiGrp.GET("/", homeView)
 	uiGrp.GET("/audio", srv.audioView)
 	uiGrp.GET("/parse", srv.parseView)

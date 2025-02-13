@@ -1,0 +1,6 @@
+---
+- name: Install ffmpeg
+  ansible.builtin.apt:
+    name: ffmpeg
+    state: present
+    update_cache: yes
