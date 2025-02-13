@@ -1,6 +1,6 @@
 ---
 # tasks file for talkliketv
-- name: Create user for talkliketv
+- name: create user for talkliketv
   user:
     name: "{{ web_user }}"  # Username
     state: present  # Ensure the user is present
@@ -8,15 +8,15 @@
     shell: /usr/sbin/nologin
     append: yes
 
-- name: Copy talkliketv binary to server
+- name: copy talkliketv binary to server
   copy:
-    src: tltv
+    src: ../../../../bin/linux_amd64/tltv
     dest: /usr/local/bin/
     owner: "{{ web_user }}"
     group: "{{ web_user }}"
     mode: "744"
 
-- name: Copy service file to server
+- name: copy service file to server
   copy:
     src: tltv.service
     dest: /etc/systemd/system/

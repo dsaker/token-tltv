@@ -1,9 +1,14 @@
+data "google_compute_image" "debian" {
+  family  = "debian-12"
+  project = "debian-cloud"
+}
+
 module "gce-tltv-container" {
   source = "terraform-google-modules/container-vm/google"
   version = "~> 3.2"
 
   container = {
-    image=local.image
+    image=data.google_compute_image.debian.self_link
     env = [
       {
         name = "PROJECT_ID"
@@ -15,23 +20,22 @@ module "gce-tltv-container" {
       }
     ],
   }
-
   restart_policy = "Always"
 }
 
-data "google_artifact_registry_repository" "token_tltv" {
-  location = var.region
-  repository_id = var.repository_id
-}
+# data "google_artifact_registry_repository" "token_tltv" {
+#   location = var.region
+#   repository_id = var.repository_id
+# }
 
 # create locals data to store registry info for image name
-locals {
-  instance_name = format("%s-%s", var.instance_name, substr(md5(module.gce-tltv-container.container.image), 0, 8))
-  l = data.google_artifact_registry_repository.token_tltv.location
-  p = data.google_artifact_registry_repository.token_tltv.project
-  r = data.google_artifact_registry_repository.token_tltv.repository_id
-  image = "${local.l}-docker.pkg.dev/${local.p}/${local.r}/${var.image_name}:${var.image_version}"
-}
+# locals {
+#   instance_name = format("%s-%s", var.instance_name, substr(md5(module.gce-tltv-container.container.image), 0, 8))
+#   l = data.google_artifact_registry_repository.token_tltv.location
+#   p = data.google_artifact_registry_repository.token_tltv.project
+#   r = data.google_artifact_registry_repository.token_tltv.repository_id
+#   image = "${local.l}-docker.pkg.dev/${local.p}/${local.r}/${var.image_name}:${var.image_version}"
+# }
 
 resource "google_compute_firewall" "health_check_8080" {
   name          = "health-check-8080"
