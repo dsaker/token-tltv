@@ -5,8 +5,9 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/labstack/echo/v4"
 	echomw "github.com/labstack/echo/v4/middleware"
-	middleware "github.com/oapi-codegen/echo-middleware"
+	oapimw "github.com/oapi-codegen/echo-middleware"
 	"golang.org/x/time/rate"
+	"io/fs"
 	"log"
 	"os"
 	"sync"
@@ -17,6 +18,7 @@ import (
 	"talkliketv.click/tltv/internal/oapi"
 	"talkliketv.click/tltv/internal/translates"
 	"talkliketv.click/tltv/internal/util"
+	"talkliketv.click/tltv/ui"
 )
 
 type Server struct {
@@ -52,8 +54,8 @@ func NewServer(c config.Config, t translates.TranslateX, af audiofile.AudioFileX
 		log.Fatalln("loading spec: %w", err)
 	}
 	spec.Servers = openapi3.Servers{&openapi3.Server{URL: "/v1"}}
-	apiGrp.Use(middleware.OapiRequestValidatorWithOptions(spec,
-		&middleware.Options{
+	apiGrp.Use(oapimw.OapiRequestValidatorWithOptions(spec,
+		&oapimw.Options{
 			SilenceServersWarning: true,
 		}))
 
@@ -66,7 +68,15 @@ func NewServer(c config.Config, t translates.TranslateX, af audiofile.AudioFileX
 	}
 
 	uiGrp := e.Group("")
-	uiGrp.Static("/static", "ui/static")
+	// Serve static files from the "static" directory
+	staticFiles, err := fs.Sub(ui.Files, "static")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	//e.Static(fs.FormatDirEntry(staticFiles[1])))
+	uiGrp.StaticFS("/static", staticFiles)
+	//uiGrp.Static("/static", staticFiles[1].Name())
 	uiGrp.GET("/", homeView)
 	uiGrp.GET("/audio", srv.audioView)
 	uiGrp.GET("/parse", srv.parseView)

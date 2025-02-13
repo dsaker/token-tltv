@@ -1,0 +1,26 @@
+- name: install ffmpeg
+  hosts: talkliketv
+  become: True
+  gather_facts: yes
+  tags:
+    - ffmpeg
+  roles:
+    - role: ffmpeg
+
+- name: install caddy
+  hosts: talkliketv
+  become: True
+  gather_facts: yes
+  tags:
+    - caddy
+  roles:
+    - role: caddy
+
+- name: install talkliketv
+  hosts: talkliketv
+  become: True
+  gather_facts: yes
+  tags:
+    - talkliketv
+  roles:
+    - role: talkliketv

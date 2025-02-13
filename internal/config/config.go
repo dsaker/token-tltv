@@ -41,10 +41,6 @@ func (cfg *Config) SetConfigs() error {
 		return errors.New("environment variable must be [local|dev|prod]")
 	}
 
-	if !slices.Contains([]string{"local", "dev", "prod"}, cfg.Env) {
-		return errors.New("environment variable must be [local|dev|prod]")
-	}
-
 	// google cloud project id
 	flag.StringVar(&cfg.ProjectId, "project-id", "", "project id for google cloud platform that contains firestore")
 

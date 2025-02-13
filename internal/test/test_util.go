@@ -159,7 +159,7 @@ func StartContainer(ctx context.Context, projectId string) (*TltvContainer, erro
 	req := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context:    "../",
-			Dockerfile: "docker/dev/Dockerfile",
+			Dockerfile: "/deploy/docker/dev/Dockerfile",
 			KeepImage:  true,
 		},
 		ExposedPorts: []string{"8080/tcp"},
