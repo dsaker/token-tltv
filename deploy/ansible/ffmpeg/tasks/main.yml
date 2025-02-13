@@ -1,6 +1,12 @@
 ---
-- name: Install ffmpeg
+- name: install ffmpeg
   ansible.builtin.apt:
     name: ffmpeg
+    state: present
+    update_cache: yes
+
+- name: install rsync
+  ansible.builtin.apt:
+    name: rsync
     state: present
     update_cache: yes

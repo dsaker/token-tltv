@@ -146,3 +146,11 @@ build/pack:
 ## connect: connect to the cloud server
 connect:
 	ssh ${CLOUD_HOST_USERNAME}@${CLOUD_HOST_IP}
+
+## cloud/redeploy/ce: builds and redeploys tltv to compute engine instance
+cloud/redeploy/ce:
+	GOOS=linux GOARCH=amd64 go build -ldflags=${linker_flags} -o=./bin/linux_amd64/tltv ./
+	rsync -rP --delete ./bin/linux_amd64/tltv ${CLOUD_HOST_USERNAME}@${CLOUD_HOST_IP}:~
+	ssh -t ${CLOUD_HOST_USERNAME}@${CLOUD_HOST_IP} '\
+			sudo mv ~/tltv /usr/local/bin/ \
+    		sudo systemctl restart tltv.service'
