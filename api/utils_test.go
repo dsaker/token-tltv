@@ -157,8 +157,9 @@ func setupServerTest(ctrl *gomock.Controller, tc testCase) *httptest.Server {
 	stubs := test.NewMockStubs(ctrl)
 	tc.buildStubs(stubs)
 
-	e := NewServer(testCfg.Config, stubs.TranslateX, stubs.AudioFileX, stubs.TokensX, stubs.ModelsX)
+	srv := NewServer(testCfg.Config, stubs.TranslateX, stubs.AudioFileX, stubs.TokensX, stubs.ModelsX)
 
+	e := srv.NewEcho(nil)
 	ts := httptest.NewServer(e)
 
 	return ts

@@ -3,12 +3,13 @@
 package main
 
 import (
+	"cloud.google.com/go/logging"
+	"context"
 	"flag"
 	"log"
 	"net"
 	"os"
 	"os/exec"
-	"runtime/pprof"
 	"strings"
 	"talkliketv.click/tltv/api"
 	"talkliketv.click/tltv/internal/audio/audiofile"
@@ -19,27 +20,29 @@ import (
 )
 
 func main() {
-	// start cpu profiling
-	f, _ := os.Create("cpu.prof")
-	err := pprof.StartCPUProfile(f)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer pprof.StopCPUProfile()
-
 	// load config
 	var cfg config.Config
-	err = cfg.SetConfigs()
+	err := cfg.SetConfigs()
 	if err != nil {
 		log.Fatal(err)
 	}
 	flag.Parse()
 
+	var logger *logging.Logger
 	if cfg.Env == "dev" && cfg.ProjectId == "" {
 		cfg.ProjectId = os.Getenv("TEST_PROJECT_ID")
 		if cfg.ProjectId == "" {
 			log.Fatal("In dev mode you must provide PROJECT_ID as environment variable or command argument")
 		}
+		ctx := context.Background()
+		client, err := logging.NewClient(ctx, cfg.ProjectId)
+		if err != nil {
+			log.Fatalf("Failed to create logging client: %v", err)
+		}
+		defer client.Close()
+
+		// Create a logger
+		logger = client.Logger("echo-log")
 	}
 
 	if cfg.Env == "prod" {
@@ -83,15 +86,15 @@ func main() {
 	tokensColl := fClient.Collection(util.TokenColl)
 	tokens := models.Tokens{Coll: tokensColl}
 	// create new server
-	e := api.NewServer(cfg, t, af, &tokens, &mods)
+	server := api.NewServer(cfg, t, af, &tokens, &mods)
 
 	// running in local mode allows you to create audio without using tokens
 	// this should never be used in the cloud
 	if cfg.Env == "local" {
-		localTokens := models.LocalTokens{}
-		e = api.NewServer(cfg, t, af, &localTokens, &mods)
+		server = api.NewServer(cfg, t, af, &models.LocalTokens{}, &mods)
 	}
 
+	e := server.NewEcho(logger)
 	log.Print("\n\n" + util.StarString + "environment: " + cfg.Env + "\n" + util.StarString)
 
 	e.Logger.Fatal(e.Start(net.JoinHostPort("0.0.0.0", cfg.Port)))

@@ -422,8 +422,8 @@ func TestGoogleIntegration(t *testing.T) {
 		require.NoError(t, err)
 	}(ctx, client, tokens.Coll)
 
-	e := NewServer(testCfg.Config, tr, af, &tokens, &mods)
-
+	srv := NewServer(testCfg.Config, tr, af, &tokens, &mods)
+	e := srv.NewEcho(nil)
 	title := test.RandomTitle(voicesMap)
 
 	//create a base path for storing mp3 audio files
@@ -541,8 +541,9 @@ func TestAmazonIntegration(t *testing.T) {
 	}(ctx, client, tokens.Coll)
 
 	testCfg.Platform = "amazon"
-	e := NewServer(testCfg.Config, tr, af, &tokens, &model)
+	srv := NewServer(testCfg.Config, tr, af, &tokens, &model)
 
+	e := srv.NewEcho(nil)
 	title := test.RandomTitle(voicesMap)
 
 	//create a base path for storing mp3 audio files

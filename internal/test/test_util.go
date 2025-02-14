@@ -22,9 +22,8 @@ import (
 )
 
 var (
-	AudioBasePath     = "/tmp/test/audio/"
-	GcpTestProject    = "token-tltv-test"
-	FirestoreTestColl = "token-tltv-test"
+	AudioBasePath  = "/tmp/test/audio/"
+	GcpTestProject = "token-tltv-test"
 )
 
 func RequireMatchAnyExcept(t *testing.T, model any, response any, skip []string, except string, shouldEqual any) {
@@ -146,7 +145,7 @@ func (lc *StdoutLogConsumer) Accept(l testcontainers.Log) {
 func StartContainer(ctx context.Context, projectId string) (*TltvContainer, error) {
 	g := StdoutLogConsumer{}
 
-	absPath, err := filepath.Abs("/tmp/secrets/token-tltv-test-7053dcf2e89d.json")
+	absPath, err := filepath.Abs("/tmp/secrets/token-tltv-test-68350495bc39.json")
 	if err != nil {
 		log.Fatal(err)
 	}
