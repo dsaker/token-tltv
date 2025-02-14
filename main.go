@@ -28,11 +28,18 @@ func main() {
 	}
 	flag.Parse()
 
-	var logger *logging.Logger
 	if cfg.Env == "dev" && cfg.ProjectId == "" {
 		cfg.ProjectId = os.Getenv("TEST_PROJECT_ID")
 		if cfg.ProjectId == "" {
 			log.Fatal("In dev mode you must provide PROJECT_ID as environment variable or command argument")
+		}
+	}
+
+	var logger *logging.Logger
+	if cfg.Env == "prod" {
+		cfg.ProjectId = os.Getenv("PROJECT_ID")
+		if cfg.ProjectId == "" {
+			log.Fatal("In prod mode you must provide PROJECT_ID as environment variable")
 		}
 		ctx := context.Background()
 		client, err := logging.NewClient(ctx, cfg.ProjectId)
@@ -41,15 +48,13 @@ func main() {
 		}
 		defer client.Close()
 
-		// Create a logger
-		logger = client.Logger("echo-log")
-	}
-
-	if cfg.Env == "prod" {
-		cfg.ProjectId = os.Getenv("PROJECT_ID")
-		if cfg.ProjectId == "" {
-			log.Fatal("In prod mode you must provide PROJECT_ID as environment variable")
+		vmName, err := util.GetVMName()
+		if err != nil {
+			log.Println("Error getting VM name:", err)
+			vmName = "tltv-logger"
 		}
+		// Create a logger
+		logger = client.Logger(vmName)
 	}
 
 	// if ffmpeg is not installed and in PATH of host machine fail immediately

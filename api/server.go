@@ -49,13 +49,15 @@ func NewServer(
 }
 
 // NewEcho creates a new echo server
-func (s *Server) NewEcho(
-	logger *logging.Logger) *echo.Echo {
+func (s *Server) NewEcho(logger *logging.Logger) *echo.Echo {
 	e := echo.New()
 	// make sure silence mp3s exist in your base path
 	initSilence(s.config)
 
 	if s.config.Env == "prod" {
+		if logger == nil {
+			log.Fatal("logger is nil")
+		}
 		// Middleware to send logs to Google Cloud Logging
 		e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 			return func(c echo.Context) error {
@@ -89,7 +91,7 @@ func (s *Server) NewEcho(
 					},
 					Severity: severity,
 				})
-				return next(c)
+				return err
 			}
 		})
 	}
