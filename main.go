@@ -55,6 +55,7 @@ func main() {
 		}
 		// Create a logger
 		logger = client.Logger(vmName)
+		log.Println("logger name: ", vmName)
 	}
 
 	// if ffmpeg is not installed and in PATH of host machine fail immediately

@@ -153,4 +153,4 @@ cloud/redeploy/ce:
 	rsync -rP --delete ./bin/linux_amd64/tltv ${CLOUD_HOST_USERNAME}@${CLOUD_HOST_IP}:~
 	ssh -t ${CLOUD_HOST_USERNAME}@${CLOUD_HOST_IP} '\
 			sudo mv ~/tltv /usr/local/bin/ \
-    		sudo systemctl restart tltv.service'
+    		&& sudo systemctl restart tltv.service'

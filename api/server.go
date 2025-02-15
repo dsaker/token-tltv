@@ -11,6 +11,7 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"strconv"
 	"sync"
 	"talkliketv.click/tltv/internal/audio"
 	"talkliketv.click/tltv/internal/audio/audiofile"
@@ -81,7 +82,16 @@ func (s *Server) NewEcho(logger *logging.Logger) *echo.Echo {
 					severity = logging.Error
 				}
 				logger.Log(logging.Entry{
-					Payload: map[string]interface{}{
+					Labels: map[string]string{
+						"method":     req.Method,
+						"uri":        req.RequestURI,
+						"status":     strconv.Itoa(res.Status),
+						"latency":    latency.String(),
+						"user_agent": req.UserAgent(),
+						"message":    message,
+					},
+					Severity: severity,
+					Payload: map[string]any{
 						"method":     req.Method,
 						"uri":        req.RequestURI,
 						"status":     res.Status,
@@ -89,7 +99,6 @@ func (s *Server) NewEcho(logger *logging.Logger) *echo.Echo {
 						"user_agent": req.UserAgent(),
 						"message":    message,
 					},
-					Severity: severity,
 				})
 				return err
 			}
