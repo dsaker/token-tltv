@@ -55,12 +55,14 @@ var (
 	projectId string
 	platform  string
 	saFile    string
+	headless  bool
 )
 
 func TestMain(m *testing.M) {
 	flag.StringVar(&platform, "platform", "google", "which platform you are using [google|amazon]")
 	flag.StringVar(&util.Test, "test", "test", "type of tests to run [unit|integration|end-to-end]")
 	flag.StringVar(&projectId, "project-id", "", "project id for google cloud platform that contains firestore")
+	flag.BoolVar(&headless, "headless", true, "if true browser will be headless")
 	flag.StringVar(&saFile, "sa-file", "", "path to service account file with permissions to run tests")
 	flag.Parse()
 
