@@ -1,6 +1,6 @@
 ---
 # tasks file for caddy
-- name: Install packages
+- name: install packages
   ansible.builtin.apt:
     name:
       - debian-keyring
@@ -22,7 +22,6 @@
     name: caddy
     state: present
     update_cache: yes
-
 
 - name: copy Caddyfile template to talkliketv server
   template:

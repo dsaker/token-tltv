@@ -46,3 +46,7 @@ variable "tltv_network" {
 variable "tltv_subnetwork" {
     type = string
 }
+
+variable "email_notification_display_name" {
+    type = string
+}

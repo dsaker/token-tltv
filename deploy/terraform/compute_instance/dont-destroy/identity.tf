@@ -34,6 +34,12 @@ resource "google_project_iam_member" "ce_logging_logWriter" {
   member  = "serviceAccount:${google_service_account.tltv_ce_service_account.email}"
 }
 
+resource "google_project_iam_member" "ce_monitoring_metricWriter" {
+  project = var.project_id
+  role    = "roles/monitoring.metricWriter"
+  member  = "serviceAccount:${google_service_account.tltv_ce_service_account.email}"
+}
+
 resource "google_compute_address" "static_xyz" {
   name = var.static_ip_xyz
 }

@@ -89,6 +89,7 @@ func (s *Server) NewEcho(logger *logging.Logger) *echo.Echo {
 						"latency":    latency.String(),
 						"user_agent": req.UserAgent(),
 						"message":    message,
+						"real_ip":    c.RealIP(),
 					},
 					Severity: severity,
 					Payload: map[string]any{
@@ -98,6 +99,7 @@ func (s *Server) NewEcho(logger *logging.Logger) *echo.Echo {
 						"latency":    latency.String(),
 						"user_agent": req.UserAgent(),
 						"message":    message,
+						"real_ip":    c.RealIP(),
 					},
 				})
 				return err
@@ -135,11 +137,11 @@ func (s *Server) NewEcho(logger *logging.Logger) *echo.Echo {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	//e.Static(fs.FormatDirEntry(staticFiles[1])))
 	uiGrp.StaticFS("/static", staticFiles)
-	//uiGrp.Static("/static", staticFiles[1].Name())
 	uiGrp.GET("/", homeView)
+	uiGrp.GET("/ads.txt", adsView)
+	uiGrp.GET("/robots.txt", robotsView)
+	uiGrp.GET("/favicon.ico", faviconView)
 	uiGrp.GET("/audio", s.audioView)
 	uiGrp.GET("/parse", s.parseView)
 

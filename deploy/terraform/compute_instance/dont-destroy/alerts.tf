@@ -54,34 +54,7 @@ resource "google_monitoring_alert_policy" "cpu_utilization_gt_80" {
   }
 }
 
-resource "google_monitoring_alert_policy" "talkliketv_vm_log_warning" {
-  combiner              = "OR"
-  display_name          = "talkliketv-vm-log-warning"
-  enabled               = true
-  notification_channels = [google_monitoring_notification_channel.email_notification.name]
-  project               = var.project_id
-  severity              = "WARNING"
-  user_labels           = {}
-  alert_strategy {
-    auto_close           = "604800s"
-    notification_prompts = ["OPENED"]
-    notification_rate_limit {
-      period = "3600s"
-    }
-  }
-  conditions {
-    display_name = "Log match condition"
-    condition_matched_log {
-      filter = "severity=WARNING\nresource.type=\"gce_instance\""
-      label_extractors = {
-        warning_message = "EXTRACT(jsonPayload.message)"
-        warning_method  = "EXTRACT(jsonPayload.method)"
-        warning_status  = "EXTRACT(jsonPayload.status)"
-        warning_uri     = "EXTRACT(jsonPayload.uri)"
-      }
-    }
-  }
-}
+
 
 resource "google_monitoring_alert_policy" "talkliketv_vm_log_error" {
   combiner              = "OR"
