@@ -46,14 +46,14 @@ func newTemplateCache() (map[string]*template.Template, error) {
 		name := filepath.Base(page)
 
 		// Create a slice containing the filepath patterns for the templates we
-		// want to parse.
+		// want to parsefile.
 		patterns := []string{
 			"html/base.gohtml",
 			"html/common/*.gohtml",
 			page,
 		}
 
-		// Use ParseFS() instead of ParseFiles() to parse the template files
+		// Use ParseFS() instead of ParseFiles() to parsefile the template files
 		// from the ui.Files embedded filesystem.
 		ts, err := template.New(name).ParseFS(ui.Files, patterns...)
 		if err != nil {

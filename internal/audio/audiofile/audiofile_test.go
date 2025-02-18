@@ -54,7 +54,7 @@ func TestGetLines(t *testing.T) {
 			},
 		},
 		{
-			name: "parse srt",
+			name: "parsefile srt",
 			buildFile: func(t *testing.T) *os.File {
 				srtString := `654
 				00:34:22,393 > 00:34:25,271
@@ -115,7 +115,7 @@ func TestGetLines(t *testing.T) {
 					"This is the. This is. This is the. this is the\nThis is the")
 			},
 			checkLines: func(lines []string, err error) {
-				require.Errorf(t, err, "unable to parse file")
+				require.Errorf(t, err, "unable to parsefile file")
 			},
 		},
 		{
@@ -127,7 +127,7 @@ func TestGetLines(t *testing.T) {
 					"")
 			},
 			checkLines: func(lines []string, err error) {
-				require.Errorf(t, err, "unable to parse file")
+				require.Errorf(t, err, "unable to parsefile file")
 			},
 		},
 	}
@@ -499,13 +499,14 @@ var (
 	projectId string
 	platform  string
 	saFile    string
+	headless  bool
 )
 
 func TestMain(m *testing.M) {
-	_, voicesMap = models.MakeGoogleMaps()
 	flag.StringVar(&platform, "platform", "google", "which platform you are using [google|amazon]")
 	flag.StringVar(&util.Test, "test", "test", "type of tests to run [unit|integration|end-to-end]")
 	flag.StringVar(&projectId, "project-id", "", "project id for google cloud platform that contains firestore")
+	flag.BoolVar(&headless, "headless", true, "if true browser will be headless")
 	flag.StringVar(&saFile, "sa-file", "", "path to service account file with permissions to run tests")
 	flag.Parse()
 

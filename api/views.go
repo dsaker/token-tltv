@@ -16,7 +16,7 @@ func (s *Server) audioView(e echo.Context) error {
 	return e.Render(http.StatusOK, "audio.gohtml", newTemplateData(s.m.GetLanguages(), s.m.GetVoices(), ""))
 }
 
-// parseView renders the frontend html page to upload a file to parse it
+// parseView renders the frontend html page to upload a file to parsefile it
 func (s *Server) parseView(e echo.Context) error {
 	return e.Render(http.StatusOK, "parse.gohtml", map[string]interface{}{
 		"MaxPhrases": s.config.MaxNumPhrases,

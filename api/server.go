@@ -60,51 +60,7 @@ func (s *Server) NewEcho(logger *logging.Logger) *echo.Echo {
 			log.Fatal("logger is nil")
 		}
 		// Middleware to send logs to Google Cloud Logging
-		e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-			return func(c echo.Context) error {
-				start := time.Now()
-				err := next(c) // Process the request.
-				stop := time.Now()
-				latency := stop.Sub(start)
-
-				message := ""
-				if err != nil {
-					message = "error: " + err.Error()
-				}
-				req := c.Request()
-				res := c.Response()
-
-				severity := logging.Info
-				if res.Status >= 400 {
-					severity = logging.Warning
-				}
-				if res.Status >= 500 {
-					severity = logging.Error
-				}
-				logger.Log(logging.Entry{
-					Labels: map[string]string{
-						"method":     req.Method,
-						"uri":        req.RequestURI,
-						"status":     strconv.Itoa(res.Status),
-						"latency":    latency.String(),
-						"user_agent": req.UserAgent(),
-						"message":    message,
-						"real_ip":    c.RealIP(),
-					},
-					Severity: severity,
-					Payload: map[string]any{
-						"method":     req.Method,
-						"uri":        req.RequestURI,
-						"status":     res.Status,
-						"latency":    latency.String(),
-						"user_agent": req.UserAgent(),
-						"message":    message,
-						"real_ip":    c.RealIP(),
-					},
-				})
-				return err
-			}
-		})
+		e.Use(GoogleCloudLoggingMiddleWare(logger))
 	}
 
 	// add middleware
@@ -147,6 +103,54 @@ func (s *Server) NewEcho(logger *logging.Logger) *echo.Echo {
 
 	oapi.RegisterHandlersWithBaseURL(apiGrp, s, "")
 	return e
+}
+
+func GoogleCloudLoggingMiddleWare(logger *logging.Logger) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			start := time.Now()
+			err := next(c) // Process the request.
+			stop := time.Now()
+			latency := stop.Sub(start)
+
+			message := ""
+			if err != nil {
+				message = "error: " + err.Error()
+			}
+			req := c.Request()
+			res := c.Response()
+
+			severity := logging.Info
+			if res.Status >= 400 {
+				severity = logging.Warning
+			}
+			if res.Status >= 500 {
+				severity = logging.Error
+			}
+			logger.Log(logging.Entry{
+				Labels: map[string]string{
+					"method":     req.Method,
+					"uri":        req.RequestURI,
+					"status":     strconv.Itoa(res.Status),
+					"latency":    latency.String(),
+					"user_agent": req.UserAgent(),
+					"message":    message,
+					"real_ip":    c.RealIP(),
+				},
+				Severity: severity,
+				Payload: map[string]any{
+					"method":     req.Method,
+					"uri":        req.RequestURI,
+					"status":     res.Status,
+					"latency":    latency.String(),
+					"user_agent": req.UserAgent(),
+					"message":    message,
+					"real_ip":    c.RealIP(),
+				},
+			})
+			return err
+		}
+	}
 }
 
 // Make sure we conform to ServerInterface
