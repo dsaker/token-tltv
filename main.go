@@ -3,12 +3,13 @@
 package main
 
 import (
+	"cloud.google.com/go/logging"
+	"context"
 	"flag"
 	"log"
 	"net"
 	"os"
 	"os/exec"
-	"runtime/pprof"
 	"strings"
 	"talkliketv.click/tltv/api"
 	"talkliketv.click/tltv/internal/audio/audiofile"
@@ -19,17 +20,9 @@ import (
 )
 
 func main() {
-	// start cpu profiling
-	f, _ := os.Create("cpu.prof")
-	err := pprof.StartCPUProfile(f)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer pprof.StopCPUProfile()
-
 	// load config
 	var cfg config.Config
-	err = cfg.SetConfigs()
+	err := cfg.SetConfigs()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -42,11 +35,27 @@ func main() {
 		}
 	}
 
+	var logger *logging.Logger
 	if cfg.Env == "prod" {
 		cfg.ProjectId = os.Getenv("PROJECT_ID")
 		if cfg.ProjectId == "" {
 			log.Fatal("In prod mode you must provide PROJECT_ID as environment variable")
 		}
+		ctx := context.Background()
+		client, err := logging.NewClient(ctx, cfg.ProjectId)
+		if err != nil {
+			log.Fatalf("Failed to create logging client: %v", err)
+		}
+		defer client.Close()
+
+		vmName, err := util.GetVMName()
+		if err != nil {
+			log.Println("Error getting VM name:", err)
+			vmName = "tltv-logger"
+		}
+		// Create a logger
+		logger = client.Logger(vmName)
+		log.Println("logger name: ", vmName)
 	}
 
 	// if ffmpeg is not installed and in PATH of host machine fail immediately
@@ -83,15 +92,15 @@ func main() {
 	tokensColl := fClient.Collection(util.TokenColl)
 	tokens := models.Tokens{Coll: tokensColl}
 	// create new server
-	e := api.NewServer(cfg, t, af, &tokens, &mods)
+	server := api.NewServer(cfg, t, af, &tokens, &mods)
 
 	// running in local mode allows you to create audio without using tokens
 	// this should never be used in the cloud
 	if cfg.Env == "local" {
-		localTokens := models.LocalTokens{}
-		e = api.NewServer(cfg, t, af, &localTokens, &mods)
+		server = api.NewServer(cfg, t, af, &models.LocalTokens{}, &mods)
 	}
 
+	e := server.NewEcho(logger)
 	log.Print("\n\n" + util.StarString + "environment: " + cfg.Env + "\n" + util.StarString)
 
 	e.Logger.Fatal(e.Start(net.JoinHostPort("0.0.0.0", cfg.Port)))

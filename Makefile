@@ -82,7 +82,7 @@ audit/local:
 	make vuln
 	go test -vet=off ./... -coverprofile=coverage.out
 	go test ./... -test=integration -project-id=token-tltv-test
-	go test ./... -test=end-to-end -project-id=token-tltv-test
+	go test ./... -test=end-to-end -project-id=token-tltv-test -sa-file=${token-tltv-test-sa-key}
 
 ## coverage
 coverage:
@@ -153,4 +153,4 @@ cloud/redeploy/ce:
 	rsync -rP --delete ./bin/linux_amd64/tltv ${CLOUD_HOST_USERNAME}@${CLOUD_HOST_IP}:~
 	ssh -t ${CLOUD_HOST_USERNAME}@${CLOUD_HOST_IP} '\
 			sudo mv ~/tltv /usr/local/bin/ \
-    		sudo systemctl restart tltv.service'
+    		&& sudo systemctl restart tltv.service'

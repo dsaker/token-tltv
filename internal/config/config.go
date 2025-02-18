@@ -19,6 +19,7 @@ type Config struct {
 	FileUploadLimit int64
 	ProjectId       string
 	Platform        string
+	Container       bool
 }
 
 func (cfg *Config) SetConfigs() error {
@@ -44,6 +45,8 @@ func (cfg *Config) SetConfigs() error {
 	// google cloud project id
 	flag.StringVar(&cfg.ProjectId, "project-id", "", "project id for google cloud platform that contains firestore")
 
+	// if the application runs in a container, then it is not necessary to send logs to google cloud logging
+	flag.BoolVar(&cfg.Container, "container", false, "running in a container")
 	return nil
 }
 

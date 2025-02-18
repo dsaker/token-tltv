@@ -24,3 +24,11 @@ variable "static_ip_xyz" {
 variable "static_ip_com" {
   type = string
 }
+
+variable "sms_notification" {
+    type = string
+}
+
+variable "email_notification" {
+    type = string
+}

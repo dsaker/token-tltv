@@ -4,6 +4,7 @@ go 1.23.6
 
 require (
 	cloud.google.com/go/firestore v1.16.0
+	cloud.google.com/go/logging v1.11.0
 	cloud.google.com/go/texttospeech v1.8.1
 	cloud.google.com/go/translate v1.12.1
 	firebase.google.com/go v3.13.0+incompatible

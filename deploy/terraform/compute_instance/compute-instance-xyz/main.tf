@@ -53,11 +53,10 @@ resource "google_compute_instance" "talkliketv_xyz" {
   }
 
   scheduling {
-    automatic_restart   = false
-    provisioning_model  = "SPOT"
-    preemptible = true
-    instance_termination_action = "STOP"
+    automatic_restart   = true
+    preemptible = false
   }
+
 
   service_account {
     email  = data.google_service_account.tltv_sa_xyz.email
@@ -98,4 +97,63 @@ resource "google_compute_firewall" "talkliketv_vpc_network_allow_https_xyz" {
 
   target_tags   = ["https-talkliketv-xyz"]
   source_ranges = ["0.0.0.0/0"]
+}
+
+// setup uptime check for talkliketv.xyz
+resource "google_monitoring_uptime_check_config" "talkliketv_xyz_uptime_check" {
+  display_name = "talkliketv-xyz-uptime-check"
+
+  http_check {
+    path = "/"
+    port = "443"
+    request_method = "GET"
+    use_ssl = true
+    validate_ssl = true
+    accepted_response_status_codes {
+      status_class = "STATUS_CLASS_2XX"
+    }
+  }
+
+  monitored_resource {
+    type = "uptime_url"
+    labels = {
+      project_id = var.project_id
+      host       = "talkliketv.xyz"
+    }
+  }
+
+  timeout = "10s"
+  period  = "300s"
+}
+
+data "google_monitoring_notification_channel" "email_notification" {
+  display_name = var.email_notification_display_name
+}
+
+resource "google_monitoring_alert_policy" "talkliketv_xyz_uptime_failure" {
+  combiner              = "OR"
+  display_name          = "talkliketv-xyz-uptime-failure"
+  enabled               = true
+  notification_channels = [data.google_monitoring_notification_channel.email_notification.name]
+  project               = "token-tltv-450304"
+  severity = "ERROR"
+  conditions {
+    display_name = "Failure of uptime check_id ${google_monitoring_uptime_check_config.talkliketv_xyz_uptime_check.display_name}"
+    condition_threshold {
+      comparison              = "COMPARISON_GT"
+      duration                = "60s"
+      filter                  = "metric.type=\"monitoring.googleapis.com/uptime_check/check_passed\" AND metric.label.check_id=\"${google_monitoring_uptime_check_config.talkliketv_xyz_uptime_check.uptime_check_id}\" AND resource.type=\"uptime_url\""
+      threshold_value         = 1
+      aggregations {
+        alignment_period     = "1200s"
+        cross_series_reducer = "REDUCE_COUNT_FALSE"
+        group_by_fields      = ["resource.label.*"]
+        per_series_aligner   = "ALIGN_NEXT_OLDER"
+      }
+      trigger {
+        count   = 1
+        percent = 0
+      }
+    }
+  }
 }

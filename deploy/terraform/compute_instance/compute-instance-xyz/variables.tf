@@ -38,3 +38,7 @@ variable "static_ip_name" {
 variable "zone" {
     type = string
 }
+
+variable "email_notification_display_name" {
+  type = string
+}

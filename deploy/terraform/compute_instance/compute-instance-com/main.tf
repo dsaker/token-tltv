@@ -47,10 +47,8 @@ resource "google_compute_instance" "talkliketv_com" {
   }
 
   scheduling {
-    automatic_restart   = false
-    provisioning_model  = "SPOT"
-    preemptible = true
-    instance_termination_action = "STOP"
+    automatic_restart   = true
+    preemptible = false
   }
 
   service_account {
@@ -63,5 +61,63 @@ resource "google_compute_instance" "talkliketv_com" {
     user     = var.gce_ssh_user
     host     = data.google_compute_address.static_xyz.address
     private_key = file(var.gce_ssh_private_key_file)
+  }
+}
+
+resource "google_monitoring_uptime_check_config" "talkliketv_com_uptime_check" {
+  display_name = "talkliketv-com-uptime-check"
+
+  http_check {
+    path = "/"
+    port = "443"
+    request_method = "GET"
+    use_ssl = true
+    validate_ssl = true
+    accepted_response_status_codes {
+      status_class = "STATUS_CLASS_2XX"
+    }
+  }
+
+  monitored_resource {
+    type = "uptime_url"
+    labels = {
+      project_id = var.project_id
+      host       = "talkliketv.com"
+    }
+  }
+
+  timeout = "10s"
+  period  = "300s"
+}
+
+data "google_monitoring_notification_channel" "email_notification" {
+  display_name = var.email_notification_display_name
+}
+
+resource "google_monitoring_alert_policy" "talkliketv_com_uptime_failure" {
+  combiner              = "OR"
+  display_name          = "talkliketv-com-uptime-failure"
+  enabled               = true
+  notification_channels = [data.google_monitoring_notification_channel.email_notification.name]
+  project               = "token-tltv-450304"
+  severity = "ERROR"
+  conditions {
+    display_name = "Failure of uptime check_id ${google_monitoring_uptime_check_config.talkliketv_com_uptime_check.display_name}"
+    condition_threshold {
+      comparison              = "COMPARISON_GT"
+      duration                = "60s"
+      filter                  = "metric.type=\"monitoring.googleapis.com/uptime_check/check_passed\" AND metric.label.check_id=\"${google_monitoring_uptime_check_config.talkliketv_com_uptime_check.uptime_check_id}\" AND resource.type=\"uptime_url\""
+      threshold_value         = 1
+      aggregations {
+        alignment_period     = "1200s"
+        cross_series_reducer = "REDUCE_COUNT_FALSE"
+        group_by_fields      = ["resource.label.*"]
+        per_series_aligner   = "ALIGN_NEXT_OLDER"
+      }
+      trigger {
+        count   = 1
+        percent = 0
+      }
+    }
   }
 }

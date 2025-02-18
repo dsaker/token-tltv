@@ -7,6 +7,15 @@
   roles:
     - role: ffmpeg
 
+- name: install gcp-ops-agent
+  hosts: talkliketv
+  become: True
+  gather_facts: yes
+  tags:
+    - gcp-ops-agent
+  roles:
+    - role: gcp-ops-agent
+
 - name: install caddy
   hosts: talkliketv
   become: True

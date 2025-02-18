@@ -17,7 +17,6 @@ var (
 	ErrVoiceIdInvalid    = errors.New("voice id invalid")
 	ErrPauseNotFound     = errors.New("audio pause file not found")
 	ErrLanguageIdInvalid = errors.New("language id invalid")
-	ErrPauseInvalid      = errors.New("pause out of range (must be between 3 and 10")
 )
 
 type Title struct {

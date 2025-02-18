@@ -164,15 +164,14 @@ func TestEndToEndAudio(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	myFloat := 500.0
-
 	// Trigger the file input, for example, by clicking a button
 	fileChooser, err := page.ExpectFileChooser(func() error {
 		err = page.Locator("#text-file").Click()
 		require.NoError(t, err)
 		return nil
 	}, playwright.PageExpectFileChooserOptions{
-		Timeout: &myFloat,
+		// Set a timeout for the file chooser after 5 seconds
+		Timeout: playwright.Float(5000),
 	})
 
 	err = fileChooser.SetFiles("../internal/test/sample.srt")
@@ -186,9 +185,18 @@ func TestEndToEndAudio(t *testing.T) {
 
 	err = page.Locator("#submit-audio-form").Click()
 	require.NoError(t, err)
-	download, ok := <-downloadChan
-	if !ok {
-		t.Fatal("download channel closed")
+
+	var download playwright.Download
+	var ok bool
+	// wait for download event.. timeout after 5 seconds if no event received
+	select {
+	case download, ok = <-downloadChan:
+		if !ok {
+			t.Fatal("download channel closed")
+		}
+		return
+	case <-time.After(5 * time.Second):
+		t.Fatal("Timeout reached, no message received")
 	}
 
 	dir := filepath.Join("tmp", strings.Split(t.Name(), "/")[0])

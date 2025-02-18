@@ -1,6 +1,7 @@
 package api
 
 import (
+	"cloud.google.com/go/logging"
 	"fmt"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/labstack/echo/v4"
@@ -10,6 +11,7 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"strconv"
 	"sync"
 	"talkliketv.click/tltv/internal/audio"
 	"talkliketv.click/tltv/internal/audio/audiofile"
@@ -19,6 +21,7 @@ import (
 	"talkliketv.click/tltv/internal/translates"
 	"talkliketv.click/tltv/internal/util"
 	"talkliketv.click/tltv/ui"
+	"time"
 )
 
 type Server struct {
@@ -30,22 +33,91 @@ type Server struct {
 	config    config.Config
 }
 
-// NewServer creates a new HTTP server and sets up routing.
-func NewServer(c config.Config, t translates.TranslateX, af audiofile.AudioFileX, tok models.TokensX, m models.ModelsX) *echo.Echo {
+func NewServer(
+	c config.Config,
+	t translates.TranslateX,
+	af audiofile.AudioFileX,
+	tok models.TokensX,
+	m models.ModelsX,
+) *Server {
+	return &Server{
+		translate: t,
+		config:    c,
+		af:        af,
+		tokens:    tok,
+		m:         m,
+	}
+}
+
+// NewEcho creates a new echo server
+func (s *Server) NewEcho(logger *logging.Logger) *echo.Echo {
 	e := echo.New()
 	// make sure silence mp3s exist in your base path
-	initSilence(c)
+	initSilence(s.config)
 
+	if s.config.Env == "prod" {
+		if logger == nil {
+			log.Fatal("logger is nil")
+		}
+		// Middleware to send logs to Google Cloud Logging
+		e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+			return func(c echo.Context) error {
+				start := time.Now()
+				err := next(c) // Process the request.
+				stop := time.Now()
+				latency := stop.Sub(start)
+
+				message := ""
+				if err != nil {
+					message = "error: " + err.Error()
+				}
+				req := c.Request()
+				res := c.Response()
+
+				severity := logging.Info
+				if res.Status >= 400 {
+					severity = logging.Warning
+				}
+				if res.Status >= 500 {
+					severity = logging.Error
+				}
+				logger.Log(logging.Entry{
+					Labels: map[string]string{
+						"method":     req.Method,
+						"uri":        req.RequestURI,
+						"status":     strconv.Itoa(res.Status),
+						"latency":    latency.String(),
+						"user_agent": req.UserAgent(),
+						"message":    message,
+						"real_ip":    c.RealIP(),
+					},
+					Severity: severity,
+					Payload: map[string]any{
+						"method":     req.Method,
+						"uri":        req.RequestURI,
+						"status":     res.Status,
+						"latency":    latency.String(),
+						"user_agent": req.UserAgent(),
+						"message":    message,
+						"real_ip":    c.RealIP(),
+					},
+				})
+				return err
+			}
+		})
+	}
+
+	// add middleware
+	e.Use(echomw.Logger())
+	e.Use(echomw.RateLimiter(echomw.NewRateLimiterMemoryStore(rate.Limit(5))))
+	e.Use(echomw.Recover())
+
+	// Create a new template cache
 	tempC, err := newTemplateCache()
 	if err != nil {
 		log.Fatal(err)
 	}
 	e.Renderer = &TemplateRegistry{templates: tempC}
-
-	// add middleware
-	e.Use(echomw.RateLimiter(echomw.NewRateLimiterMemoryStore(rate.Limit(5))))
-	e.Use(echomw.Logger())
-	e.Use(echomw.Recover())
 
 	// Use our validation middleware to check all requests against the OpenAPI schema.
 	apiGrp := e.Group("/v1")
@@ -59,29 +131,21 @@ func NewServer(c config.Config, t translates.TranslateX, af audiofile.AudioFileX
 			SilenceServersWarning: true,
 		}))
 
-	srv := &Server{
-		translate: t,
-		config:    c,
-		af:        af,
-		tokens:    tok,
-		m:         m,
-	}
-
 	uiGrp := e.Group("")
 	// Serve static files from the "static" directory
 	staticFiles, err := fs.Sub(ui.Files, "static")
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	//e.Static(fs.FormatDirEntry(staticFiles[1])))
 	uiGrp.StaticFS("/static", staticFiles)
-	//uiGrp.Static("/static", staticFiles[1].Name())
 	uiGrp.GET("/", homeView)
-	uiGrp.GET("/audio", srv.audioView)
-	uiGrp.GET("/parse", srv.parseView)
+	uiGrp.GET("/ads.txt", adsView)
+	uiGrp.GET("/robots.txt", robotsView)
+	uiGrp.GET("/favicon.ico", faviconView)
+	uiGrp.GET("/audio", s.audioView)
+	uiGrp.GET("/parse", s.parseView)
 
-	oapi.RegisterHandlersWithBaseURL(apiGrp, srv, "")
+	oapi.RegisterHandlersWithBaseURL(apiGrp, s, "")
 	return e
 }
 

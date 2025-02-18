@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/go-playground/form/v4"
 	"google.golang.org/api/iterator"
+	"io"
 	"net/http"
 	"os"
 )
@@ -15,8 +16,9 @@ var (
 )
 
 const (
-	StarString = "*********************************************\n"
-	TokenColl  = "tokens"
+	StarString  = "*********************************************\n"
+	TokenColl   = "tokens"
+	metadataURL = "http://metadata.google.internal/computeMetadata/v1/instance/name"
 )
 
 // PathExists returns whether the given file or directory exists
@@ -108,8 +110,7 @@ func DeleteFirestoreCollection(ctx context.Context, client *firestore.Client, co
 			numDeleted++
 		}
 
-		// If there are no documents to delete,
-		// the process is over.
+		// If there are no documents to delete, the process is over.
 		if numDeleted == 0 {
 			bulkwriter.End()
 			break
@@ -118,4 +119,26 @@ func DeleteFirestoreCollection(ctx context.Context, client *firestore.Client, co
 		bulkwriter.Flush()
 	}
 	return nil
+}
+
+func GetVMName() (string, error) {
+	req, err := http.NewRequest(http.MethodGet, metadataURL, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Metadata-Flavor", "Google")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return string(body), nil
 }
