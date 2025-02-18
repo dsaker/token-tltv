@@ -38,6 +38,7 @@ const (
 var (
 	local    = false
 	headless = true
+	saFile   string
 )
 
 type TestConfig struct {
@@ -63,13 +64,14 @@ func TestMain(m *testing.M) {
 	flag.StringVar(&util.Test, "test", "unit", "type of tests to run [unit|integration|end-to-end]")
 	flag.BoolVar(&local, "local", false, "if true end-to-end tests will be run in local mode")
 	flag.BoolVar(&headless, "headless", true, "if true browser will be headless")
+	flag.StringVar(&saFile, "sa-file", "", "path to service account file with permissions to run tests")
 	flag.Parse()
 
 	langsMap, voicesMap = models.MakeGoogleMaps()
 
 	testCfg.url = "http://localhost:8080"
 	if util.Test == "end-to-end" {
-		getBrowserContext(headless)
+		getBrowserContext(headless, saFile)
 	}
 
 	testCfg.TTSBasePath = test.AudioBasePath
@@ -99,10 +101,10 @@ func addTokenFirestore(t *testing.T, client *firestore.Client, ctx context.Conte
 }
 
 // getBrowserContext sets up the playwright browser context
-func getBrowserContext(headless bool) {
+func getBrowserContext(headless bool, saFile string) {
 	if !local {
 		ctx := context.Background()
-		container, err := test.StartContainer(ctx, testCfg.ProjectId)
+		container, err := test.StartContainer(ctx, testCfg.ProjectId, saFile)
 		testCfg.tc = container
 		if err != nil {
 			log.Fatal(err)

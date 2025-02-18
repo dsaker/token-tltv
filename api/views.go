@@ -42,5 +42,8 @@ func faviconView(e echo.Context) error {
 		return e.String(http.StatusNotFound, "favicon.ico not found")
 	}
 	file, err := staticFiles.Open("favicon.ico")
+	if err != nil {
+		return e.String(http.StatusNotFound, "favicon.ico not found")
+	}
 	return e.Stream(http.StatusOK, "image/x-icon", file)
 }

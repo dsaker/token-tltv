@@ -191,14 +191,14 @@ func TestEndToEndAudio(t *testing.T) {
 	// wait for download event.. timeout after 5 seconds if no event received
 	select {
 	case download, ok = <-downloadChan:
+		if !ok {
+			t.Fatal("download channel closed")
+		}
 		return
 	case <-time.After(5 * time.Second):
 		t.Fatal("Timeout reached, no message received")
 	}
 
-	if !ok {
-		t.Fatal("download channel closed")
-	}
 	dir := filepath.Join("tmp", strings.Split(t.Name(), "/")[0])
 	savePath := filepath.Join(dir, download.SuggestedFilename())
 	defer os.RemoveAll(dir)

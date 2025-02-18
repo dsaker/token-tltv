@@ -6,7 +6,7 @@ import (
 	"errors"
 	"github.com/go-playground/form/v4"
 	"google.golang.org/api/iterator"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 )
@@ -122,7 +122,7 @@ func DeleteFirestoreCollection(ctx context.Context, client *firestore.Client, co
 }
 
 func GetVMName() (string, error) {
-	req, err := http.NewRequest("GET", metadataURL, nil)
+	req, err := http.NewRequest(http.MethodGet, metadataURL, nil)
 	if err != nil {
 		return "", err
 	}
@@ -135,7 +135,7 @@ func GetVMName() (string, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}

@@ -51,12 +51,18 @@ func TestTokenGenerate(t *testing.T) {
 	})
 }
 
+var (
+	projectId string
+	platform  string
+	saFile    string
+)
+
 func TestMain(m *testing.M) {
-	var platform string
 	flag.StringVar(&platform, "platform", "google", "which platform you are using [google|amazon]")
 	flag.StringVar(&util.Test, "test", "test", "type of tests to run [unit|integration|end-to-end]")
-	var projectId string
 	flag.StringVar(&projectId, "project-id", "", "project id for google cloud platform that contains firestore")
+	flag.StringVar(&saFile, "sa-file", "", "path to service account file with permissions to run tests")
 	flag.Parse()
+
 	os.Exit(m.Run())
 }

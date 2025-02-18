@@ -142,10 +142,10 @@ func (lc *StdoutLogConsumer) Accept(l testcontainers.Log) {
 	fmt.Print(string(l.Content))
 }
 
-func StartContainer(ctx context.Context, projectId string) (*TltvContainer, error) {
+func StartContainer(ctx context.Context, projectId, saFile string) (*TltvContainer, error) {
 	g := StdoutLogConsumer{}
 
-	absPath, err := filepath.Abs("/tmp/secrets/token-tltv-test-68350495bc39.json")
+	absPath, err := filepath.Abs(saFile)
 	if err != nil {
 		log.Fatal(err)
 	}
