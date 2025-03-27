@@ -28,7 +28,7 @@ distributing tokens to selected users, removing the need for a formal authentica
 - Create a [Google Cloud Project](https://developers.google.com/workspace/guides/create-project)
 - Install [ffmpeg](https://www.ffmpeg.org/download.html)
 - Install [make] 
-- Run below commands to sign in and enable the necessary Google Cloud API's
+- Run below commands to enable the necessary Google Cloud API's
 ```
 gcloud services enable texttospeech.googleapis.com
 gcloud services enable translate.googleapis.com
