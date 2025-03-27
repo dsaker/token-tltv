@@ -112,18 +112,6 @@ minikube image load token-tltv:latest
 minikube service tltv-svc --url 
 ```
 
-### Run Container Locally
-- Set up [ADC](https://cloud.google.com/docs/authentication/set-up-adc-containerized-environment)
-- Install [minikube](https://minikube.sigs.k8s.io/docs/handbook/addons/gcp-auth/)
-```
-minikube start
-minikube addons enable gcp-auth
-make build/local
-minikube cache add token-tltv:latest
-kubectl apply -f docker/deployment.yaml
-minikube service tltv-svc --url
-```
-
 ### Update Languages and Voices
 - Google Cloud Platform
 ```
