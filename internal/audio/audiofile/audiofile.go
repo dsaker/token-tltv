@@ -1,16 +1,13 @@
 package audiofile
 
 import (
-	"archive/zip"
 	"bufio"
 	"errors"
 	"fmt"
-	"io"
 	"iter"
 	"mime/multipart"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"slices"
 	"strconv"
@@ -105,12 +102,8 @@ func (af *AudioFile) GetLines(e echo.Context, f multipart.File) ([]string, error
 		line = scanner.Text()
 		// if line contains ">" and doesn't contain any letters it is srt file
 		if strings.Contains(line, ">") {
-			if strings.Contains(line, "<font") {
+			if strings.Contains(line, "<font") || !reAlpha.MatchString(line) {
 				fileType = "srt"
-			} else {
-				if !reAlpha.MatchString(line) {
-					fileType = "srt"
-				}
 			}
 		}
 		count++
@@ -213,43 +206,7 @@ func (af *AudioFile) CreateMp3Zip(e echo.Context, t models.Title, tmpDir string)
 		}
 	}
 
-	return createZipFile(e, tmpDir, t.Name, outDirPath)
-}
-
-// addFileToZip is a helper function for CreateMp3Zip that adds each file to
-// the zip.Writer
-func addFileToZip(e echo.Context, zipWriter *zip.Writer, filename string) error {
-	file, err := os.Open(filename)
-	if err != nil {
-		e.Logger().Error(err)
-		return err
-	}
-	defer file.Close()
-
-	fInfo, err := file.Stat()
-	if err != nil {
-		e.Logger().Error(err)
-		return err
-	}
-
-	header, err := zip.FileInfoHeader(fInfo)
-	if err != nil {
-		e.Logger().Error(err)
-		return err
-	}
-
-	header.Name = filepath.Base(filename)
-	header.Method = zip.Deflate
-
-	writer, err := zipWriter.CreateHeader(header)
-	if err != nil {
-		e.Logger().Error(err)
-		return err
-	}
-
-	_, err = io.Copy(writer, file)
-	e.Logger().Info("wrote file: %s", file.Name())
-	return err
+	return util.CreateZipFile(e, tmpDir, t.Name, outDirPath)
 }
 
 // BuildAudioInputFiles creates a file with the filepaths of the mp3's used to construct
@@ -375,39 +332,5 @@ func (af *AudioFile) CreatePhrasesZip(e echo.Context, chunkedPhrases iter.Seq[[]
 		}
 	}
 
-	return createZipFile(e, tmpPath, filename, tmpPath)
-}
-
-// createZipFile takes a tmpDir which is the directory containing the files you want to zip.
-// filename which is the name that you want the zipped files to have as their base name
-// and outDirPath which is where the zip file will be stored and zips up the files
-func createZipFile(e echo.Context, tmpDir, filename, outDirPath string) (*os.File, error) {
-	// TODO add txt file of the phrases
-	zipFile, err := os.Create(tmpDir + filename + ".zip")
-	if err != nil {
-		e.Logger().Error(err)
-		return nil, err
-	}
-	defer zipFile.Close()
-
-	zipWriter := zip.NewWriter(zipFile)
-	defer zipWriter.Close()
-
-	// get a list of files from the output directory
-	files, err := os.ReadDir(outDirPath)
-	if err != nil {
-		e.Logger().Error(err)
-		return nil, err
-	}
-
-	for _, file := range files {
-		if !strings.HasSuffix(file.Name(), ".zip") {
-			err = addFileToZip(e, zipWriter, outDirPath+"/"+file.Name())
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	return zipFile, err
+	return util.CreateZipFile(e, tmpPath, filename, tmpPath)
 }

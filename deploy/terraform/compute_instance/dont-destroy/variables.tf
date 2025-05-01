@@ -32,3 +32,7 @@ variable "sms_notification" {
 variable "email_notification" {
     type = string
 }
+
+variable "my_ip" {
+  type = string
+}

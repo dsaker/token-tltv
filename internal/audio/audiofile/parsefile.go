@@ -153,30 +153,23 @@ func parseSrt(f multipart.File) []string {
 	var line string
 	for scanner.Scan() {
 		line = strings.TrimSpace(scanner.Text())
-		if line == "" {
+		if line == "" ||
+			(line[0] >= '0' && line[0] <= '9') ||
+			(line[0] == '[' && line[len(line)-1] == ']') ||
+			strings.Contains(line, "<font") ||
+			strings.Contains(line, "font>") {
 			continue
-		} else if line[0] >= '0' && line[0] <= '9' {
-			continue
-		} else if line[0] == '[' && line[len(line)-1] == ']' {
-			continue
-		} else if strings.Contains(line, "<font") || strings.Contains(line, "font>") {
-			continue
-		} else {
-			// if the next line following subtitle is not new line it is more dialogue so combine it
-			scanner.Scan()
-			nextLine := scanner.Text()
-			if nextLine != "" {
-				line = strings.ReplaceAll(line, "\n", "")
-				line = line + " " + nextLine
-				line = replaceFmt(line)
-			} else {
-				line = replaceFmt(line)
-			}
 		}
-
-		phrases := splitLongPhrases(line)
-		stringsSlice = append(stringsSlice, phrases...)
+		scanner.Scan()
+		nextLine := scanner.Text()
+		if nextLine != "" {
+			line = strings.ReplaceAll(line, "\n", "") + " " + nextLine
+		}
+		line = replaceFmt(line)
 	}
+
+	phrases := splitLongPhrases(line)
+	stringsSlice = append(stringsSlice, phrases...)
 
 	return stringsSlice
 }
@@ -188,64 +181,64 @@ func splitLongPhrases(line string) []string {
 	// if phrase is too short don't keep it
 	if len(words) <= minimumPhraseLength {
 		return []string{}
-	} else if len(words) < maximumPhraseLength {
+	}
+	if len(words) < maximumPhraseLength {
 		// if phrase isn't too long don't split it
 		return []string{line}
-	} else {
-		// split into an array of strings along punctuation
-		last := 0
-		for i, word := range words {
-			if unicode.IsPunct(rune(word[len(word)-1])) {
-				nextString := ""
-				for j := last; j <= i; j++ {
-					nextString = nextString + words[j] + " "
-				}
-				splitString = append(splitString, nextString)
-				last = i + 1
+	}
+	// split into an array of strings along punctuation
+	last := 0
+	for i, word := range words {
+		if unicode.IsPunct(rune(word[len(word)-1])) {
+			nextString := ""
+			for j := last; j <= i; j++ {
+				nextString = nextString + words[j] + " "
 			}
+			splitString = append(splitString, nextString)
+			last = i + 1
 		}
-		// if last word does not end in punctuation add that string
-		if last < len(words) {
-			splitString = append(splitString, strings.Join(words[last:], " "))
-		}
-		// if long phrase has punctuation split on punctuation
-		if len(splitString) > 1 {
-			// combine any strings that are less than the minimumPhraseLength with the string after it
-			i := 0
-			for i < len(splitString)-1 {
-				// if phrase is small combine it with the next one
-				wordsInString := strings.Fields(splitString[i])
-				if len(wordsInString) < minimumPhraseLength {
-					splitString[i] = splitString[i] + " " + splitString[i+1]
-					// remove the next index of split string
+	}
+	// if last word does not end in punctuation add that string
+	if last < len(words) {
+		splitString = append(splitString, strings.Join(words[last:], " "))
+	}
+	// if long phrase has punctuation split on punctuation
+	if len(splitString) > 1 {
+		// combine any strings that are less than the minimumPhraseLength with the string after it
+		i := 0
+		for i < len(splitString)-1 {
+			// if phrase is small combine it with the next one
+			wordsInString := strings.Fields(splitString[i])
+			if len(wordsInString) < minimumPhraseLength {
+				splitString[i] = splitString[i] + " " + splitString[i+1]
+				// remove the next index of split string
+				splitString = append(splitString[:i+1], splitString[i+2:]...)
+			} else {
+				// if both combined are less than maximum than concat
+				next := splitString[i] + " " + splitString[i+1]
+				nextWordCount := strings.Fields(next)
+				if len(nextWordCount) <= maximumPhraseLength {
+					splitString[i] = next
 					splitString = append(splitString[:i+1], splitString[i+2:]...)
-				} else {
-					// if both combined are less than maximum than concat
-					next := splitString[i] + " " + splitString[i+1]
-					nextWordCount := strings.Fields(next)
-					if len(nextWordCount) <= maximumPhraseLength {
-						splitString[i] = next
-						splitString = append(splitString[:i+1], splitString[i+2:]...)
-					}
-				}
-				// else continue
-				i++
-			}
-
-			// now check the last index and pen ultimate of the split string and combine if shorter than minimumPhraseLength
-			if len(splitString) > 1 {
-				lastElem := len(splitString) - 1
-				lastElemCount := len(strings.Fields(splitString[lastElem]))
-				penUltimateElemCount := len(strings.Fields(splitString[lastElem-1]))
-				if lastElemCount < minimumPhraseLength || penUltimateElemCount < minimumPhraseLength {
-					lastString := splitString[lastElem-1] + " " + splitString[lastElem]
-					splitString[lastElem] = lastString
-					splitString = splitString[:lastElem-1]
 				}
 			}
-		} else {
-			return []string{line}
+			// else continue
+			i++
 		}
+
+		// now check the last index and pen ultimate of the split string and combine if shorter than minimumPhraseLength
+		if len(splitString) > 1 {
+			lastElem := len(splitString) - 1
+			lastElemCount := len(strings.Fields(splitString[lastElem]))
+			penUltimateElemCount := len(strings.Fields(splitString[lastElem-1]))
+			if lastElemCount < minimumPhraseLength || penUltimateElemCount < minimumPhraseLength {
+				lastString := splitString[lastElem-1] + " " + splitString[lastElem]
+				splitString[lastElem] = lastString
+				splitString = splitString[:lastElem-1]
+			}
+		}
+	} else {
+		return []string{line}
 	}
 
 	for i := range splitString {

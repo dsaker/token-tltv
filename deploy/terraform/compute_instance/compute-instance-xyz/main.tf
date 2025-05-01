@@ -1,22 +1,17 @@
-data "google_compute_address" "static_xyz" {
-  name = var.static_ip_name
+resource "google_compute_address" "static_xyz" {
+  name = "xyz-ip-address"
 }
 
 data "google_service_account" "tltv_sa_xyz" {
   account_id = var.sa_account_id
 }
 
-resource "google_compute_network" "vpc_network_xyz" {
-  name                    = "talkliketv-vpc-network-xyz"
-  auto_create_subnetworks = false
-  mtu                     = 1460
+data "google_compute_network" "tltv_network" {
+  name = "default"
 }
 
-resource "google_compute_subnetwork" "subnetwork_talkliketv_xyz" {
-  name          = "talkliketv-subnet-xyz"
-  ip_cidr_range = "10.0.1.0/24"
-  region        = var.region
-  network       = google_compute_network.vpc_network_xyz.id
+data "google_compute_subnetwork" "tltv_subnetwork" {
+  name          = "default"
 }
 
 data "google_compute_image" "debian" {
@@ -28,7 +23,7 @@ data "google_compute_image" "debian" {
 resource "google_compute_instance" "talkliketv_xyz" {
   name                      = "talkliketv-vm-xyz"
   machine_type              = var.machine_type
-  tags                      = ["ssh-talkliketv-xyz", "https-talkliketv-xyz"]
+  tags                      = ["ssh-talkliketv", "https-server"]
   allow_stopping_for_update = true
   zone = var.zone
 
@@ -46,10 +41,10 @@ resource "google_compute_instance" "talkliketv_xyz" {
 
   network_interface {
     access_config {
-      nat_ip = data.google_compute_address.static_xyz.address
+      nat_ip = google_compute_address.static_xyz.address
     }
-    network    =  google_compute_network.vpc_network_xyz.id
-    subnetwork =  google_compute_subnetwork.subnetwork_talkliketv_xyz.id
+    network    =  data.google_compute_network.tltv_network.id
+    subnetwork =  data.google_compute_subnetwork.tltv_subnetwork.id
   }
 
   scheduling {
@@ -66,37 +61,9 @@ resource "google_compute_instance" "talkliketv_xyz" {
   connection {
     type     = "ssh"
     user     = var.gce_ssh_user
-    host     = data.google_compute_address.static_xyz.address
+    host     = google_compute_address.static_xyz.address
     private_key = file(var.gce_ssh_private_key_file)
   }
-}
-
-# allow ssh to talkliketv vpc
-resource "google_compute_firewall" "talkliketv_vpc_network_allow_ssh_xyz" {
-  name    = "talkliketv-vpc-network-allow-ssh-xyz"
-  network = google_compute_network.vpc_network_xyz.name
-
-  allow {
-    protocol = "tcp"
-    ports    = ["22"]
-  }
-
-  target_tags   = ["ssh-talkliketv-xyz"]
-  source_ranges = [var.my_ip]
-}
-
-# allow https to talkliketv vpc
-resource "google_compute_firewall" "talkliketv_vpc_network_allow_https_xyz" {
-  name    = "talkliketv-vpc-network-allow-https-xyz"
-  network = google_compute_network.vpc_network_xyz.name
-
-  allow {
-    protocol = "tcp"
-    ports    = ["443"]
-  }
-
-  target_tags   = ["https-talkliketv-xyz"]
-  source_ranges = ["0.0.0.0/0"]
 }
 
 // setup uptime check for talkliketv.xyz

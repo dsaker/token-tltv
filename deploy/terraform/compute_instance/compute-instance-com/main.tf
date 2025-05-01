@@ -1,4 +1,4 @@
-data "google_compute_address" "static_xyz" {
+data "google_compute_address" "static_com" {
   name = var.static_ip_com
 }
 
@@ -12,17 +12,17 @@ data "google_compute_image" "debian" {
 }
 
 data "google_compute_network" "tltv_network" {
-  name = var.tltv_network
+  name = "default"
 }
 
 data "google_compute_subnetwork" "tltv_subnetwork" {
-  name          = var.tltv_subnetwork
+  name          = "default"
 }
 # Create a single Compute Engine instance
 resource "google_compute_instance" "talkliketv_com" {
   name                      = "talkliketv-vm-com"
   machine_type              = var.machine_type
-  tags                      = ["ssh-talkliketv-xyz", "https-talkliketv-xyz"]
+  tags                      = ["ssh-talkliketv", "https-server"]
   allow_stopping_for_update = true
   zone = var.zone
 
@@ -40,7 +40,7 @@ resource "google_compute_instance" "talkliketv_com" {
 
   network_interface {
     access_config {
-      nat_ip = data.google_compute_address.static_xyz.address
+      nat_ip = data.google_compute_address.static_com.address
     }
     network    =  data.google_compute_network.tltv_network.id
     subnetwork =  data.google_compute_subnetwork.tltv_subnetwork.id
@@ -59,7 +59,7 @@ resource "google_compute_instance" "talkliketv_com" {
   connection {
     type     = "ssh"
     user     = var.gce_ssh_user
-    host     = data.google_compute_address.static_xyz.address
+    host     = data.google_compute_address.static_com.address
     private_key = file(var.gce_ssh_private_key_file)
   }
 }
@@ -99,7 +99,7 @@ resource "google_monitoring_alert_policy" "talkliketv_com_uptime_failure" {
   display_name          = "talkliketv-com-uptime-failure"
   enabled               = true
   notification_channels = [data.google_monitoring_notification_channel.email_notification.name]
-  project               = "token-tltv-450304"
+  project               = var.project_id
   severity = "ERROR"
   conditions {
     display_name = "Failure of uptime check_id ${google_monitoring_uptime_check_config.talkliketv_com_uptime_check.display_name}"
