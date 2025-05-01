@@ -12,8 +12,6 @@ import (
 	"strings"
 	"talkliketv.click/tltv/internal/config"
 	"talkliketv.click/tltv/internal/models"
-	"talkliketv.click/tltv/internal/test"
-	"talkliketv.click/tltv/internal/translates"
 	"unicode"
 )
 
@@ -21,6 +19,17 @@ const (
 	minimumPhraseLength = 4
 	maximumPhraseLength = 10
 )
+
+func parseFileContent(f multipart.File, fileType string) ([]string, error) {
+	switch fileType {
+	case "srt":
+		return parseSrt(f), nil
+	case "paragraph":
+		return parseParagraph(f), nil
+	default:
+		return parseSingle(f), nil
+	}
+}
 
 func ProcessFile(e echo.Context, af AudioFileX, cfg config.Config, titleName string) ([]models.Phrase, *os.File, error) {
 	stringsSlice, err := FileParse(e, af, cfg.FileUploadLimit)
@@ -91,60 +100,6 @@ func ZipStringsSlice(e echo.Context, af AudioFileX, slice []string, max int, pat
 	return zipFile, nil
 }
 
-// CreateAudioFromTitle is a helper function that performs the tasks shared by
-// AudioFromFile and AudioFromTitle
-func CreateAudioFromTitle(e echo.Context, t translates.TranslateX, af AudioFileX, title models.Title, path string) (*os.File, error) {
-	// TODO if you don't want these files to persist then you need to defer removing them from calling function
-	audioBasePath := path + title.Name
-
-	fromAudioBasePath := fmt.Sprintf("%s/%d/", audioBasePath, title.FromVoiceId)
-	toAudioBasePath := fmt.Sprintf("%s/%d/", audioBasePath, title.ToVoiceId)
-
-	_, err := t.CreateTTS(e, title, title.FromVoiceId, fromAudioBasePath)
-	if err != nil {
-		e.Logger().Error(err)
-		// if error remove all the text-to-speech created up to that point
-		osErr := os.RemoveAll(audioBasePath)
-		if osErr != nil {
-			e.Logger().Error(osErr)
-		}
-		return nil, err
-	}
-
-	toPhrases, err := t.CreateTTS(e, title, title.ToVoiceId, toAudioBasePath)
-	if err != nil {
-		e.Logger().Error(err)
-		osErr := os.RemoveAll(audioBasePath)
-		if osErr != nil {
-			e.Logger().Error(osErr)
-		}
-		return nil, err
-	}
-	title.ToPhrases = toPhrases
-
-	// get pause path string to build the full pause file path
-	pausePath, ok := AudioPauseFilePath[title.Pause]
-	if !ok {
-		e.Logger().Error(models.ErrPauseNotFound)
-		return nil, models.ErrPauseNotFound
-	}
-	fullPausePath := path + pausePath
-
-	// create a temporary directory for building all the files
-	tmpDirPath := fmt.Sprintf("%s%s-%s/", path, title.Name, test.RandomString(4))
-	err = os.MkdirAll(tmpDirPath, 0777)
-	if err != nil {
-		e.Logger().Error(err)
-		return nil, err
-	}
-
-	if err = af.BuildAudioInputFiles(e, title, fullPausePath, fromAudioBasePath, toAudioBasePath, tmpDirPath); err != nil {
-		return nil, err
-	}
-
-	return af.CreateMp3Zip(e, title, tmpDirPath)
-}
-
 // parseSrt takes a srt multipart file and parses it into a slice of strings
 func parseSrt(f multipart.File) []string {
 	var stringsSlice []string
@@ -164,12 +119,13 @@ func parseSrt(f multipart.File) []string {
 		nextLine := scanner.Text()
 		if nextLine != "" {
 			line = strings.ReplaceAll(line, "\n", "") + " " + nextLine
+			line = strings.ReplaceAll(line, "\t", "")
 		}
 		line = replaceFmt(line)
-	}
 
-	phrases := splitLongPhrases(line)
-	stringsSlice = append(stringsSlice, phrases...)
+		phrases := splitLongPhrases(line)
+		stringsSlice = append(stringsSlice, phrases...)
+	}
 
 	return stringsSlice
 }

@@ -53,9 +53,9 @@ func main() {
 	for _, token := range tokens {
 		err = insertToken(db, token)
 		if err != nil {
-			log.Printf("Failed to insert token %s: %v\n", token, err)
+			log.Printf("Failed to insert token %s: %v\n", token.Hash, err)
 		} else {
-			fmt.Printf("Successfully inserted token: %s\n", token)
+			fmt.Printf("Successfully inserted token: %s\n", token.Hash)
 		}
 	}
 }

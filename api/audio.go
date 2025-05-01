@@ -64,7 +64,7 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 
 	title.TitlePhrases = phrases
 
-	zipFile, err := audiofile.CreateAudioFromTitle(e, s.translate, s.af, *title, s.config.TTSBasePath)
+	zipFile, err := audiofile.AudioFromTitle(e, s.translate, s.af, *title, s.config.TTSBasePath)
 	if err != nil {
 		e.Logger().Error(err)
 		return e.String(http.StatusInternalServerError, "unable to create audio file: "+err.Error())
