@@ -28,7 +28,7 @@ distributing tokens to selected users, removing the need for a formal authentica
 - Create a [Google Cloud Project](https://developers.google.com/workspace/guides/create-project)
 - Install [ffmpeg](https://www.ffmpeg.org/download.html)
 - Install [make] 
-- Run below commands to sign in and enable the necessary Google Cloud API's
+- Run below commands to enable the necessary Google Cloud API's
 ```
 gcloud services enable texttospeech.googleapis.com
 gcloud services enable translate.googleapis.com
@@ -110,18 +110,6 @@ make build/local
 kubectl apply -f docker/deployment.yaml
 minikube image load token-tltv:latest
 minikube service tltv-svc --url 
-```
-
-### Run Container Locally
-- Set up [ADC](https://cloud.google.com/docs/authentication/set-up-adc-containerized-environment)
-- Install [minikube](https://minikube.sigs.k8s.io/docs/handbook/addons/gcp-auth/)
-```
-minikube start
-minikube addons enable gcp-auth
-make build/local
-minikube cache add token-tltv:latest
-kubectl apply -f docker/deployment.yaml
-minikube service tltv-svc --url
 ```
 
 ### Update Languages and Voices
