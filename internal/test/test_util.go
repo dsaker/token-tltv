@@ -23,7 +23,12 @@ import (
 
 var (
 	AudioBasePath  = "/tmp/test/audio/"
+	ParseBasePath  = "/tmp/test/parse/"
 	GcpTestProject = "token-tltv-test"
+)
+
+const (
+	FiveSentences = "This is the first sentence.\nThis is the second sentence.\nThis is the third sentence.\nThis is the fourth sentence.\nThis is the fifth sentence.\n"
 )
 
 func RequireMatchAnyExcept(t *testing.T, model any, response any, skip []string, except string, shouldEqual any) {

@@ -2,8 +2,6 @@ package audiofile
 
 import (
 	"bufio"
-	"errors"
-	"fmt"
 	"github.com/labstack/echo/v4"
 	"mime/multipart"
 	"os"
@@ -12,6 +10,7 @@ import (
 	"strings"
 	"talkliketv.click/tltv/internal/config"
 	"talkliketv.click/tltv/internal/models"
+	"talkliketv.click/tltv/internal/services"
 	"unicode"
 )
 
@@ -65,13 +64,12 @@ func FileParse(e echo.Context, af AudioFileX, fileUploadLimit int64) ([]string, 
 	fh, err := e.FormFile("file_path")
 	if err != nil {
 		e.Logger().Error(err)
-		return nil, ErrUnableToParseFile(err)
+		return nil, services.ErrUnableToParseFile(err)
 	}
 
 	// Check if file size is too large 64000 == 8KB ~ approximately 4 pages of text
 	if fh.Size > fileUploadLimit {
-		rString := fmt.Sprintf("file too large (%d > %d)", fh.Size, fileUploadLimit)
-		return nil, ErrUnableToParseFile(errors.New(rString))
+		return nil, services.ErrFileTooLarge(fh.Size, fileUploadLimit)
 	}
 	src, err := fh.Open()
 	if err != nil {
@@ -83,7 +81,7 @@ func FileParse(e echo.Context, af AudioFileX, fileUploadLimit int64) ([]string, 
 	// get an array of all the phrases from the uploaded file
 	stringsSlice, err := af.GetLines(e, src)
 	if err != nil {
-		return nil, ErrUnableToParseFile(err)
+		return nil, services.ErrUnableToParseFile(err)
 	}
 
 	return stringsSlice, nil

@@ -33,6 +33,7 @@ var (
 
 const (
 	audioBasePath = "/v1/audio"
+	parseBasePath = "/v1/parse"
 )
 
 var (

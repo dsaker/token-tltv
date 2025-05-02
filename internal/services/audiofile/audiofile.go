@@ -11,10 +11,10 @@ import (
 	"slices"
 	"strconv"
 	"talkliketv.click/tltv/internal/models"
+	"talkliketv.click/tltv/internal/services/pattern"
 	"talkliketv.click/tltv/internal/util"
 
 	"github.com/labstack/echo/v4"
-	audio "talkliketv.click/tltv/internal/audio/pattern"
 )
 
 // AudioPauseFilePath is a map to the silence mp3's of the embedded FS in
@@ -34,10 +34,6 @@ var AudioPauseFilePath = map[int]string{
 // endSentenceMap is a map to find the ending punctuation of a sentence
 // TODO change endSentenceMap to work for any language
 var (
-	ErrOneFile           = errors.New("no need to zip one file")
-	ErrUnableToParseFile = func(err error) error {
-		return fmt.Errorf("unable to parsefile file: %s", err)
-	}
 	endSentenceMap = map[rune]bool{
 		'!': true,
 		'.': true,

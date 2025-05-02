@@ -1,8 +1,13 @@
-package validator
+package services
 
 import (
+	"errors"
+	"fmt"
+	"github.com/labstack/echo/v4"
 	"net/mail"
+	"strconv"
 	"strings"
+	"talkliketv.click/tltv/internal/models"
 	"unicode/utf8"
 )
 
@@ -96,4 +101,55 @@ func (v *Validator) In(value string, list ...string) bool {
 		}
 	}
 	return false
+}
+
+func ValidateAudioRequest(e echo.Context, m models.ModelsX) (*models.Title, error) {
+	titleName := e.FormValue("title_name")
+	fileLangId, err := strconv.Atoi(e.FormValue("file_language_id"))
+	if err != nil || !isValidLanguage(m, fileLangId) {
+		return nil, fmt.Errorf("invalid file_language_id: %v", err)
+	}
+
+	toVoiceId, err := strconv.Atoi(e.FormValue("to_voice_id"))
+	if err != nil || !isValidVoice(m, toVoiceId) {
+		return nil, fmt.Errorf("invalid to_voice_id: %v", err)
+	}
+
+	fromVoiceId, err := strconv.Atoi(e.FormValue("from_voice_id"))
+	if err != nil || !isValidVoice(m, fromVoiceId) {
+		return nil, fmt.Errorf("invalid from_voice_id: %v", err)
+	}
+
+	pause, err := strconv.Atoi(e.FormValue("pause"))
+	if err != nil || pause < 3 || pause > 10 {
+		return nil, errors.New("pause must be between 3 and 10")
+	}
+
+	if len(titleName) < 5 || len(titleName) > 32 {
+		return nil, errors.New("title_name must be between 5 and 32")
+	}
+
+	pattern, err := strconv.Atoi(e.FormValue("pattern"))
+	if err != nil || pattern < 1 || pattern > 3 {
+		return nil, errors.New("pattern must be between 1 and 3")
+	}
+
+	return &models.Title{
+		Name:        titleName,
+		TitleLangId: fileLangId,
+		ToVoiceId:   toVoiceId,
+		FromVoiceId: fromVoiceId,
+		Pause:       pause,
+		Pattern:     pattern,
+	}, nil
+}
+
+func isValidLanguage(m models.ModelsX, id int) bool {
+	_, err := m.GetLanguage(id)
+	return err == nil
+}
+
+func isValidVoice(m models.ModelsX, id int) bool {
+	_, err := m.GetVoice(id)
+	return err == nil
 }

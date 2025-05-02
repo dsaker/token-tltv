@@ -13,12 +13,11 @@ import (
 	"os"
 	"strconv"
 	"sync"
-	"talkliketv.click/tltv/internal/audio"
-	"talkliketv.click/tltv/internal/audio/audiofile"
 	"talkliketv.click/tltv/internal/config"
 	"talkliketv.click/tltv/internal/models"
 	"talkliketv.click/tltv/internal/oapi"
-	"talkliketv.click/tltv/internal/translates"
+	"talkliketv.click/tltv/internal/services"
+	"talkliketv.click/tltv/internal/services/audiofile"
 	"talkliketv.click/tltv/internal/util"
 	"talkliketv.click/tltv/ui"
 	"time"
@@ -26,7 +25,7 @@ import (
 
 type Server struct {
 	sync.RWMutex
-	translate translates.TranslateX
+	translate services.TranslateX
 	af        audiofile.AudioFileX
 	m         models.ModelsX
 	tokens    models.TokensX
@@ -35,7 +34,7 @@ type Server struct {
 
 func NewServer(
 	c config.Config,
-	t translates.TranslateX,
+	t services.TranslateX,
 	af audiofile.AudioFileX,
 	tok models.TokensX,
 	m models.ModelsX,
@@ -172,7 +171,7 @@ func initSilence(cfg config.Config) {
 		}
 		for key, value := range audiofile.AudioPauseFilePath {
 			fmt.Printf("%d", key)
-			pause, err := audio.Silence.ReadFile(value)
+			pause, err := services.Silence.ReadFile(value)
 			if err != nil {
 				log.Fatal(err)
 			}

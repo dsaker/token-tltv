@@ -1,4 +1,4 @@
-package translates
+package services
 
 import (
 	"flag"

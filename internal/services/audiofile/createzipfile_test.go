@@ -11,6 +11,7 @@ import (
 	"slices"
 	"talkliketv.click/tltv/internal/mock"
 	"talkliketv.click/tltv/internal/models"
+	"talkliketv.click/tltv/internal/services"
 	"talkliketv.click/tltv/internal/test"
 	"talkliketv.click/tltv/internal/util"
 	"testing"
@@ -167,7 +168,7 @@ func TestCreatePhrasesZip(t *testing.T) {
 			buildStubs: func(ma *mock.MockcmdRunnerX) {
 			},
 			checkReturn: func(t *testing.T, file *os.File, err error) {
-				require.Error(t, ErrOneFile)
+				require.Error(t, services.ErrOneFile)
 			},
 			values:       map[string]any{"size": 3},
 			stringsSlice: []string{},
