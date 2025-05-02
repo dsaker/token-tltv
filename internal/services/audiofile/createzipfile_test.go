@@ -12,7 +12,7 @@ import (
 	"talkliketv.click/tltv/internal/mock"
 	"talkliketv.click/tltv/internal/models"
 	"talkliketv.click/tltv/internal/services"
-	"talkliketv.click/tltv/internal/test"
+	"talkliketv.click/tltv/internal/testutil"
 	"talkliketv.click/tltv/internal/util"
 	"testing"
 )
@@ -26,8 +26,8 @@ func TestCreateMp3Zip(t *testing.T) {
 		{
 			name: "No error",
 			createTitle: func(t *testing.T) (models.Title, string) {
-				title := test.RandomTitle(voicesMap)
-				tmpDir := test.AudioBasePath + "TestCreateMp3ZipWithFfmpeg/" + title.Name + "/"
+				title := testutil.RandomTitle(voicesMap)
+				tmpDir := testutil.AudioBasePath + "TestCreateMp3ZipWithFfmpeg/" + title.Name + "/"
 				err := os.MkdirAll(tmpDir, 0777)
 				require.NoError(t, err)
 				file := createFile(
@@ -50,8 +50,8 @@ func TestCreateMp3Zip(t *testing.T) {
 		{
 			name: "No files",
 			createTitle: func(t *testing.T) (models.Title, string) {
-				title := test.RandomTitle(voicesMap)
-				tmpDir := test.AudioBasePath + "TestCreateMp3ZipWithFfmpeg/" + title.Name + "/"
+				title := testutil.RandomTitle(voicesMap)
+				tmpDir := testutil.AudioBasePath + "TestCreateMp3ZipWithFfmpeg/" + title.Name + "/"
 				err := os.MkdirAll(tmpDir, 0777)
 				require.NoError(t, err)
 				return title, tmpDir
@@ -105,8 +105,8 @@ func TestCreatePhrasesZip(t *testing.T) {
 		{
 			name: "3 files",
 			createTitle: func(t *testing.T) (models.Title, string) {
-				title := test.RandomTitle(voicesMap)
-				tmpDir := test.AudioBasePath + "TestCreatePhrasesZip/" + title.Name + "/"
+				title := testutil.RandomTitle(voicesMap)
+				tmpDir := testutil.AudioBasePath + "TestCreatePhrasesZip/" + title.Name + "/"
 				err := os.MkdirAll(tmpDir, 0777)
 				require.NoError(t, err)
 				return title, tmpDir
@@ -132,8 +132,8 @@ func TestCreatePhrasesZip(t *testing.T) {
 		{
 			name: "5 files",
 			createTitle: func(t *testing.T) (models.Title, string) {
-				title := test.RandomTitle(voicesMap)
-				tmpDir := test.AudioBasePath + "TestCreatePhrasesZip/" + title.Name + "/"
+				title := testutil.RandomTitle(voicesMap)
+				tmpDir := testutil.AudioBasePath + "TestCreatePhrasesZip/" + title.Name + "/"
 				err := os.MkdirAll(tmpDir, 0777)
 				require.NoError(t, err)
 				return title, tmpDir
@@ -159,8 +159,8 @@ func TestCreatePhrasesZip(t *testing.T) {
 		{
 			name: "No One File",
 			createTitle: func(t *testing.T) (models.Title, string) {
-				title := test.RandomTitle(voicesMap)
-				tmpDir := test.AudioBasePath + "TestCreatePhrasesZip/" + title.Name + "/"
+				title := testutil.RandomTitle(voicesMap)
+				tmpDir := testutil.AudioBasePath + "TestCreatePhrasesZip/" + title.Name + "/"
 				err := os.MkdirAll(tmpDir, 0777)
 				require.NoError(t, err)
 				return title, tmpDir

@@ -14,6 +14,8 @@ import (
 	"os"
 	"strings"
 	"talkliketv.click/tltv/internal/models"
+	"talkliketv.click/tltv/internal/testflags"
+	"talkliketv.click/tltv/internal/testutil"
 	"testing"
 
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -21,7 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"talkliketv.click/tltv/internal/config"
-	"talkliketv.click/tltv/internal/test"
 	"talkliketv.click/tltv/internal/util"
 )
 
@@ -46,13 +47,13 @@ type TestConfig struct {
 	config.Config
 	browser *playwright.Browser
 	url     string
-	tc      *test.TltvContainer
+	tc      *testutil.TltvContainer
 }
 
 // testCase struct groups together the fields necessary for running most of the test cases
 type testCase struct {
 	name          string
-	buildStubs    func(stubs test.MockStubs)
+	buildStubs    func(stubs testutil.MockStubs)
 	multipartBody func(t *testing.T) (*bytes.Buffer, *multipart.Writer)
 	checkResponse func(res *http.Response)
 }
@@ -62,11 +63,14 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	flag.StringVar(&util.Test, "test", "unit", "type of tests to run [unit|integration|end-to-end]")
-	flag.BoolVar(&local, "local", false, "if true end-to-end tests will be run in local mode")
-	flag.BoolVar(&headless, "headless", true, "if true browser will be headless")
-	flag.StringVar(&saFile, "sa-file", "", "path to service account file with permissions to run tests")
+
+	testflags.ParseFlags()
 	flag.Parse()
+
+	util.Test = testflags.TestType
+	local = testflags.Local
+	headless = testflags.Headless
+	saFile = testflags.SAFile
 
 	langsMap, voicesMap = models.MakeGoogleMaps()
 
@@ -75,10 +79,10 @@ func TestMain(m *testing.M) {
 		getBrowserContext(headless, saFile)
 	}
 
-	testCfg.TTSBasePath = test.AudioBasePath
+	testCfg.TTSBasePath = testutil.AudioBasePath
 
 	// Run tests
-	exitCode := m.Run()
+	exitCode := testflags.RunTests(m)
 
 	os.Exit(exitCode)
 }
@@ -105,7 +109,7 @@ func addTokenFirestore(t *testing.T, client *firestore.Client, ctx context.Conte
 func getBrowserContext(headless bool, saFile string) {
 	if !local {
 		ctx := context.Background()
-		container, err := test.StartContainer(ctx, testCfg.ProjectId, saFile)
+		container, err := testutil.StartContainer(ctx, testCfg.ProjectId, saFile)
 		testCfg.tc = container
 		if err != nil {
 			log.Fatal(err)
@@ -157,7 +161,7 @@ func readBody(t *testing.T, rs *http.Response) string {
 
 // setupServerTest sets up testCase that will include the middleware not included in handler tests
 func setupServerTest(ctrl *gomock.Controller, tc testCase) *httptest.Server {
-	stubs := test.NewMockStubs(ctrl)
+	stubs := testutil.NewMockStubs(ctrl)
 	tc.buildStubs(stubs)
 
 	srv := NewServer(testCfg.Config, stubs.TranslateX, stubs.AudioFileX, stubs.TokensX, stubs.ModelsX)

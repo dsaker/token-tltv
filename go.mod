@@ -13,7 +13,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/translate v1.29.2
 	github.com/denisenkom/go-mssqldb v0.12.3
 	github.com/getkin/kin-openapi v0.131.0
-	github.com/go-playground/form/v4 v4.2.1
 	github.com/golang-migrate/migrate/v4 v4.18.1
 	github.com/golang/mock v1.1.1
 	github.com/googleapis/gax-go/v2 v2.14.1

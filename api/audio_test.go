@@ -19,7 +19,7 @@ import (
 	"talkliketv.click/tltv/internal/models"
 	"talkliketv.click/tltv/internal/services"
 	"talkliketv.click/tltv/internal/services/audiofile"
-	"talkliketv.click/tltv/internal/test"
+	"talkliketv.click/tltv/internal/testutil"
 	"talkliketv.click/tltv/internal/util"
 	"testing"
 )
@@ -31,10 +31,10 @@ func TestAudioFromFile(t *testing.T) {
 
 	t.Parallel()
 
-	title := test.RandomTitle(voicesMap)
+	title := testutil.RandomTitle(voicesMap)
 
 	// create a base path for storing mp3 audio files
-	tmpAudioBasePath := test.AudioBasePath + title.Name + "/"
+	tmpAudioBasePath := testutil.AudioBasePath + title.Name + "/"
 	err := os.MkdirAll(tmpAudioBasePath, 0777)
 	// remove directory after tests run
 	defer os.RemoveAll(tmpAudioBasePath)
@@ -55,11 +55,11 @@ func TestAudioFromFile(t *testing.T) {
 	titleWithTranslates := title
 	titleWithTranslates.ToPhrases = []models.Phrase{phrase1, phrase2}
 
-	fiveSecSilenceBasePath := test.AudioBasePath + "silence/5SecSilence.mp3"
+	fiveSecSilenceBasePath := testutil.AudioBasePath + "silence/5SecSilence.mp3"
 	fromAudioBasePath := fmt.Sprintf("%s%d/", tmpAudioBasePath, title.FromVoiceId)
 	toAudioBasePath := fmt.Sprintf("%s%d/", tmpAudioBasePath, title.ToVoiceId)
 
-	randomToken := test.RandomString(32)
+	randomToken := testutil.RandomString(32)
 	okFormMap := map[string]string{
 		"file_language_id": strconv.Itoa(title.TitleLangId),
 		"title_name":       title.Name,
@@ -73,7 +73,7 @@ func TestAudioFromFile(t *testing.T) {
 	testCases := []testCase{
 		{
 			name: "OK",
-			buildStubs: func(stubs test.MockStubs) {
+			buildStubs: func(stubs testutil.MockStubs) {
 				file, err := os.Create(audioFromFileName)
 				require.NoError(t, err)
 				defer file.Close()
@@ -120,7 +120,7 @@ func TestAudioFromFile(t *testing.T) {
 		},
 		{
 			name: "Pause out of range",
-			buildStubs: func(stubs test.MockStubs) {
+			buildStubs: func(stubs testutil.MockStubs) {
 				stubs.TokensX.EXPECT().
 					CheckToken(gomock.Any(), randomToken).
 					Return(nil)
@@ -148,7 +148,7 @@ func TestAudioFromFile(t *testing.T) {
 		},
 		{
 			name: "file_language_id out of range",
-			buildStubs: func(stubs test.MockStubs) {
+			buildStubs: func(stubs testutil.MockStubs) {
 				stubs.TokensX.EXPECT().
 					CheckToken(gomock.Any(), randomToken).
 					Return(nil)
@@ -170,7 +170,7 @@ func TestAudioFromFile(t *testing.T) {
 		},
 		{
 			name: "file_langauge_id string",
-			buildStubs: func(stubs test.MockStubs) {
+			buildStubs: func(stubs testutil.MockStubs) {
 				stubs.TokensX.EXPECT().
 					CheckToken(gomock.Any(), randomToken).
 					Return(nil)
@@ -189,7 +189,7 @@ func TestAudioFromFile(t *testing.T) {
 		},
 		{
 			name: "to_voice_id out of range",
-			buildStubs: func(stubs test.MockStubs) {
+			buildStubs: func(stubs testutil.MockStubs) {
 				stubs.TokensX.EXPECT().
 					CheckToken(gomock.Any(), randomToken).
 					Return(nil)
@@ -214,7 +214,7 @@ func TestAudioFromFile(t *testing.T) {
 		},
 		{
 			name: "pattern out of range",
-			buildStubs: func(stubs test.MockStubs) {
+			buildStubs: func(stubs testutil.MockStubs) {
 				stubs.TokensX.EXPECT().
 					CheckToken(gomock.Any(), randomToken).
 					Return(nil)
@@ -253,7 +253,7 @@ func TestAudioFromFile(t *testing.T) {
 				}
 				return createMultiPartBody(t, data, audioFromFileName, formMap)
 			},
-			buildStubs: func(stubs test.MockStubs) {
+			buildStubs: func(stubs testutil.MockStubs) {
 			},
 			checkResponse: func(res *http.Response) {
 				require.Equal(t, http.StatusBadRequest, res.StatusCode)
@@ -264,7 +264,7 @@ func TestAudioFromFile(t *testing.T) {
 		{
 			name: "File Too Big",
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
-				tooBigFile := test.AudioBasePath + "tooBigFile.txt"
+				tooBigFile := testutil.AudioBasePath + "tooBigFile.txt"
 				file, err := os.Create(tooBigFile)
 				require.NoError(t, err)
 				defer file.Close()
@@ -293,7 +293,7 @@ func TestAudioFromFile(t *testing.T) {
 				require.NoError(t, multiWriter.Close())
 				return body, multiWriter
 			},
-			buildStubs: func(stubs test.MockStubs) {
+			buildStubs: func(stubs testutil.MockStubs) {
 				stubs.TokensX.EXPECT().
 					CheckToken(gomock.Any(), randomToken).
 					Return(nil)
@@ -315,9 +315,9 @@ func TestAudioFromFile(t *testing.T) {
 		},
 		{
 			name: "Too Many Phrases",
-			buildStubs: func(stubs test.MockStubs) {
+			buildStubs: func(stubs testutil.MockStubs) {
 				for i := 0; i < 101; i++ {
-					phrase := test.RandomString(4) + " " + test.RandomString(4)
+					phrase := testutil.RandomString(4) + " " + testutil.RandomString(4)
 					stringsSlice = append(stringsSlice, phrase)
 				}
 
@@ -355,7 +355,7 @@ func TestAudioFromFile(t *testing.T) {
 		},
 		{
 			name: "Used Token",
-			buildStubs: func(stubs test.MockStubs) {
+			buildStubs: func(stubs testutil.MockStubs) {
 				stubs.TokensX.EXPECT().
 					CheckToken(gomock.Any(), randomToken).
 					Return(models.ErrUsedToken)
@@ -401,15 +401,15 @@ func TestParseFile(t *testing.T) {
 
 	t.Parallel()
 
-	parseFileName := test.ParseBasePath + "TestParseFile.txt"
-	err := os.MkdirAll(test.ParseBasePath, 0777)
+	parseFileName := testutil.ParseBasePath + "TestParseFile.txt"
+	err := os.MkdirAll(testutil.ParseBasePath, 0777)
 	require.NoError(t, err)
-	defer os.RemoveAll(test.ParseBasePath)
+	defer os.RemoveAll(testutil.ParseBasePath)
 
 	testCases := []testCase{
 		{
 			name: "OK",
-			buildStubs: func(stubs test.MockStubs) {
+			buildStubs: func(stubs testutil.MockStubs) {
 				file, err := os.Create(parseFileName)
 				require.NoError(t, err)
 				defer file.Close()
@@ -421,7 +421,7 @@ func TestParseFile(t *testing.T) {
 					Return(file, nil)
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
-				data := []byte(test.FiveSentences)
+				data := []byte(testutil.FiveSentences)
 				return createMultiPartBody(t, data, parseFileName, nil)
 			},
 			checkResponse: func(res *http.Response) {
@@ -432,7 +432,7 @@ func TestParseFile(t *testing.T) {
 		},
 		{
 			name: "File Too Large",
-			buildStubs: func(stubs test.MockStubs) {
+			buildStubs: func(stubs testutil.MockStubs) {
 				stubs.AudioFileX.EXPECT().
 					GetLines(gomock.Any(), gomock.Any()).
 					Return(nil, services.NewFileTooLargeError(65000, 64000))
@@ -449,7 +449,7 @@ func TestParseFile(t *testing.T) {
 		},
 		{
 			name: "Error Getting Form File",
-			buildStubs: func(stubs test.MockStubs) {
+			buildStubs: func(stubs testutil.MockStubs) {
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				// Create a multipart form without the file_path field
@@ -468,7 +468,7 @@ func TestParseFile(t *testing.T) {
 		},
 		{
 			name: "Error Zipping File",
-			buildStubs: func(stubs test.MockStubs) {
+			buildStubs: func(stubs testutil.MockStubs) {
 				stubs.AudioFileX.EXPECT().
 					GetLines(gomock.Any(), gomock.Any()).
 					Return([]string{"This is a test sentence."}, nil)
@@ -538,10 +538,10 @@ func TestGoogleIntegration(t *testing.T) {
 
 	srv := NewServer(testCfg.Config, tr, af, &tokens, &mods)
 	e := srv.NewEcho(nil)
-	title := test.RandomTitle(voicesMap)
+	title := testutil.RandomTitle(voicesMap)
 
 	//create a base path for storing mp3 audio files
-	tmpAudioBasePath := test.AudioBasePath + title.Name + "/"
+	tmpAudioBasePath := testutil.AudioBasePath + title.Name + "/"
 	err = os.MkdirAll(tmpAudioBasePath, 0777)
 	require.NoError(t, err)
 
@@ -658,10 +658,10 @@ func TestAmazonIntegration(t *testing.T) {
 	srv := NewServer(testCfg.Config, tr, af, &tokens, &model)
 
 	e := srv.NewEcho(nil)
-	title := test.RandomTitle(voicesMap)
+	title := testutil.RandomTitle(voicesMap)
 
 	//create a base path for storing mp3 audio files
-	tmpAudioBasePath := test.AudioBasePath + title.Name + "/"
+	tmpAudioBasePath := testutil.AudioBasePath + title.Name + "/"
 	err = os.MkdirAll(tmpAudioBasePath, 0777)
 	require.NoError(t, err)
 

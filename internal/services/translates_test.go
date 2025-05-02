@@ -10,6 +10,8 @@ import (
 	"os"
 	"strings"
 	"talkliketv.click/tltv/internal/models"
+	"talkliketv.click/tltv/internal/testflags"
+	"talkliketv.click/tltv/internal/testutil"
 	"testing"
 
 	"cloud.google.com/go/texttospeech/apiv1/texttospeechpb"
@@ -18,7 +20,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"golang.org/x/text/language"
-	"talkliketv.click/tltv/internal/test"
 	"talkliketv.click/tltv/internal/util"
 )
 
@@ -28,7 +29,7 @@ var (
 
 type translatesTestCase struct {
 	name           string
-	buildStubs     func(stubs test.MockStubs)
+	buildStubs     func(stubs testutil.MockStubs)
 	checkTranslate func([]models.Phrase, error)
 }
 
@@ -38,21 +39,21 @@ func TestGoogleTTS(t *testing.T) {
 	}
 	t.Parallel()
 
-	title := test.RandomTitle(voicesMap)
+	title := testutil.RandomTitle(voicesMap)
 
-	basepath := test.AudioBasePath + title.Name + "/"
+	basepath := testutil.AudioBasePath + title.Name + "/"
 	err := os.MkdirAll(basepath, 0777)
 	require.NoError(t, err)
 	defer os.RemoveAll(basepath)
 
-	voice := test.RandomVoice()
+	voice := testutil.RandomVoice()
 	voice.Gender = models.MALE
 	text1 := "This is sentence one."
 
 	testCases := []translatesTestCase{
 		{
 			name: "No error",
-			buildStubs: func(stubs test.MockStubs) {
+			buildStubs: func(stubs testutil.MockStubs) {
 				req := texttospeechpb.SynthesizeSpeechRequest{
 					// Set the text input to be synthesized.
 					Input: &texttospeechpb.SynthesisInput{
@@ -85,7 +86,7 @@ func TestGoogleTTS(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			stubs := test.NewMockStubs(ctrl)
+			stubs := testutil.NewMockStubs(ctrl)
 			tc.buildStubs(stubs)
 
 			e := echo.New()
@@ -110,21 +111,21 @@ func TestAmazonTTS(t *testing.T) {
 	}
 	t.Parallel()
 
-	title := test.RandomTitle(voicesMap)
+	title := testutil.RandomTitle(voicesMap)
 
-	basepath := test.AudioBasePath + title.Name + "/"
+	basepath := testutil.AudioBasePath + title.Name + "/"
 	err := os.MkdirAll(basepath, 0777)
 	require.NoError(t, err)
 	defer os.RemoveAll(basepath)
 
-	voice := test.RandomVoice()
+	voice := testutil.RandomVoice()
 	voice.Gender = models.MALE
 	text1 := "This is sentence one."
 
 	testCases := []translatesTestCase{
 		{
 			name: "Nil response",
-			buildStubs: func(stubs test.MockStubs) {
+			buildStubs: func(stubs testutil.MockStubs) {
 				ssi := polly.SynthesizeSpeechInput{
 					Text:         &text1,
 					VoiceId:      types.VoiceId(voice.VoiceName), // voice.Name
@@ -142,7 +143,7 @@ func TestAmazonTTS(t *testing.T) {
 		},
 		{
 			name: "No error",
-			buildStubs: func(stubs test.MockStubs) {
+			buildStubs: func(stubs testutil.MockStubs) {
 				ssi := polly.SynthesizeSpeechInput{
 					Text:         &text1,
 					VoiceId:      types.VoiceId(voice.VoiceName), // voice.Name
@@ -170,7 +171,7 @@ func TestAmazonTTS(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			stubs := test.NewMockStubs(ctrl)
+			stubs := testutil.NewMockStubs(ctrl)
 			tc.buildStubs(stubs)
 
 			e := echo.New()
@@ -202,19 +203,19 @@ func TestGoogleTranslate(t *testing.T) {
 	translateText := "Esta es la primera oración."
 	returnedPhrase := []models.Phrase{{ID: 0, Text: translateText}, translate1}
 	translation := translate.Translation{Text: "Esta es la primera oración."}
-	title := test.RandomTitle(voicesMap)
+	title := testutil.RandomTitle(voicesMap)
 	title.TitlePhrases = []models.Phrase{{ID: 0, Text: text1}}
 
 	testCases := []translatesTestCase{
 		{
 			name: "No error",
-			buildStubs: func(stubs test.MockStubs) {
+			buildStubs: func(stubs testutil.MockStubs) {
 				stubs.GoogleTranslateClientX.EXPECT().Translate(gomock.Any(), []string{text1}, language.Spanish, nil).
 					Return([]translate.Translation{translation}, nil)
 			},
 			checkTranslate: func(translates []models.Phrase, err error) {
 				require.NoError(t, err)
-				test.RequireMatchAnyExcept(t, translates[0], returnedPhrase[0], nil, "", nil)
+				testutil.RequireMatchAnyExcept(t, translates[0], returnedPhrase[0], nil, "", nil)
 			},
 		},
 	}
@@ -224,7 +225,7 @@ func TestGoogleTranslate(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			stubs := test.NewMockStubs(ctrl)
+			stubs := testutil.NewMockStubs(ctrl)
 			tc.buildStubs(stubs)
 
 			e := echo.New()
@@ -258,20 +259,12 @@ func IsDirectoryEmpty(dirPath string) (bool, error) {
 	return false, nil // Directory is not empty
 }
 
-var (
-	projectId string
-	platform  string
-	saFile    string
-	headless  bool
-)
-
+// internal/models/models_test.go
 func TestMain(m *testing.M) {
-	flag.StringVar(&platform, "platform", "google", "which platform you are using [google|amazon]")
-	flag.StringVar(&util.Test, "test", "test", "type of tests to run [unit|integration|end-to-end]")
-	flag.StringVar(&projectId, "project-id", "", "project id for google cloud platform that contains firestore")
-	flag.BoolVar(&headless, "headless", true, "if true browser will be headless")
-	flag.StringVar(&saFile, "sa-file", "", "path to service account file with permissions to run tests")
+	testflags.ParseFlags()
 	flag.Parse()
 
-	os.Exit(m.Run())
+	util.Test = testflags.TestType
+
+	os.Exit(testflags.RunTests(m))
 }

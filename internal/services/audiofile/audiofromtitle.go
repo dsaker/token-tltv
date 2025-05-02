@@ -6,7 +6,7 @@ import (
 	"os"
 	"talkliketv.click/tltv/internal/models"
 	"talkliketv.click/tltv/internal/services"
-	"talkliketv.click/tltv/internal/test"
+	"talkliketv.click/tltv/internal/testutil"
 )
 
 // AudioFromTitle is a helper function that performs the tasks shared by
@@ -49,7 +49,7 @@ func AudioFromTitle(e echo.Context, t services.TranslateX, af AudioFileX, title 
 	fullPausePath := path + pausePath
 
 	// create a temporary directory for building all the files
-	tmpDirPath := fmt.Sprintf("%s%s-%s/", path, title.Name, test.RandomString(4))
+	tmpDirPath := fmt.Sprintf("%s%s-%s/", path, title.Name, testutil.RandomString(4))
 	err = os.MkdirAll(tmpDirPath, 0777)
 	if err != nil {
 		e.Logger().Error(err)

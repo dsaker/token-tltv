@@ -13,6 +13,9 @@ import (
 func (s *Server) ParseFile(e echo.Context) error {
 	stringsSlice, err := audiofile.FileParse(e, s.af, s.config.FileUploadLimit)
 	if err != nil {
+		if services.IsFileTooLargeError(err) {
+			return e.String(http.StatusBadRequest, "error parsing file: "+err.Error())
+		}
 		return e.String(http.StatusInternalServerError, "error parsing file: "+err.Error())
 	}
 

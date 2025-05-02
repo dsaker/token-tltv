@@ -57,7 +57,7 @@ func TestEndToEndParse(t *testing.T) {
 		return nil
 	})
 
-	err = fileChooser.SetFiles("../internal/test/sample.srt")
+	err = fileChooser.SetFiles("../internal/testutil/sample.srt")
 	require.NoError(t, err)
 
 	// Wait for the download event
@@ -174,7 +174,7 @@ func TestEndToEndAudio(t *testing.T) {
 		Timeout: playwright.Float(5000),
 	})
 
-	err = fileChooser.SetFiles("../internal/test/sample.srt")
+	err = fileChooser.SetFiles("../internal/testutil/sample.srt")
 	require.NoError(t, err)
 
 	// Wait for the download event

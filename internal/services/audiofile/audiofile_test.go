@@ -7,13 +7,14 @@ import (
 	"os"
 	"talkliketv.click/tltv/internal/mock"
 	"talkliketv.click/tltv/internal/models"
+	"talkliketv.click/tltv/internal/testflags"
+	"talkliketv.click/tltv/internal/testutil"
 	"testing"
 
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"talkliketv.click/tltv/internal/test"
 	"talkliketv.click/tltv/internal/util"
 )
 
@@ -154,15 +155,15 @@ func TestBuildAudioInputFiles(t *testing.T) {
 	}
 	t.Parallel()
 
-	title := test.RandomTitle(voicesMap)
-	phrase1 := test.RandomPhrase()
-	phrase2 := test.RandomPhrase()
+	title := testutil.RandomTitle(voicesMap)
+	phrase1 := testutil.RandomPhrase()
+	phrase2 := testutil.RandomPhrase()
 	title.TitlePhrases = []models.Phrase{phrase1, phrase2}
 	title.ToPhrases = []models.Phrase{phrase1, phrase2}
-	pause := test.RandomString(4)
-	from := test.RandomString(4)
-	to := test.RandomString(4)
-	tmpDir := test.AudioBasePath + "TestBuildAudioInputFiles/" + title.Name + "/"
+	pause := testutil.RandomString(4)
+	from := testutil.RandomString(4)
+	to := testutil.RandomString(4)
+	tmpDir := testutil.AudioBasePath + "TestBuildAudioInputFiles/" + title.Name + "/"
 	fromPath := tmpDir + from
 	toPath := tmpDir + to
 	err := os.MkdirAll(tmpDir, 0777)
@@ -309,20 +310,12 @@ func createFile(t *testing.T, filename, fileString string) *os.File {
 	return file
 }
 
-var (
-	projectId string
-	platform  string
-	saFile    string
-	headless  bool
-)
-
+// internal/models/models_test.go
 func TestMain(m *testing.M) {
-	flag.StringVar(&platform, "platform", "google", "which platform you are using [google|amazon]")
-	flag.StringVar(&util.Test, "test", "test", "type of tests to run [unit|integration|end-to-end]")
-	flag.StringVar(&projectId, "project-id", "", "project id for google cloud platform that contains firestore")
-	flag.BoolVar(&headless, "headless", true, "if true browser will be headless")
-	flag.StringVar(&saFile, "sa-file", "", "path to service account file with permissions to run tests")
+	testflags.ParseFlags()
 	flag.Parse()
 
-	os.Exit(m.Run())
+	util.Test = testflags.TestType
+
+	os.Exit(testflags.RunTests(m))
 }

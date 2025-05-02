@@ -27,13 +27,13 @@ import (
 	"log"
 	"os"
 	"talkliketv.click/tltv/internal/models"
-	"talkliketv.click/tltv/internal/test"
+	"talkliketv.click/tltv/internal/testutil"
 )
 
 func main() {
 	filePath := flag.String("f", "", "filepath is required")
-	projectID := flag.String("p", test.GcpTestProject, "project is required")
-	collection := flag.String("c", test.FirestoreTestCollection, "collection is required. ")
+	projectID := flag.String("p", testutil.GcpTestProject, "project is required")
+	collection := flag.String("c", testutil.FirestoreTestCollection, "collection is required. ")
 	flag.Parse()
 
 	if *filePath == "" {
