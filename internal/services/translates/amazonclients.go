@@ -33,9 +33,7 @@ type AmazonClients struct {
 
 // NewAmazonClients creates new amazon translate and text-to-speech clients; constructs
 // the dependencies and returns them
-func NewAmazonClients() *AmazonClients {
-	// create amazon translate and text-to-speech clients
-	ctx := context.Background()
+func NewAmazonClients(ctx context.Context) *AmazonClients {
 	// Initialize AWS configuration
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {

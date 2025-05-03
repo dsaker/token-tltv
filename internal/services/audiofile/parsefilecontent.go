@@ -2,6 +2,7 @@ package audiofile
 
 import (
 	"bufio"
+	"errors"
 	"github.com/labstack/echo/v4"
 	"io"
 	"mime/multipart"
@@ -26,8 +27,10 @@ func parseFileContent(f multipart.File, fileType TextFormat) ([]string, error) {
 		return parseSrt(f), nil
 	case Paragraph:
 		return parseParagraph(f), nil
-	default:
+	case OnePhrasePerLine:
 		return parseSingle(f), nil
+	default:
+		return nil, errors.New("file must be srt, paragraph or one phrase per line")
 	}
 }
 

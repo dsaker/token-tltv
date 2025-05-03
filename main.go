@@ -79,9 +79,9 @@ func main() {
 	}
 
 	mods := models.Models{Languages: langs, Voices: voices}
-	t := translates.New(*translates.NewGoogleClients(), translates.AmazonClients{}, &mods, translates.Google)
+	t := translates.New(*translates.NewGoogleClients(context.Background()), translates.AmazonClients{}, &mods, translates.Google)
 	if cfg.Platform == "amazon" {
-		t = translates.New(translates.GoogleClients{}, *translates.NewAmazonClients(), &mods, translates.Amazon)
+		t = translates.New(translates.GoogleClients{}, *translates.NewAmazonClients(context.Background()), &mods, translates.Amazon)
 	}
 
 	fClient, err := cfg.FirestoreClient()

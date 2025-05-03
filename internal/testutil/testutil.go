@@ -25,6 +25,7 @@ var (
 	AudioBasePath  = "/tmp/test/audio/"
 	ParseBasePath  = "/tmp/test/parse/"
 	GcpTestProject = "token-tltv-test"
+	ErrUnexpected  = errors.New("unexpected error")
 )
 
 const (

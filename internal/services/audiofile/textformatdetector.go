@@ -89,6 +89,5 @@ var srtTimestampRegex = regexp.MustCompile(`\d{2}:\d{2}:\d{2},\d{3}\s-->\s\d{2}:
 
 // srtFormatCheck checks if a line matches the SRT timestamp format (00:00:00,000 --> 00:00:00,000)
 func srtFormatCheck(line string) bool {
-
 	return srtTimestampRegex.MatchString(line)
 }

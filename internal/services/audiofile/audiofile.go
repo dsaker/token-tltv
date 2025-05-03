@@ -7,7 +7,6 @@ import (
 	"mime/multipart"
 	"os"
 	"os/exec"
-	"regexp"
 	"slices"
 	"strconv"
 	"talkliketv.click/tltv/internal/models"
@@ -30,18 +29,6 @@ var AudioPauseFilePath = map[int]string{
 	9:  "silence/9SecSilence.mp3",
 	10: "silence/10SecSilence.mp3",
 }
-
-// endSentenceMap is a map to find the ending punctuation of a sentence
-// TODO change endSentenceMap to work for any language
-var (
-	endSentenceMap = map[rune]bool{
-		'!': true,
-		'.': true,
-		'?': true,
-	}
-	// Use a regular expression to match punctuation characters
-	reAlpha = regexp.MustCompile(`[a-zA-Z]`)
-)
 
 type AudioFileX interface {
 	GetLines(echo.Context, multipart.File) ([]string, error)

@@ -398,6 +398,16 @@ func TestAudioFromFile_FileFormatDetection(t *testing.T) {
 	title := testutil.RandomTitle(voicesMap)
 	randomToken := testutil.RandomString(32)
 
+	formMap := map[string]string{
+		"file_language_id": strconv.Itoa(title.TitleLangId),
+		"title_name":       title.Name,
+		"from_voice_id":    strconv.Itoa(title.FromVoiceId),
+		"to_voice_id":      strconv.Itoa(title.ToVoiceId),
+		"token":            randomToken,
+		"pause":            "5",
+		"pattern":          "1",
+	}
+
 	testCases := []testCase{
 		{
 			name: "Detect Paragraph Format",
@@ -411,15 +421,6 @@ func TestAudioFromFile_FileFormatDetection(t *testing.T) {
 				paragraphText := "This is a much longer paragraph that contains multiple sentences. " +
 					"It's designed to be detected as a paragraph format rather than one phrase per line. " +
 					"The detector should recognize this based on the average line length and structure."
-				formMap := map[string]string{
-					"file_language_id": strconv.Itoa(title.TitleLangId),
-					"title_name":       title.Name,
-					"from_voice_id":    strconv.Itoa(title.FromVoiceId),
-					"to_voice_id":      strconv.Itoa(title.ToVoiceId),
-					"token":            randomToken,
-					"pause":            "5",
-					"pattern":          "1",
-				}
 				return createMultiPartBody(t, []byte(paragraphText), testFileName, formMap)
 			},
 			checkResponse: func(res *http.Response) {
@@ -439,15 +440,6 @@ func TestAudioFromFile_FileFormatDetection(t *testing.T) {
 				// Create text in SRT format
 				srtText := "1\n00:00:01,000 --> 00:00:04,000\nThis is the first subtitle.\n\n" +
 					"2\n00:00:05,000 --> 00:00:09,000\nThis is the second subtitle.\n"
-				formMap := map[string]string{
-					"file_language_id": strconv.Itoa(title.TitleLangId),
-					"title_name":       title.Name,
-					"from_voice_id":    strconv.Itoa(title.FromVoiceId),
-					"to_voice_id":      strconv.Itoa(title.ToVoiceId),
-					"token":            randomToken,
-					"pause":            "5",
-					"pattern":          "1",
-				}
 				return createMultiPartBody(t, []byte(srtText), testFileName, formMap)
 			},
 			checkResponse: func(res *http.Response) {
@@ -473,16 +465,31 @@ func TestAudioFromFile_FileFormatDetection(t *testing.T) {
 				require.NoError(t, err)
 
 				// Write a partial/corrupt file content
-				part.Write([]byte{0xFF, 0xD8}) // Incomplete content
+				_, err = part.Write([]byte{0xFF, 0xD8}) // Incomplete content
+				require.NoError(t, err)
 
 				// Add form fields
-				multiWriter.WriteField("token", randomToken)
-				multiWriter.WriteField("file_language_id", strconv.Itoa(title.TitleLangId))
-				multiWriter.WriteField("title_name", title.Name)
-				multiWriter.WriteField("from_voice_id", strconv.Itoa(title.FromVoiceId))
-				multiWriter.WriteField("to_voice_id", strconv.Itoa(title.ToVoiceId))
-				multiWriter.WriteField("pause", "5")
-				multiWriter.WriteField("pattern", "1")
+				if err = multiWriter.WriteField("token", randomToken); err != nil {
+					require.NoError(t, err)
+				}
+				if err = multiWriter.WriteField("file_language_id", strconv.Itoa(title.TitleLangId)); err != nil {
+					require.NoError(t, err)
+				}
+				if err = multiWriter.WriteField("title_name", title.Name); err != nil {
+					require.NoError(t, err)
+				}
+				if err = multiWriter.WriteField("from_voice_id", strconv.Itoa(title.FromVoiceId)); err != nil {
+					require.NoError(t, err)
+				}
+				if err = multiWriter.WriteField("to_voice_id", strconv.Itoa(title.ToVoiceId)); err != nil {
+					require.NoError(t, err)
+				}
+				if err = multiWriter.WriteField("pause", "5"); err != nil {
+					require.NoError(t, err)
+				}
+				if err = multiWriter.WriteField("pattern", "1"); err != nil {
+					require.NoError(t, err)
+				}
 
 				// Close the writer - this will actually make the form valid,
 				// so this test will need special handling in the ServerMock
@@ -504,13 +511,27 @@ func TestAudioFromFile_FileFormatDetection(t *testing.T) {
 				multiWriter := multipart.NewWriter(body)
 
 				// Add other form fields but no file
-				multiWriter.WriteField("token", randomToken)
-				multiWriter.WriteField("file_language_id", strconv.Itoa(title.TitleLangId))
-				multiWriter.WriteField("title_name", title.Name)
-				multiWriter.WriteField("from_voice_id", strconv.Itoa(title.FromVoiceId))
-				multiWriter.WriteField("to_voice_id", strconv.Itoa(title.ToVoiceId))
-				multiWriter.WriteField("pause", "5")
-				multiWriter.WriteField("pattern", "1")
+				if err := multiWriter.WriteField("token", randomToken); err != nil {
+					require.NoError(t, err)
+				}
+				if err := multiWriter.WriteField("file_language_id", strconv.Itoa(title.TitleLangId)); err != nil {
+					require.NoError(t, err)
+				}
+				if err := multiWriter.WriteField("title_name", title.Name); err != nil {
+					require.NoError(t, err)
+				}
+				if err := multiWriter.WriteField("from_voice_id", strconv.Itoa(title.FromVoiceId)); err != nil {
+					require.NoError(t, err)
+				}
+				if err := multiWriter.WriteField("to_voice_id", strconv.Itoa(title.ToVoiceId)); err != nil {
+					require.NoError(t, err)
+				}
+				if err := multiWriter.WriteField("pause", "5"); err != nil {
+					require.NoError(t, err)
+				}
+				if err := multiWriter.WriteField("pattern", "1"); err != nil {
+					require.NoError(t, err)
+				}
 
 				multiWriter.Close()
 				return body, multiWriter
@@ -668,7 +689,7 @@ func TestGoogleIntegration(t *testing.T) {
 	//initialize audiofile with the real command runner
 	af := audiofile.New(&audiofile.RealCmdRunner{})
 	// create translates with google or amazon clients depending on the flag set in conifg
-	tr := translates.New(*translates.NewGoogleClients(), translates.AmazonClients{}, &mods, translates.Google)
+	tr := translates.New(*translates.NewGoogleClients(context.Background()), translates.AmazonClients{}, &mods, translates.Google)
 
 	// Use the application default credentials
 	ctx := context.Background()
@@ -717,7 +738,7 @@ func TestGoogleIntegration(t *testing.T) {
 				require.Equal(t, http.StatusOK, res.StatusCode)
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
-				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
+				data := []byte(validSentences)
 
 				return createMultiPartBody(t, data, filename, okFormMap)
 			},
@@ -730,7 +751,7 @@ func TestGoogleIntegration(t *testing.T) {
 				require.Contains(t, resBody, "token already used")
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
-				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
+				data := []byte(validSentences)
 				// generate new token
 				token2, plaintext2, err := models.GenerateToken()
 				require.NoError(t, err)
@@ -787,7 +808,7 @@ func TestAmazonIntegration(t *testing.T) {
 		Languages: langs,
 		Voices:    voices,
 	}
-	tr := translates.New(translates.GoogleClients{}, *translates.NewAmazonClients(), &model, translates.Amazon)
+	tr := translates.New(translates.GoogleClients{}, *translates.NewAmazonClients(context.Background()), &model, translates.Amazon)
 
 	// Use the application default credentials
 	client, err := testCfg.FirestoreClient()
@@ -838,7 +859,7 @@ func TestAmazonIntegration(t *testing.T) {
 				require.Equal(t, http.StatusOK, res.StatusCode)
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
-				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
+				data := []byte(validSentences)
 				return createMultiPartBody(t, data, filename, okFormMap)
 			},
 		},
