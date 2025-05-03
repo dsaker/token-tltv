@@ -3,8 +3,8 @@ package audiofile
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"github.com/labstack/echo/v4"
+	"io"
 	"mime/multipart"
 	"os"
 	"regexp"
@@ -12,8 +12,7 @@ import (
 	"strings"
 	"talkliketv.click/tltv/internal/config"
 	"talkliketv.click/tltv/internal/models"
-	"talkliketv.click/tltv/internal/test"
-	"talkliketv.click/tltv/internal/translates"
+	"talkliketv.click/tltv/internal/services"
 	"unicode"
 )
 
@@ -21,6 +20,19 @@ const (
 	minimumPhraseLength = 4
 	maximumPhraseLength = 10
 )
+
+func parseFileContent(f multipart.File, fileType TextFormat) ([]string, error) {
+	switch fileType {
+	case Srt:
+		return parseSrt(f), nil
+	case Paragraph:
+		return parseParagraph(f), nil
+	case OnePhrasePerLine:
+		return parseSingle(f), nil
+	default:
+		return nil, errors.New("file must be srt, paragraph or one phrase per line")
+	}
+}
 
 func ProcessFile(e echo.Context, af AudioFileX, cfg config.Config, titleName string) ([]models.Phrase, *os.File, error) {
 	stringsSlice, err := FileParse(e, af, cfg.FileUploadLimit)
@@ -56,13 +68,12 @@ func FileParse(e echo.Context, af AudioFileX, fileUploadLimit int64) ([]string, 
 	fh, err := e.FormFile("file_path")
 	if err != nil {
 		e.Logger().Error(err)
-		return nil, ErrUnableToParseFile(err)
+		return nil, services.ErrUnableToParseFile(err)
 	}
 
 	// Check if file size is too large 64000 == 8KB ~ approximately 4 pages of text
 	if fh.Size > fileUploadLimit {
-		rString := fmt.Sprintf("file too large (%d > %d)", fh.Size, fileUploadLimit)
-		return nil, ErrUnableToParseFile(errors.New(rString))
+		return nil, services.ErrFileTooLarge(fh.Size, fileUploadLimit)
 	}
 	src, err := fh.Open()
 	if err != nil {
@@ -74,7 +85,7 @@ func FileParse(e echo.Context, af AudioFileX, fileUploadLimit int64) ([]string, 
 	// get an array of all the phrases from the uploaded file
 	stringsSlice, err := af.GetLines(e, src)
 	if err != nil {
-		return nil, ErrUnableToParseFile(err)
+		return nil, services.ErrUnableToParseFile(err)
 	}
 
 	return stringsSlice, nil
@@ -89,60 +100,6 @@ func ZipStringsSlice(e echo.Context, af AudioFileX, slice []string, max int, pat
 		return nil, err
 	}
 	return zipFile, nil
-}
-
-// CreateAudioFromTitle is a helper function that performs the tasks shared by
-// AudioFromFile and AudioFromTitle
-func CreateAudioFromTitle(e echo.Context, t translates.TranslateX, af AudioFileX, title models.Title, path string) (*os.File, error) {
-	// TODO if you don't want these files to persist then you need to defer removing them from calling function
-	audioBasePath := path + title.Name
-
-	fromAudioBasePath := fmt.Sprintf("%s/%d/", audioBasePath, title.FromVoiceId)
-	toAudioBasePath := fmt.Sprintf("%s/%d/", audioBasePath, title.ToVoiceId)
-
-	_, err := t.CreateTTS(e, title, title.FromVoiceId, fromAudioBasePath)
-	if err != nil {
-		e.Logger().Error(err)
-		// if error remove all the text-to-speech created up to that point
-		osErr := os.RemoveAll(audioBasePath)
-		if osErr != nil {
-			e.Logger().Error(osErr)
-		}
-		return nil, err
-	}
-
-	toPhrases, err := t.CreateTTS(e, title, title.ToVoiceId, toAudioBasePath)
-	if err != nil {
-		e.Logger().Error(err)
-		osErr := os.RemoveAll(audioBasePath)
-		if osErr != nil {
-			e.Logger().Error(osErr)
-		}
-		return nil, err
-	}
-	title.ToPhrases = toPhrases
-
-	// get pause path string to build the full pause file path
-	pausePath, ok := AudioPauseFilePath[title.Pause]
-	if !ok {
-		e.Logger().Error(models.ErrPauseNotFound)
-		return nil, models.ErrPauseNotFound
-	}
-	fullPausePath := path + pausePath
-
-	// create a temporary directory for building all the files
-	tmpDirPath := fmt.Sprintf("%s%s-%s/", path, title.Name, test.RandomString(4))
-	err = os.MkdirAll(tmpDirPath, 0777)
-	if err != nil {
-		e.Logger().Error(err)
-		return nil, err
-	}
-
-	if err = af.BuildAudioInputFiles(e, title, fullPausePath, fromAudioBasePath, toAudioBasePath, tmpDirPath); err != nil {
-		return nil, err
-	}
-
-	return af.CreateMp3Zip(e, title, tmpDirPath)
 }
 
 // parseSrt takes a srt multipart file and parses it into a slice of strings
@@ -164,22 +121,24 @@ func parseSrt(f multipart.File) []string {
 		nextLine := scanner.Text()
 		if nextLine != "" {
 			line = strings.ReplaceAll(line, "\n", "") + " " + nextLine
+			line = strings.ReplaceAll(line, "\t", "")
 		}
 		line = replaceFmt(line)
-	}
 
-	phrases := splitLongPhrases(line)
-	stringsSlice = append(stringsSlice, phrases...)
+		phrases := splitLongPhrases(line)
+		stringsSlice = append(stringsSlice, phrases...)
+	}
 
 	return stringsSlice
 }
 
+// splitLongPhrases splits a long phrase into smaller phrases based on punctuation
 func splitLongPhrases(line string) []string {
 	var splitString []string
 
 	words := strings.Fields(line)
 	// if phrase is too short don't keep it
-	if len(words) <= minimumPhraseLength {
+	if len(words) < minimumPhraseLength {
 		return []string{}
 	}
 	if len(words) < maximumPhraseLength {
@@ -250,30 +209,47 @@ func splitLongPhrases(line string) []string {
 
 // parseParagraph takes a txt multipart file in paragraph form and returns a slice of strings
 func parseParagraph(f multipart.File) []string {
+	if f == nil {
+		return nil
+	}
+
+	content, err := io.ReadAll(f)
+	if err != nil {
+		return nil
+	}
+
+	allText := string(content)
+	allLines := splitOnEndingPunctuation(allText)
+
 	var stringsSlice []string
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		line := scanner.Text()
-		// Split on punctuation characters
-		last := 0
-		for i, c := range line {
-			if i == len(line)-1 {
-				sentence := strings.TrimSpace(line[last : i+1])
-				last = i + 1
-				words := strings.Fields(sentence)
-				if len(words) > 3 {
-					stringsSlice = append(stringsSlice, line)
-				}
-			} else if endSentenceMap[c] {
-				sentence := strings.TrimSpace(line[last : i+1])
-				last = i + 1
-				phrases := splitLongPhrases(sentence)
-				stringsSlice = append(stringsSlice, phrases...)
-			}
+	for _, line := range allLines {
+		phrases := splitLongPhrases(line)
+		if len(phrases) > 0 {
+			stringsSlice = append(stringsSlice, phrases...)
 		}
 	}
 
 	return stringsSlice
+}
+
+// splitOnEndingPunctuation splits the text on sentence-ending punctuation
+func splitOnEndingPunctuation(text string) []string {
+	// Regular expression to split the text at sentence-ending punctuation
+	re := regexp.MustCompile(`[!.?]`)
+
+	// Split the text using the regular expression
+	sentences := re.Split(text, -1)
+
+	// Filter out empty strings
+	var filtered []string
+	for _, s := range sentences {
+		trimmed := strings.TrimSpace(s)
+		if trimmed != "" {
+			filtered = append(filtered, trimmed)
+		}
+	}
+
+	return filtered
 }
 
 // parseSingle takes a txt multipart file with one phrase per line and parses it

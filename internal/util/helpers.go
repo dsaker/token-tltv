@@ -1,18 +1,13 @@
 package util
 
 import (
-	"archive/zip"
 	"cloud.google.com/go/firestore"
 	"context"
 	"errors"
-	"github.com/go-playground/form/v4"
-	"github.com/labstack/echo/v4"
 	"google.golang.org/api/iterator"
 	"io"
 	"net/http"
 	"os"
-	"path/filepath"
-	"strings"
 )
 
 var (
@@ -35,30 +30,6 @@ func PathExists(path string) (bool, error) {
 		return false, nil
 	}
 	return false, err
-}
-
-// DecodePostForm  helper method. The second parameter here, dst,
-// is the target destination that we want to decode the form data into.
-func DecodePostForm(r *http.Request, dst any, fd *form.Decoder) error {
-	// Call Decode() on our decoder instance, passing the target destination as
-	// the first parameter.
-	err := fd.Decode(dst, r.PostForm)
-	if err != nil {
-		// If we try to use an invalid target destination, the Decode() method
-		// will return an error with the type *form.InvalidDecoderError.We use
-		// errors.As() to check for this and raise a panic rather than returning
-		// the error.
-		var invalidDecoderError *form.InvalidDecoderError
-
-		if errors.As(err, &invalidDecoderError) {
-			panic(err)
-		}
-
-		// For all other errors, we return them as normal.
-		return err
-	}
-
-	return nil
 }
 
 // RemoveDuplicateStr removes duplicate strings from a slice.
@@ -145,74 +116,4 @@ func GetVMName() (string, error) {
 	}
 
 	return string(body), nil
-}
-
-// CreateZipFile takes a tmpDir which is the directory containing the files you want to zip.
-// filename which is the name that you want the zipped files to have as their base name
-// and outDirPath which is where the zip file will be stored and zips up the files
-func CreateZipFile(e echo.Context, tmpDir, filename, outDirPath string) (*os.File, error) {
-	// TODO add txt file of the phrases
-	zipFile, err := os.Create(tmpDir + filename + ".zip")
-	if err != nil {
-		e.Logger().Error(err)
-		return nil, err
-	}
-	defer zipFile.Close()
-
-	zipWriter := zip.NewWriter(zipFile)
-	defer zipWriter.Close()
-
-	// get a list of files from the output directory
-	files, err := os.ReadDir(outDirPath)
-	if err != nil {
-		e.Logger().Error(err)
-		return nil, err
-	}
-
-	for _, file := range files {
-		if !strings.HasSuffix(file.Name(), ".zip") {
-			err = addFileToZip(e, zipWriter, outDirPath+"/"+file.Name())
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	return zipFile, err
-}
-
-// addFileToZip is a helper function for CreateMp3Zip that adds each file to
-// the zip.Writer
-func addFileToZip(e echo.Context, zipWriter *zip.Writer, filename string) error {
-	file, err := os.Open(filename)
-	if err != nil {
-		e.Logger().Error(err)
-		return err
-	}
-	defer file.Close()
-
-	fInfo, err := file.Stat()
-	if err != nil {
-		e.Logger().Error(err)
-		return err
-	}
-
-	header, err := zip.FileInfoHeader(fInfo)
-	if err != nil {
-		e.Logger().Error(err)
-		return err
-	}
-
-	header.Name = filepath.Base(filename)
-	header.Method = zip.Deflate
-
-	writer, err := zipWriter.CreateHeader(header)
-	if err != nil {
-		e.Logger().Error(err)
-		return err
-	}
-
-	_, err = io.Copy(writer, file)
-	e.Logger().Info("wrote file: %s", file.Name())
-	return err
 }

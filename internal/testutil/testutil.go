@@ -1,4 +1,4 @@
-package test
+package testutil
 
 import (
 	"context"
@@ -23,7 +23,13 @@ import (
 
 var (
 	AudioBasePath  = "/tmp/test/audio/"
+	ParseBasePath  = "/tmp/test/parse/"
 	GcpTestProject = "token-tltv-test"
+	ErrUnexpected  = errors.New("unexpected error")
+)
+
+const (
+	FiveSentences = "This is the first sentence.\nThis is the second sentence.\nThis is the third sentence.\nThis is the fourth sentence.\nThis is the fifth sentence.\n"
 )
 
 func RequireMatchAnyExcept(t *testing.T, model any, response any, skip []string, except string, shouldEqual any) {
@@ -63,19 +69,6 @@ const (
 	FirestoreTestCollection = "token-tltv-test"
 )
 
-// RandomString generates a random string of length n
-func RandomString(n int) string {
-	var sb strings.Builder
-	k := len(alphabet)
-
-	for i := 0; i < n; i++ {
-		c := alphabet[rand.Intn(k)] //nolint:gosec
-		sb.WriteByte(c)
-	}
-
-	return sb.String()
-}
-
 func RandomPhrase() models.Phrase {
 	return models.Phrase{
 		ID:   rand.Intn(100), //nolint:gosec
@@ -92,6 +85,19 @@ func RandomVoice() models.Voice {
 		VoiceName:              RandomString(8),
 		NaturalSampleRateHertz: 24000,
 	}
+}
+
+// RandomString generates a random string of length n
+func RandomString(n int) string {
+	var sb strings.Builder
+	k := len(alphabet)
+
+	for i := 0; i < n; i++ {
+		c := alphabet[rand.Intn(k)] //nolint:gosec
+		sb.WriteByte(c)
+	}
+
+	return sb.String()
 }
 
 func RandomTitle(voices map[int]models.Voice) (title models.Title) {

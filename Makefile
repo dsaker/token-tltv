@@ -80,7 +80,7 @@ audit/local:
 	make audit
 	make ci-lint
 	make vuln
-	go test -vet=off ./... -coverprofile=coverage.out
+	go test -vet=off ./... -test=unit -coverprofile=coverage.out
 	go test ./... -test=integration -project-id=token-tltv-test
 	go test ./... -test=end-to-end -project-id=token-tltv-test -sa-file=${token-tltv-test-sa-key}
 

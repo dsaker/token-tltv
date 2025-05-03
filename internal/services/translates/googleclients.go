@@ -36,9 +36,8 @@ type GoogleClients struct {
 
 // NewGoogleClients creates a new google translate and text-to-speech clients; constructs
 // the translate and audiofile dependencies and returns them
-func NewGoogleClients() *GoogleClients {
+func NewGoogleClients(ctx context.Context) *GoogleClients {
 	// create google translate and text-to-speech clients
-	ctx := context.Background()
 	transClient, err := translate.NewClient(ctx)
 	if err != nil {
 		log.Fatalf("Error creating google api translate client\n: %s", err)

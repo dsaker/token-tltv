@@ -1,21 +1,20 @@
 package audiofile
 
 import (
-	"archive/zip"
 	"flag"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"slices"
 	"talkliketv.click/tltv/internal/mock"
 	"talkliketv.click/tltv/internal/models"
+	"talkliketv.click/tltv/internal/testflags"
+	"talkliketv.click/tltv/internal/testutil"
 	"testing"
 
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"talkliketv.click/tltv/internal/test"
 	"talkliketv.click/tltv/internal/util"
 )
 
@@ -46,30 +45,33 @@ func TestGetLines(t *testing.T) {
 				return createTmpFile(
 					t,
 					"noerror",
-					"This is the first sentence.\nThis is the second sentence.\n")
+					"This is the first sentence.\nThis is the second sentence.\nThis is the third sentence.\nThis is the fourth sentence.\nThis is the fifth sentence.\n")
 			},
 			checkLines: func(lines []string, err error) {
 				require.NoError(t, err)
-				require.Equal(t, len(lines), 2)
+				require.Equal(t, len(lines), 5)
 			},
 		},
 		{
 			name: "parsefile srt",
 			buildFile: func(t *testing.T) *os.File {
-				srtString := `654
-				00:34:22,393 > 00:34:25,271
-				¿El camión a Tepatitlán?
-				Saliendo, segundo andén.
+				srtString := `1
+00:00:01,418 --> 00:00:04,170
+A continuación, se muestra
+una presentación especial de Fox.
 
-				655
-				00:34:25,354 > 00:34:28,441
-				Por favor, nada más debo entregar esto.
-					Un segundo, por favor.
+2
+00:00:04,170 --> 00:00:09,342
+En vivo desde el Teatro Dolby-Mucinex
+en Hollywood, California.
 
-				656
-				00:34:29,192 > 00:34:31,444
-				Déjala pasar, mi Johnny.
-					Gracias.`
+3
+00:00:09,342 --> 00:00:11,428
+
+4
+00:00:11,428 --> 00:00:16,307
+Las mayores estrellas del teatro,
+el cine, la política y los deportes`
 				return createTmpFile(
 					t,
 					"parsesrt",
@@ -77,7 +79,7 @@ func TestGetLines(t *testing.T) {
 			},
 			checkLines: func(lines []string, err error) {
 				require.NoError(t, err)
-				require.Equal(t, len(lines), 4)
+				require.Equal(t, len(lines), 5)
 			},
 		},
 		{
@@ -86,11 +88,11 @@ func TestGetLines(t *testing.T) {
 				return createTmpFile(
 					t,
 					"noerror",
-					"This is the first sentence.\n\n\n\n\n\n\nThis is the second sentence.\n")
+					"This is the first sentence.\n\n\n\n\n\n\nThis is the second sentence.\nThis is the third sentence.\nThis is the fourth sentence.\nThis is the fifth sentence.\n")
 			},
 			checkLines: func(lines []string, err error) {
 				require.NoError(t, err)
-				require.Equal(t, len(lines), 2)
+				require.Equal(t, len(lines), 5)
 			},
 		},
 		{
@@ -99,7 +101,7 @@ func TestGetLines(t *testing.T) {
 				return createTmpFile(
 					t,
 					"noerror",
-					"This is the first one. This is the second one. This is the third one. this is the fourth one\nThis is the fifth")
+					"This is the first one. This is the second one. This is the third one. this is the fourth one.\nThis is the fifth")
 			},
 			checkLines: func(lines []string, err error) {
 				require.NoError(t, err)
@@ -112,7 +114,7 @@ func TestGetLines(t *testing.T) {
 				return createTmpFile(
 					t,
 					"noerror",
-					"This is the. This is. This is the. this is the\nThis is the")
+					"This is the. This is. This is the. this is the.\nThis is the")
 			},
 			checkLines: func(lines []string, err error) {
 				require.Errorf(t, err, "unable to parsefile file")
@@ -156,15 +158,15 @@ func TestBuildAudioInputFiles(t *testing.T) {
 	}
 	t.Parallel()
 
-	title := test.RandomTitle(voicesMap)
-	phrase1 := test.RandomPhrase()
-	phrase2 := test.RandomPhrase()
+	title := testutil.RandomTitle(voicesMap)
+	phrase1 := testutil.RandomPhrase()
+	phrase2 := testutil.RandomPhrase()
 	title.TitlePhrases = []models.Phrase{phrase1, phrase2}
 	title.ToPhrases = []models.Phrase{phrase1, phrase2}
-	pause := test.RandomString(4)
-	from := test.RandomString(4)
-	to := test.RandomString(4)
-	tmpDir := test.AudioBasePath + "TestBuildAudioInputFiles/" + title.Name + "/"
+	pause := testutil.RandomString(4)
+	from := testutil.RandomString(4)
+	to := testutil.RandomString(4)
+	tmpDir := testutil.AudioBasePath + "TestBuildAudioInputFiles/" + title.Name + "/"
 	fromPath := tmpDir + from
 	toPath := tmpDir + to
 	err := os.MkdirAll(tmpDir, 0777)
@@ -200,190 +202,6 @@ func TestBuildAudioInputFiles(t *testing.T) {
 			require.NoError(t, err)
 			filePath := tmpDir + title.Name + "-input-01"
 			require.FileExists(t, filePath)
-		})
-	}
-}
-
-func TestCreateMp3Zip(t *testing.T) {
-	if util.Test != "unit" {
-		t.Skip("skipping unit test")
-	}
-	t.Parallel()
-	testCases := []audioFileTestCase{
-		{
-			name: "No error",
-			createTitle: func(t *testing.T) (models.Title, string) {
-				title := test.RandomTitle(voicesMap)
-				tmpDir := test.AudioBasePath + "TestCreateMp3ZipWithFfmpeg/" + title.Name + "/"
-				err := os.MkdirAll(tmpDir, 0777)
-				require.NoError(t, err)
-				file := createFile(
-					t,
-					tmpDir+"noerror.txt",
-					"This is the first sentence.\nThis is the second sentence.\n")
-				require.FileExists(t, file.Name())
-				return title, tmpDir
-			},
-			buildStubs: func(ma *mock.MockcmdRunnerX) {
-				ma.EXPECT().
-					CombinedOutput(gomock.Any()).Times(1).
-					Return([]byte{}, nil)
-			},
-			checkReturn: func(t *testing.T, file *os.File, err error) {
-				require.NoError(t, err)
-				require.FileExists(t, file.Name())
-			},
-		},
-		{
-			name: "No files",
-			createTitle: func(t *testing.T) (models.Title, string) {
-				title := test.RandomTitle(voicesMap)
-				tmpDir := test.AudioBasePath + "TestCreateMp3ZipWithFfmpeg/" + title.Name + "/"
-				err := os.MkdirAll(tmpDir, 0777)
-				require.NoError(t, err)
-				return title, tmpDir
-			},
-			buildStubs: func(ma *mock.MockcmdRunnerX) {
-			},
-			checkReturn: func(t *testing.T, file *os.File, err error) {
-				require.Contains(t, err.Error(), "no files found in CreateMp3Zip")
-			},
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			cmdX := mock.NewMockcmdRunnerX(ctrl)
-			tc.buildStubs(cmdX)
-			defer ctrl.Finish()
-
-			e := echo.New()
-			req := httptest.NewRequest(http.MethodGet, "/fakeurl", nil)
-			rec := httptest.NewRecorder()
-			c := e.NewContext(req, rec)
-
-			audioFile := New(cmdX)
-			title, tmpDir := tc.createTitle(t)
-			osFile, err := audioFile.CreateMp3Zip(c, title, tmpDir)
-			tc.checkReturn(t, osFile, err)
-		})
-	}
-}
-
-func TestCreatePhrasesZip(t *testing.T) {
-	if util.Test != "unit" {
-		t.Skip("skipping unit test")
-	}
-	t.Parallel()
-
-	stringsSlice := []string{
-		"Absolutely! Here's a zany paragraph packed with punctuation:",
-		"Wow! Did you see that?! A purple penguin — yes, a purple penguin! —",
-		"just roller-skated past my window... (in broad daylight!)",
-		"while juggling pineapples, watermelons, and, believe it or not,",
-		"rubber chickens?!? Not only that, but it was whistling a tune",
-		"(sounded suspiciously like Beethoven's Fifth) and waving a little flag that said,",
-		"'Viva Las Veggies!' 🍍🍉🥒.",
-		"Now, I've seen some strange things in my life,",
-		"but this takes the (gluten-free) cake. I mean... really?!?"}
-
-	testCases := []audioFileTestCase{
-		{
-			name: "3 files",
-			createTitle: func(t *testing.T) (models.Title, string) {
-				title := test.RandomTitle(voicesMap)
-				tmpDir := test.AudioBasePath + "TestCreatePhrasesZip/" + title.Name + "/"
-				err := os.MkdirAll(tmpDir, 0777)
-				require.NoError(t, err)
-				return title, tmpDir
-			},
-			buildStubs: func(ma *mock.MockcmdRunnerX) {
-			},
-			checkReturn: func(t *testing.T, file *os.File, err error) {
-				require.NoError(t, err)
-				require.FileExists(t, file.Name())
-				zipFilePath := file.Name()
-
-				reader, err := zip.OpenReader(zipFilePath)
-				require.NoError(t, err)
-				count := 0
-				for range reader.File {
-					count++
-				}
-				require.Equal(t, 3, count)
-			},
-			values:       map[string]any{"size": 3},
-			stringsSlice: stringsSlice,
-		},
-		{
-			name: "5 files",
-			createTitle: func(t *testing.T) (models.Title, string) {
-				title := test.RandomTitle(voicesMap)
-				tmpDir := test.AudioBasePath + "TestCreatePhrasesZip/" + title.Name + "/"
-				err := os.MkdirAll(tmpDir, 0777)
-				require.NoError(t, err)
-				return title, tmpDir
-			},
-			buildStubs: func(ma *mock.MockcmdRunnerX) {
-			},
-			checkReturn: func(t *testing.T, file *os.File, err error) {
-				require.NoError(t, err)
-				require.FileExists(t, file.Name())
-				zipFilePath := file.Name()
-
-				reader, err := zip.OpenReader(zipFilePath)
-				require.NoError(t, err)
-				count := 0
-				for range reader.File {
-					count++
-				}
-				require.Equal(t, 5, count)
-			},
-			values:       map[string]any{"size": 2},
-			stringsSlice: stringsSlice,
-		},
-		{
-			name: "No One File",
-			createTitle: func(t *testing.T) (models.Title, string) {
-				title := test.RandomTitle(voicesMap)
-				tmpDir := test.AudioBasePath + "TestCreatePhrasesZip/" + title.Name + "/"
-				err := os.MkdirAll(tmpDir, 0777)
-				require.NoError(t, err)
-				return title, tmpDir
-			},
-			buildStubs: func(ma *mock.MockcmdRunnerX) {
-			},
-			checkReturn: func(t *testing.T, file *os.File, err error) {
-				require.Error(t, ErrOneFile)
-			},
-			values:       map[string]any{"size": 3},
-			stringsSlice: []string{},
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			cmdX := mock.NewMockcmdRunnerX(ctrl)
-			tc.buildStubs(cmdX)
-			defer ctrl.Finish()
-
-			e := echo.New()
-			req := httptest.NewRequest(http.MethodGet, "/fakeurl", nil)
-			rec := httptest.NewRecorder()
-			c := e.NewContext(req, rec)
-
-			audioFile := New(cmdX)
-			title, tmpDir := tc.createTitle(t)
-			chunkedPhrases := slices.Chunk(tc.stringsSlice, tc.values["size"].(int))
-			// remove phrasesBasePath after you have sent zipfile
-			defer func(path string) {
-				err := os.RemoveAll(path)
-				require.NoError(t, err)
-			}(tmpDir)
-			osFile, err := audioFile.CreatePhrasesZip(c, chunkedPhrases, tmpDir, title.Name)
-			tc.checkReturn(t, osFile, err)
 		})
 	}
 }
@@ -495,20 +313,12 @@ func createFile(t *testing.T, filename, fileString string) *os.File {
 	return file
 }
 
-var (
-	projectId string
-	platform  string
-	saFile    string
-	headless  bool
-)
-
+// internal/models/models_test.go
 func TestMain(m *testing.M) {
-	flag.StringVar(&platform, "platform", "google", "which platform you are using [google|amazon]")
-	flag.StringVar(&util.Test, "test", "test", "type of tests to run [unit|integration|end-to-end]")
-	flag.StringVar(&projectId, "project-id", "", "project id for google cloud platform that contains firestore")
-	flag.BoolVar(&headless, "headless", true, "if true browser will be headless")
-	flag.StringVar(&saFile, "sa-file", "", "path to service account file with permissions to run tests")
+	testflags.ParseFlags()
 	flag.Parse()
 
-	os.Exit(m.Run())
+	util.Test = testflags.TestType
+
+	os.Exit(testflags.RunTests(m))
 }

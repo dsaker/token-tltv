@@ -13,12 +13,12 @@ import (
 	"os"
 	"strconv"
 	"sync"
-	"talkliketv.click/tltv/internal/audio"
-	"talkliketv.click/tltv/internal/audio/audiofile"
 	"talkliketv.click/tltv/internal/config"
 	"talkliketv.click/tltv/internal/models"
 	"talkliketv.click/tltv/internal/oapi"
-	"talkliketv.click/tltv/internal/translates"
+	"talkliketv.click/tltv/internal/services"
+	"talkliketv.click/tltv/internal/services/audiofile"
+	"talkliketv.click/tltv/internal/services/translates"
 	"talkliketv.click/tltv/internal/util"
 	"talkliketv.click/tltv/ui"
 	"time"
@@ -172,7 +172,7 @@ func initSilence(cfg config.Config) {
 		}
 		for key, value := range audiofile.AudioPauseFilePath {
 			fmt.Printf("%d", key)
-			pause, err := audio.Silence.ReadFile(value)
+			pause, err := services.Silence.ReadFile(value)
 			if err != nil {
 				log.Fatal(err)
 			}
