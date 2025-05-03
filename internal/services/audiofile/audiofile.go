@@ -76,7 +76,7 @@ func (r *RealCmdRunner) CombinedOutput(cmd *exec.Cmd) ([]byte, error) {
 // line and then parses the file accordingly, returning a string slice containing the
 // phrases to be translated
 func (af *AudioFile) GetLines(e echo.Context, f multipart.File) ([]string, error) {
-	fileType, err := detectFileType(f)
+	fileType, err := DetectTextFormat(f)
 	if err != nil {
 		e.Logger().Error(err)
 		return nil, err

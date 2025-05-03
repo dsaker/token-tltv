@@ -33,8 +33,9 @@ var (
 )
 
 const (
-	audioBasePath = "/v1/audio"
-	parseBasePath = "/v1/parse"
+	audioBasePath  = "/v1/audio"
+	parseBasePath  = "/v1/parse"
+	validSentences = "This is the first sentence.\nThis is the second sentence.\nThis is the third sentence.\nThis is the fourth sentence.\nThis is the fifth sentence.\n"
 )
 
 var (

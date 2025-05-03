@@ -18,6 +18,7 @@ import (
 	"talkliketv.click/tltv/internal/oapi"
 	"talkliketv.click/tltv/internal/services"
 	"talkliketv.click/tltv/internal/services/audiofile"
+	"talkliketv.click/tltv/internal/services/translates"
 	"talkliketv.click/tltv/internal/util"
 	"talkliketv.click/tltv/ui"
 	"time"
@@ -25,7 +26,7 @@ import (
 
 type Server struct {
 	sync.RWMutex
-	translate services.TranslateX
+	translate translates.TranslateX
 	af        audiofile.AudioFileX
 	m         models.ModelsX
 	tokens    models.TokensX
@@ -34,7 +35,7 @@ type Server struct {
 
 func NewServer(
 	c config.Config,
-	t services.TranslateX,
+	t translates.TranslateX,
 	af audiofile.AudioFileX,
 	tok models.TokensX,
 	m models.ModelsX,

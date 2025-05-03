@@ -1,4 +1,4 @@
-package services
+package translates
 
 import (
 	tts "cloud.google.com/go/texttospeech/apiv1"

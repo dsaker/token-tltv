@@ -5,13 +5,13 @@ import (
 	"github.com/labstack/echo/v4"
 	"os"
 	"talkliketv.click/tltv/internal/models"
-	"talkliketv.click/tltv/internal/services"
+	"talkliketv.click/tltv/internal/services/translates"
 	"talkliketv.click/tltv/internal/testutil"
 )
 
 // AudioFromTitle is a helper function that performs the tasks shared by
 // AudioFromFile and AudioFromTitle
-func AudioFromTitle(e echo.Context, t services.TranslateX, af AudioFileX, title models.Title, path string) (*os.File, error) {
+func AudioFromTitle(e echo.Context, t translates.TranslateX, af AudioFileX, title models.Title, path string) (*os.File, error) {
 	// TODO if you don't want these files to persist then you need to defer removing them from calling function
 	audioBasePath := path + title.Name
 

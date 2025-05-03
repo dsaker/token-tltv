@@ -14,8 +14,8 @@ import (
 	"talkliketv.click/tltv/api"
 	"talkliketv.click/tltv/internal/config"
 	"talkliketv.click/tltv/internal/models"
-	"talkliketv.click/tltv/internal/services"
 	"talkliketv.click/tltv/internal/services/audiofile"
+	"talkliketv.click/tltv/internal/services/translates"
 	"talkliketv.click/tltv/internal/util"
 )
 
@@ -79,9 +79,9 @@ func main() {
 	}
 
 	mods := models.Models{Languages: langs, Voices: voices}
-	t := services.New(*services.NewGoogleClients(), services.AmazonClients{}, &mods, services.Google)
+	t := translates.New(*translates.NewGoogleClients(), translates.AmazonClients{}, &mods, translates.Google)
 	if cfg.Platform == "amazon" {
-		t = services.New(services.GoogleClients{}, *services.NewAmazonClients(), &mods, services.Amazon)
+		t = translates.New(translates.GoogleClients{}, *translates.NewAmazonClients(), &mods, translates.Amazon)
 	}
 
 	fClient, err := cfg.FirestoreClient()

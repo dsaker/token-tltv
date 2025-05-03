@@ -3,6 +3,7 @@ package audiofile
 import (
 	"bufio"
 	"github.com/labstack/echo/v4"
+	"io"
 	"mime/multipart"
 	"os"
 	"regexp"
@@ -19,11 +20,11 @@ const (
 	maximumPhraseLength = 10
 )
 
-func parseFileContent(f multipart.File, fileType string) ([]string, error) {
+func parseFileContent(f multipart.File, fileType TextFormat) ([]string, error) {
 	switch fileType {
-	case "srt":
+	case Srt:
 		return parseSrt(f), nil
-	case "paragraph":
+	case Paragraph:
 		return parseParagraph(f), nil
 	default:
 		return parseSingle(f), nil
@@ -128,12 +129,13 @@ func parseSrt(f multipart.File) []string {
 	return stringsSlice
 }
 
+// splitLongPhrases splits a long phrase into smaller phrases based on punctuation
 func splitLongPhrases(line string) []string {
 	var splitString []string
 
 	words := strings.Fields(line)
 	// if phrase is too short don't keep it
-	if len(words) <= minimumPhraseLength {
+	if len(words) < minimumPhraseLength {
 		return []string{}
 	}
 	if len(words) < maximumPhraseLength {
@@ -204,30 +206,47 @@ func splitLongPhrases(line string) []string {
 
 // parseParagraph takes a txt multipart file in paragraph form and returns a slice of strings
 func parseParagraph(f multipart.File) []string {
+	if f == nil {
+		return nil
+	}
+
+	content, err := io.ReadAll(f)
+	if err != nil {
+		return nil
+	}
+
+	allText := string(content)
+	allLines := splitOnEndingPunctuation(allText)
+
 	var stringsSlice []string
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		line := scanner.Text()
-		// Split on punctuation characters
-		last := 0
-		for i, c := range line {
-			if i == len(line)-1 {
-				sentence := strings.TrimSpace(line[last : i+1])
-				last = i + 1
-				words := strings.Fields(sentence)
-				if len(words) > 3 {
-					stringsSlice = append(stringsSlice, line)
-				}
-			} else if endSentenceMap[c] {
-				sentence := strings.TrimSpace(line[last : i+1])
-				last = i + 1
-				phrases := splitLongPhrases(sentence)
-				stringsSlice = append(stringsSlice, phrases...)
-			}
+	for _, line := range allLines {
+		phrases := splitLongPhrases(line)
+		if len(phrases) > 0 {
+			stringsSlice = append(stringsSlice, phrases...)
 		}
 	}
 
 	return stringsSlice
+}
+
+// splitOnEndingPunctuation splits the text on sentence-ending punctuation
+func splitOnEndingPunctuation(text string) []string {
+	// Regular expression to split the text at sentence-ending punctuation
+	re := regexp.MustCompile(`[!.?]`)
+
+	// Split the text using the regular expression
+	sentences := re.Split(text, -1)
+
+	// Filter out empty strings
+	var filtered []string
+	for _, s := range sentences {
+		trimmed := strings.TrimSpace(s)
+		if trimmed != "" {
+			filtered = append(filtered, trimmed)
+		}
+	}
+
+	return filtered
 }
 
 // parseSingle takes a txt multipart file with one phrase per line and parses it

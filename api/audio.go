@@ -11,17 +11,16 @@ import (
 )
 
 func (s *Server) ParseFile(e echo.Context) error {
+	fh, err := e.FormFile("file_path")
+	if err != nil {
+		return e.String(http.StatusBadRequest, "error getting form file: "+err.Error())
+	}
 	stringsSlice, err := audiofile.FileParse(e, s.af, s.config.FileUploadLimit)
 	if err != nil {
 		if services.IsFileTooLargeError(err) {
 			return e.String(http.StatusBadRequest, "error parsing file: "+err.Error())
 		}
 		return e.String(http.StatusInternalServerError, "error parsing file: "+err.Error())
-	}
-
-	fh, err := e.FormFile("file_path")
-	if err != nil {
-		return e.String(http.StatusBadRequest, "error getting form file: "+err.Error())
 	}
 
 	zippedFile, err := audiofile.ZipStringsSlice(e, s.af, stringsSlice, s.config.MaxNumPhrases, s.config.TTSBasePath, fh.Filename)
@@ -36,6 +35,31 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 		e.Logger().Error(err)
 		return e.String(http.StatusForbidden, "invalid token: "+err.Error())
 	}
+
+	fh, err := e.FormFile("file_path")
+	if err != nil {
+		return e.String(http.StatusBadRequest, "error getting form file: "+err.Error())
+	}
+
+	if fh.Size > s.config.FileUploadLimit {
+		return e.String(http.StatusBadRequest, "file too large")
+	}
+
+	src, err := fh.Open()
+	if err != nil {
+		e.Logger().Error(err)
+		return e.String(http.StatusBadRequest, "error opening file: "+err.Error())
+	}
+	// make sure the file has been parsed before continuing
+	filetype, err := audiofile.DetectTextFormat(src)
+	if err != nil {
+		e.Logger().Error(err)
+		return e.String(http.StatusBadRequest, "error detecting file type: "+err.Error())
+	}
+	if filetype != audiofile.OnePhrasePerLine {
+		return e.String(http.StatusBadRequest, "Please parse file before uploading")
+	}
+	src.Close()
 
 	title, err := services.ValidateAudioRequest(e, s.m)
 	if err != nil {

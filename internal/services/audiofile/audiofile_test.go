@@ -55,20 +55,23 @@ func TestGetLines(t *testing.T) {
 		{
 			name: "parsefile srt",
 			buildFile: func(t *testing.T) *os.File {
-				srtString := `654
-				00:34:22,393 > 00:34:25,271
-				¿El camión a Tepatitlán?
-				Saliendo, segundo andén.
+				srtString := `1
+00:00:01,418 --> 00:00:04,170
+A continuación, se muestra
+una presentación especial de Fox.
 
-				655
-				00:34:25,354 > 00:34:28,441
-				Por favor, nada más debo entregar esto.
-					Un segundo, por favor.
+2
+00:00:04,170 --> 00:00:09,342
+En vivo desde el Teatro Dolby-Mucinex
+en Hollywood, California.
 
-				656
-				00:34:29,192 > 00:34:31,444
-				Déjala pasar, mi Johnny.
-					Gracias.`
+3
+00:00:09,342 --> 00:00:11,428
+
+4
+00:00:11,428 --> 00:00:16,307
+Las mayores estrellas del teatro,
+el cine, la política y los deportes`
 				return createTmpFile(
 					t,
 					"parsesrt",
@@ -76,7 +79,7 @@ func TestGetLines(t *testing.T) {
 			},
 			checkLines: func(lines []string, err error) {
 				require.NoError(t, err)
-				require.Equal(t, len(lines), 4)
+				require.Equal(t, len(lines), 5)
 			},
 		},
 		{
@@ -98,7 +101,7 @@ func TestGetLines(t *testing.T) {
 				return createTmpFile(
 					t,
 					"noerror",
-					"This is the first one. This is the second one. This is the third one. this is the fourth one\nThis is the fifth")
+					"This is the first one. This is the second one. This is the third one. this is the fourth one.\nThis is the fifth")
 			},
 			checkLines: func(lines []string, err error) {
 				require.NoError(t, err)
@@ -111,7 +114,7 @@ func TestGetLines(t *testing.T) {
 				return createTmpFile(
 					t,
 					"noerror",
-					"This is the. This is. This is the. this is the\nThis is the")
+					"This is the. This is. This is the. this is the.\nThis is the")
 			},
 			checkLines: func(lines []string, err error) {
 				require.Errorf(t, err, "unable to parsefile file")

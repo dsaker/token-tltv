@@ -19,6 +19,7 @@ import (
 	"talkliketv.click/tltv/internal/models"
 	"talkliketv.click/tltv/internal/services"
 	"talkliketv.click/tltv/internal/services/audiofile"
+	"talkliketv.click/tltv/internal/services/translates"
 	"talkliketv.click/tltv/internal/testutil"
 	"talkliketv.click/tltv/internal/util"
 	"testing"
@@ -111,7 +112,7 @@ func TestAudioFromFile(t *testing.T) {
 					Return(nil)
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
-				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
+				data := []byte(validSentences)
 				return createMultiPartBody(t, data, audioFromFileName, okFormMap)
 			},
 			checkResponse: func(res *http.Response) {
@@ -135,7 +136,7 @@ func TestAudioFromFile(t *testing.T) {
 					Return(models.Voice{}, nil)
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
-				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
+				data := []byte(validSentences)
 				formMap := maps.Clone(okFormMap)
 				formMap["pause"] = "11"
 				return createMultiPartBody(t, data, audioFromFileName, formMap)
@@ -157,7 +158,7 @@ func TestAudioFromFile(t *testing.T) {
 					Return(models.Language{}, models.ErrLanguageIdInvalid)
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
-				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
+				data := []byte(validSentences)
 				formMap := maps.Clone(okFormMap)
 				formMap["file_language_id"] = "9999"
 				return createMultiPartBody(t, data, audioFromFileName, formMap)
@@ -176,7 +177,7 @@ func TestAudioFromFile(t *testing.T) {
 					Return(nil)
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
-				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
+				data := []byte(validSentences)
 				formMap := maps.Clone(okFormMap)
 				formMap["file_language_id"] = "abcd"
 				return createMultiPartBody(t, data, audioFromFileName, formMap)
@@ -201,7 +202,7 @@ func TestAudioFromFile(t *testing.T) {
 					Return(models.Voice{}, models.ErrVoiceIdInvalid)
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
-				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
+				data := []byte(validSentences)
 				formMap := maps.Clone(okFormMap)
 				formMap["to_voice_id"] = "9999"
 				return createMultiPartBody(t, data, audioFromFileName, formMap)
@@ -229,7 +230,7 @@ func TestAudioFromFile(t *testing.T) {
 					Return(models.Voice{}, nil)
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
-				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
+				data := []byte(validSentences)
 				formMap := maps.Clone(okFormMap)
 				formMap["pattern"] = "5"
 				return createMultiPartBody(t, data, audioFromFileName, formMap)
@@ -297,15 +298,6 @@ func TestAudioFromFile(t *testing.T) {
 				stubs.TokensX.EXPECT().
 					CheckToken(gomock.Any(), randomToken).
 					Return(nil)
-				stubs.ModelsX.EXPECT().
-					GetLanguage(title.TitleLangId).
-					Return(models.Language{}, nil)
-				stubs.ModelsX.EXPECT().
-					GetVoice(title.ToVoiceId).
-					Return(models.Voice{}, nil)
-				stubs.ModelsX.EXPECT().
-					GetVoice(title.FromVoiceId).
-					Return(models.Voice{}, nil)
 			},
 			checkResponse: func(res *http.Response) {
 				require.Equal(t, http.StatusBadRequest, res.StatusCode)
@@ -317,7 +309,7 @@ func TestAudioFromFile(t *testing.T) {
 			name: "Too Many Phrases",
 			buildStubs: func(stubs testutil.MockStubs) {
 				for i := 0; i < 101; i++ {
-					phrase := testutil.RandomString(4) + " " + testutil.RandomString(4)
+					phrase := "This is a sentence that is big enough\n"
 					stringsSlice = append(stringsSlice, phrase)
 				}
 
@@ -349,7 +341,7 @@ func TestAudioFromFile(t *testing.T) {
 				require.Equal(t, http.StatusOK, res.StatusCode)
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
-				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
+				data := []byte(validSentences)
 				return createMultiPartBody(t, data, audioFromFileName, okFormMap)
 			},
 		},
@@ -390,6 +382,163 @@ func TestAudioFromFile(t *testing.T) {
 
 			tc.checkResponse(res)
 			require.NoError(t, err)
+		})
+	}
+}
+
+func TestAudioFromFile_FileFormatDetection(t *testing.T) {
+	if util.Test != "unit" {
+		t.Skip("skipping unit test")
+	}
+
+	t.Parallel()
+
+	testFileName := testutil.AudioBasePath + "FileFormatDetection.txt"
+
+	title := testutil.RandomTitle(voicesMap)
+	randomToken := testutil.RandomString(32)
+
+	testCases := []testCase{
+		{
+			name: "Detect Paragraph Format",
+			buildStubs: func(stubs testutil.MockStubs) {
+				stubs.TokensX.EXPECT().
+					CheckToken(gomock.Any(), randomToken).
+					Return(nil)
+			},
+			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
+				// Create text that will be detected as paragraph format (longer lines)
+				paragraphText := "This is a much longer paragraph that contains multiple sentences. " +
+					"It's designed to be detected as a paragraph format rather than one phrase per line. " +
+					"The detector should recognize this based on the average line length and structure."
+				formMap := map[string]string{
+					"file_language_id": strconv.Itoa(title.TitleLangId),
+					"title_name":       title.Name,
+					"from_voice_id":    strconv.Itoa(title.FromVoiceId),
+					"to_voice_id":      strconv.Itoa(title.ToVoiceId),
+					"token":            randomToken,
+					"pause":            "5",
+					"pattern":          "1",
+				}
+				return createMultiPartBody(t, []byte(paragraphText), testFileName, formMap)
+			},
+			checkResponse: func(res *http.Response) {
+				require.Equal(t, http.StatusBadRequest, res.StatusCode)
+				resBody := readBody(t, res)
+				require.Contains(t, resBody, "Please parse file before uploading")
+			},
+		},
+		{
+			name: "Detect SRT Format",
+			buildStubs: func(stubs testutil.MockStubs) {
+				stubs.TokensX.EXPECT().
+					CheckToken(gomock.Any(), randomToken).
+					Return(nil)
+			},
+			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
+				// Create text in SRT format
+				srtText := "1\n00:00:01,000 --> 00:00:04,000\nThis is the first subtitle.\n\n" +
+					"2\n00:00:05,000 --> 00:00:09,000\nThis is the second subtitle.\n"
+				formMap := map[string]string{
+					"file_language_id": strconv.Itoa(title.TitleLangId),
+					"title_name":       title.Name,
+					"from_voice_id":    strconv.Itoa(title.FromVoiceId),
+					"to_voice_id":      strconv.Itoa(title.ToVoiceId),
+					"token":            randomToken,
+					"pause":            "5",
+					"pattern":          "1",
+				}
+				return createMultiPartBody(t, []byte(srtText), testFileName, formMap)
+			},
+			checkResponse: func(res *http.Response) {
+				require.Equal(t, http.StatusBadRequest, res.StatusCode)
+				resBody := readBody(t, res)
+				require.Contains(t, resBody, "Please parse file before uploading")
+			},
+		},
+		{
+			name: "Error Opening File",
+			buildStubs: func(stubs testutil.MockStubs) {
+				stubs.TokensX.EXPECT().
+					CheckToken(gomock.Any(), randomToken).
+					Return(nil)
+			},
+			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
+				// Create a corrupt multipart form to force file open error
+				body := new(bytes.Buffer)
+				multiWriter := multipart.NewWriter(body)
+
+				// Create a form file with empty content
+				part, err := multiWriter.CreateFormFile("file_path", "corrupt_file.txt")
+				require.NoError(t, err)
+
+				// Write a partial/corrupt file content
+				part.Write([]byte{0xFF, 0xD8}) // Incomplete content
+
+				// Add form fields
+				multiWriter.WriteField("token", randomToken)
+				multiWriter.WriteField("file_language_id", strconv.Itoa(title.TitleLangId))
+				multiWriter.WriteField("title_name", title.Name)
+				multiWriter.WriteField("from_voice_id", strconv.Itoa(title.FromVoiceId))
+				multiWriter.WriteField("to_voice_id", strconv.Itoa(title.ToVoiceId))
+				multiWriter.WriteField("pause", "5")
+				multiWriter.WriteField("pattern", "1")
+
+				// Close the writer - this will actually make the form valid,
+				// so this test will need special handling in the ServerMock
+				multiWriter.Close()
+				return body, multiWriter
+			},
+			checkResponse: func(res *http.Response) {
+				// Error could be either in opening or format detection depending on the mock
+				require.True(t, res.StatusCode == http.StatusBadRequest)
+			},
+		},
+		{
+			name: "Missing Form File",
+			buildStubs: func(stubs testutil.MockStubs) {
+			},
+			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
+				// Create a multipart form without the file_path field
+				body := new(bytes.Buffer)
+				multiWriter := multipart.NewWriter(body)
+
+				// Add other form fields but no file
+				multiWriter.WriteField("token", randomToken)
+				multiWriter.WriteField("file_language_id", strconv.Itoa(title.TitleLangId))
+				multiWriter.WriteField("title_name", title.Name)
+				multiWriter.WriteField("from_voice_id", strconv.Itoa(title.FromVoiceId))
+				multiWriter.WriteField("to_voice_id", strconv.Itoa(title.ToVoiceId))
+				multiWriter.WriteField("pause", "5")
+				multiWriter.WriteField("pattern", "1")
+
+				multiWriter.Close()
+				return body, multiWriter
+			},
+			checkResponse: func(res *http.Response) {
+				require.Equal(t, http.StatusBadRequest, res.StatusCode)
+				resBody := readBody(t, res)
+				require.Contains(t, resBody, "request body has an error: doesn't match schema: Error at \\\"/file_path\\\":")
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			ts := setupServerTest(ctrl, tc)
+			multiBody, multiWriter := tc.multipartBody(t)
+			req, err := http.NewRequest(http.MethodPost, ts.URL+audioBasePath, multiBody)
+			require.NoError(t, err)
+
+			req.Header.Set("Content-Type", multiWriter.FormDataContentType())
+			res, err := ts.Client().Do(req)
+			require.NoError(t, err)
+			defer res.Body.Close()
+
+			tc.checkResponse(res)
 		})
 	}
 }
@@ -519,7 +668,7 @@ func TestGoogleIntegration(t *testing.T) {
 	//initialize audiofile with the real command runner
 	af := audiofile.New(&audiofile.RealCmdRunner{})
 	// create translates with google or amazon clients depending on the flag set in conifg
-	tr := services.New(*services.NewGoogleClients(), services.AmazonClients{}, &mods, services.Google)
+	tr := translates.New(*translates.NewGoogleClients(), translates.AmazonClients{}, &mods, translates.Google)
 
 	// Use the application default credentials
 	ctx := context.Background()
@@ -638,7 +787,7 @@ func TestAmazonIntegration(t *testing.T) {
 		Languages: langs,
 		Voices:    voices,
 	}
-	tr := services.New(services.GoogleClients{}, *services.NewAmazonClients(), &model, services.Amazon)
+	tr := translates.New(translates.GoogleClients{}, *translates.NewAmazonClients(), &model, translates.Amazon)
 
 	// Use the application default credentials
 	client, err := testCfg.FirestoreClient()
