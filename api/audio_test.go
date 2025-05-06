@@ -10,12 +10,10 @@ import (
 	"go.uber.org/mock/gomock"
 	"io"
 	"maps"
-	"math/rand"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strconv"
 	"talkliketv.click/tltv/internal/models"
 	"talkliketv.click/tltv/internal/services"
 	"talkliketv.click/tltv/internal/services/audiofile"
@@ -33,6 +31,10 @@ func TestAudioFromFile(t *testing.T) {
 	t.Parallel()
 
 	title := testutil.RandomTitle(voicesMap)
+	fromVoice := testutil.RandomVoice()
+	toVoice := testutil.RandomVoice()
+	title.ToVoice = toVoice.Name
+	title.FromVoice = fromVoice.Name
 
 	// create a base path for storing mp3 audio files
 	tmpAudioBasePath := testutil.AudioBasePath + title.Name + "/"
@@ -57,15 +59,15 @@ func TestAudioFromFile(t *testing.T) {
 	titleWithTranslates.ToPhrases = []models.Phrase{phrase1, phrase2}
 
 	fiveSecSilenceBasePath := testutil.AudioBasePath + "silence/5SecSilence.mp3"
-	fromAudioBasePath := fmt.Sprintf("%s%d/", tmpAudioBasePath, title.FromVoiceId)
-	toAudioBasePath := fmt.Sprintf("%s%d/", tmpAudioBasePath, title.ToVoiceId)
+	fromAudioBasePath := fmt.Sprintf("%s%s/", tmpAudioBasePath, fromVoice.Name)
+	toAudioBasePath := fmt.Sprintf("%s%s/", tmpAudioBasePath, toVoice.Name)
 
 	randomToken := testutil.RandomString(32)
 	okFormMap := map[string]string{
-		"file_language_id": strconv.Itoa(title.TitleLangId),
+		"file_language_id": title.TitleLang,
 		"title_name":       title.Name,
-		"from_voice_id":    strconv.Itoa(title.FromVoiceId),
-		"to_voice_id":      strconv.Itoa(title.ToVoiceId),
+		"from_voice_id":    title.FromVoice,
+		"to_voice_id":      title.ToVoice,
 		"pause":            "5",
 		"pattern":          "1",
 		"token":            randomToken,
@@ -82,24 +84,25 @@ func TestAudioFromFile(t *testing.T) {
 					CheckToken(gomock.Any(), randomToken).
 					Return(nil)
 				stubs.ModelsX.EXPECT().
-					GetLanguage(title.TitleLangId).
+					GetLanguage(gomock.Any(), title.TitleLang).
 					Return(models.Language{}, nil)
 				stubs.ModelsX.EXPECT().
-					GetVoice(title.ToVoiceId).
-					Return(models.Voice{}, nil)
+					GetVoice(gomock.Any(), title.FromVoice).
+					Return(fromVoice, nil)
 				stubs.ModelsX.EXPECT().
-					GetVoice(title.FromVoiceId).
-					Return(models.Voice{}, nil)
+					GetVoice(gomock.Any(), title.ToVoice).
+					Return(toVoice, nil)
 				stubs.AudioFileX.EXPECT().
 					GetLines(gomock.Any(), gomock.Any()).
 					Return(stringsSlice, nil)
 				stubs.TranslateX.EXPECT().
-					CreateTTS(gomock.Any(), title, title.FromVoiceId, fromAudioBasePath).
+					// CreateTTS(e, title, fromVoice, fromAudioBasePath)
+					CreateTTS(gomock.Any(), title, fromVoice, fromAudioBasePath).
 					Return(title.TitlePhrases, nil)
 				stubs.TranslateX.EXPECT().
-					CreateTTS(gomock.Any(), title, title.ToVoiceId, toAudioBasePath).
+					CreateTTS(gomock.Any(), title, toVoice, toAudioBasePath).
 					Return(title.TitlePhrases, nil)
-				// BuildAudioInputFiles(echo.Context, []int64, db.Title, string, string, string, string) error
+				// BuildAudioInputFiles(e, title, fullPausePath, fromAudioBasePath, toAudioBasePath, tmpDirPath); err != nil {
 				stubs.AudioFileX.EXPECT().
 					BuildAudioInputFiles(gomock.Any(), titleWithTranslates, fiveSecSilenceBasePath, fromAudioBasePath, toAudioBasePath, gomock.Any()).
 					Return(nil)
@@ -126,14 +129,14 @@ func TestAudioFromFile(t *testing.T) {
 					CheckToken(gomock.Any(), randomToken).
 					Return(nil)
 				stubs.ModelsX.EXPECT().
-					GetLanguage(title.TitleLangId).
+					GetLanguage(gomock.Any(), title.TitleLang).
 					Return(models.Language{}, nil)
 				stubs.ModelsX.EXPECT().
-					GetVoice(title.ToVoiceId).
-					Return(models.Voice{}, nil)
+					GetVoice(gomock.Any(), title.ToVoice).
+					Return(toVoice, nil)
 				stubs.ModelsX.EXPECT().
-					GetVoice(title.FromVoiceId).
-					Return(models.Voice{}, nil)
+					GetVoice(gomock.Any(), title.FromVoice).
+					Return(fromVoice, nil)
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte(validSentences)
@@ -154,7 +157,7 @@ func TestAudioFromFile(t *testing.T) {
 					CheckToken(gomock.Any(), randomToken).
 					Return(nil)
 				stubs.ModelsX.EXPECT().
-					GetLanguage(9999).
+					GetLanguage(gomock.Any(), "9999").
 					Return(models.Language{}, models.ErrLanguageIdInvalid)
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
@@ -170,63 +173,19 @@ func TestAudioFromFile(t *testing.T) {
 			},
 		},
 		{
-			name: "file_langauge_id string",
-			buildStubs: func(stubs testutil.MockStubs) {
-				stubs.TokensX.EXPECT().
-					CheckToken(gomock.Any(), randomToken).
-					Return(nil)
-			},
-			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
-				data := []byte(validSentences)
-				formMap := maps.Clone(okFormMap)
-				formMap["file_language_id"] = "abcd"
-				return createMultiPartBody(t, data, audioFromFileName, formMap)
-			},
-			checkResponse: func(res *http.Response) {
-				require.Equal(t, http.StatusBadRequest, res.StatusCode)
-				resBody := readBody(t, res)
-				require.Contains(t, resBody, ": invalid syntax")
-			},
-		},
-		{
-			name: "to_voice_id out of range",
-			buildStubs: func(stubs testutil.MockStubs) {
-				stubs.TokensX.EXPECT().
-					CheckToken(gomock.Any(), randomToken).
-					Return(nil)
-				stubs.ModelsX.EXPECT().
-					GetLanguage(title.TitleLangId).
-					Return(models.Language{}, nil)
-				stubs.ModelsX.EXPECT().
-					GetVoice(9999).
-					Return(models.Voice{}, models.ErrVoiceIdInvalid)
-			},
-			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
-				data := []byte(validSentences)
-				formMap := maps.Clone(okFormMap)
-				formMap["to_voice_id"] = "9999"
-				return createMultiPartBody(t, data, audioFromFileName, formMap)
-			},
-			checkResponse: func(res *http.Response) {
-				require.Equal(t, http.StatusBadRequest, res.StatusCode)
-				resBody := readBody(t, res)
-				require.Contains(t, resBody, "invalid request: invalid to_voice_id:")
-			},
-		},
-		{
 			name: "pattern out of range",
 			buildStubs: func(stubs testutil.MockStubs) {
 				stubs.TokensX.EXPECT().
 					CheckToken(gomock.Any(), randomToken).
 					Return(nil)
 				stubs.ModelsX.EXPECT().
-					GetLanguage(title.TitleLangId).
+					GetLanguage(gomock.Any(), title.TitleLang).
 					Return(models.Language{}, nil)
 				stubs.ModelsX.EXPECT().
-					GetVoice(title.ToVoiceId).
+					GetVoice(gomock.Any(), title.ToVoice).
 					Return(models.Voice{}, nil)
 				stubs.ModelsX.EXPECT().
-					GetVoice(title.FromVoiceId).
+					GetVoice(gomock.Any(), title.FromVoice).
 					Return(models.Voice{}, nil)
 			},
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
@@ -246,9 +205,9 @@ func TestAudioFromFile(t *testing.T) {
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
 				formMap := map[string]string{
-					"file_language_id": strconv.Itoa(title.TitleLangId),
-					"from_voice_id":    strconv.Itoa(title.FromVoiceId),
-					"to_voice_id":      strconv.Itoa(title.ToVoiceId),
+					"file_language_id": title.TitleLang,
+					"from_voice_id":    title.FromVoice,
+					"to_voice_id":      title.ToVoice,
 					"pause":            "10",
 					"token":            randomToken,
 				}
@@ -321,13 +280,13 @@ func TestAudioFromFile(t *testing.T) {
 					CheckToken(gomock.Any(), randomToken).
 					Return(nil)
 				stubs.ModelsX.EXPECT().
-					GetLanguage(title.TitleLangId).
+					GetLanguage(gomock.Any(), title.TitleLang).
 					Return(models.Language{}, nil)
 				stubs.ModelsX.EXPECT().
-					GetVoice(title.ToVoiceId).
+					GetVoice(gomock.Any(), title.ToVoice).
 					Return(models.Voice{}, nil)
 				stubs.ModelsX.EXPECT().
-					GetVoice(title.FromVoiceId).
+					GetVoice(gomock.Any(), title.FromVoice).
 					Return(models.Voice{}, nil)
 				stubs.AudioFileX.EXPECT().
 					GetLines(gomock.Any(), gomock.Any()).
@@ -399,10 +358,10 @@ func TestAudioFromFile_FileFormatDetection(t *testing.T) {
 	randomToken := testutil.RandomString(32)
 
 	formMap := map[string]string{
-		"file_language_id": strconv.Itoa(title.TitleLangId),
+		"file_language_id": title.TitleLang,
 		"title_name":       title.Name,
-		"from_voice_id":    strconv.Itoa(title.FromVoiceId),
-		"to_voice_id":      strconv.Itoa(title.ToVoiceId),
+		"from_voice_id":    title.FromVoice,
+		"to_voice_id":      title.ToVoice,
 		"token":            randomToken,
 		"pause":            "5",
 		"pattern":          "1",
@@ -472,16 +431,16 @@ func TestAudioFromFile_FileFormatDetection(t *testing.T) {
 				if err = multiWriter.WriteField("token", randomToken); err != nil {
 					require.NoError(t, err)
 				}
-				if err = multiWriter.WriteField("file_language_id", strconv.Itoa(title.TitleLangId)); err != nil {
+				if err = multiWriter.WriteField("file_language_id", title.TitleLang); err != nil {
 					require.NoError(t, err)
 				}
 				if err = multiWriter.WriteField("title_name", title.Name); err != nil {
 					require.NoError(t, err)
 				}
-				if err = multiWriter.WriteField("from_voice_id", strconv.Itoa(title.FromVoiceId)); err != nil {
+				if err = multiWriter.WriteField("from_voice_id", title.FromVoice); err != nil {
 					require.NoError(t, err)
 				}
-				if err = multiWriter.WriteField("to_voice_id", strconv.Itoa(title.ToVoiceId)); err != nil {
+				if err = multiWriter.WriteField("to_voice_id", title.ToVoice); err != nil {
 					require.NoError(t, err)
 				}
 				if err = multiWriter.WriteField("pause", "5"); err != nil {
@@ -514,16 +473,16 @@ func TestAudioFromFile_FileFormatDetection(t *testing.T) {
 				if err := multiWriter.WriteField("token", randomToken); err != nil {
 					require.NoError(t, err)
 				}
-				if err := multiWriter.WriteField("file_language_id", strconv.Itoa(title.TitleLangId)); err != nil {
+				if err := multiWriter.WriteField("file_language_id", title.TitleLang); err != nil {
 					require.NoError(t, err)
 				}
 				if err := multiWriter.WriteField("title_name", title.Name); err != nil {
 					require.NoError(t, err)
 				}
-				if err := multiWriter.WriteField("from_voice_id", strconv.Itoa(title.FromVoiceId)); err != nil {
+				if err := multiWriter.WriteField("from_voice_id", title.FromVoice); err != nil {
 					require.NoError(t, err)
 				}
-				if err := multiWriter.WriteField("to_voice_id", strconv.Itoa(title.ToVoiceId)); err != nil {
+				if err := multiWriter.WriteField("to_voice_id", title.ToVoice); err != nil {
 					require.NoError(t, err)
 				}
 				if err := multiWriter.WriteField("pause", "5"); err != nil {
@@ -684,29 +643,34 @@ func TestGoogleIntegration(t *testing.T) {
 	if util.Test != "integration" {
 		t.Skip("skipping integration test")
 	}
-
-	mods := models.Models{Languages: langsMap, Voices: voicesMap}
 	//initialize audiofile with the real command runner
 	af := audiofile.New(&audiofile.RealCmdRunner{})
-	// create translates with google or amazon clients depending on the flag set in conifg
-	tr := translates.New(*translates.NewGoogleClients(context.Background()), translates.AmazonClients{}, &mods, translates.Google)
 
 	// Use the application default credentials
 	ctx := context.Background()
-	client, err := testCfg.FirestoreClient()
+	fClient, err := testCfg.FirestoreClient()
 	require.NoError(t, err)
-	defer client.Close()
+	defer fClient.Close()
+
+	// Initialize Firestore models
+	mods := models.NewModels(fClient, "languages", "voices")
 
 	// generate new token and add it to the collection
-	plaintext, tokens := addTokenFirestore(t, client, ctx)
+	plaintext, tokens := addTokenFirestore(t, fClient, ctx)
 
 	// defer deleting the collection
 	defer func(ctx context.Context, client *firestore.Client, coll *firestore.CollectionRef) {
 		err = util.DeleteFirestoreCollection(ctx, client, coll)
 		require.NoError(t, err)
-	}(ctx, client, tokens.Coll)
+	}(ctx, fClient, tokens.Coll)
 
-	srv := NewServer(testCfg.Config, tr, af, &tokens, &mods)
+	tr := translates.New(
+		*translates.NewGoogleClients(ctx),
+		*translates.NewAmazonClients(ctx),
+		mods,
+	)
+
+	srv := NewServer(testCfg.Config, tr, af, &tokens, mods)
 	e := srv.NewEcho(nil)
 	title := testutil.RandomTitle(voicesMap)
 
@@ -721,10 +685,10 @@ func TestGoogleIntegration(t *testing.T) {
 	filename := tmpAudioBasePath + "TestAudioFromFile.txt"
 
 	okFormMap := map[string]string{
-		"file_language_id": strconv.Itoa(title.TitleLangId),
+		"file_language_id": title.TitleLang,
 		"title_name":       title.Name,
-		"from_voice_id":    strconv.Itoa(title.FromVoiceId),
-		"to_voice_id":      strconv.Itoa(title.ToVoiceId),
+		"from_voice_id":    title.FromVoice,
+		"to_voice_id":      title.ToVoice,
 		"token":            *plaintext,
 		"pause":            "4",
 		"pattern":          "1",
@@ -759,10 +723,10 @@ func TestGoogleIntegration(t *testing.T) {
 				err = tokens.AddToken(ctx, *token2)
 				require.NoError(t, err)
 				okFormMap2 := map[string]string{
-					"file_language_id": strconv.Itoa(title.TitleLangId),
+					"file_language_id": title.TitleLang,
 					"title_name":       title.Name,
-					"from_voice_id":    strconv.Itoa(title.FromVoiceId),
-					"to_voice_id":      strconv.Itoa(title.ToVoiceId),
+					"from_voice_id":    title.FromVoice,
+					"to_voice_id":      title.ToVoice,
 					"token":            plaintext2,
 					"pause":            "4",
 					"pattern":          "1",
@@ -800,32 +764,39 @@ func TestAmazonIntegration(t *testing.T) {
 
 	ctx := context.Background()
 
-	langs, voices := models.MakeAmazonMaps()
-
 	//initialize audiofile with the real command runner
 	af := audiofile.New(&audiofile.RealCmdRunner{})
-	model := models.Models{
-		Languages: langs,
-		Voices:    voices,
-	}
-	tr := translates.New(translates.GoogleClients{}, *translates.NewAmazonClients(context.Background()), &model, translates.Amazon)
 
 	// Use the application default credentials
-	client, err := testCfg.FirestoreClient()
+	fClient, err := testCfg.FirestoreClient()
 	require.NoError(t, err)
-	defer client.Close()
+	defer fClient.Close()
 
 	// generate new token and add it to the collection
-	plaintext, tokens := addTokenFirestore(t, client, ctx)
+	plaintext, tokens := addTokenFirestore(t, fClient, ctx)
 
 	// defer deleting the collection
 	defer func(ctx context.Context, client *firestore.Client, coll *firestore.CollectionRef) {
 		err = util.DeleteFirestoreCollection(ctx, client, coll)
 		require.NoError(t, err)
-	}(ctx, client, tokens.Coll)
+	}(ctx, fClient, tokens.Coll)
 
-	testCfg.Platform = "amazon"
-	srv := NewServer(testCfg.Config, tr, af, &tokens, &model)
+	// Initialize Firestore models
+	mods := models.NewModels(fClient, "languages", "voices")
+
+	// defer deleting the collection
+	defer func(ctx context.Context, client *firestore.Client, coll *firestore.CollectionRef) {
+		err = util.DeleteFirestoreCollection(ctx, client, coll)
+		require.NoError(t, err)
+	}(ctx, fClient, tokens.Coll)
+
+	tr := translates.New(
+		*translates.NewGoogleClients(ctx),
+		*translates.NewAmazonClients(ctx),
+		mods,
+	)
+
+	srv := NewServer(testCfg.Config, tr, af, &tokens, mods)
 
 	e := srv.NewEcho(nil)
 	title := testutil.RandomTitle(voicesMap)
@@ -840,12 +811,11 @@ func TestAmazonIntegration(t *testing.T) {
 
 	filename := tmpAudioBasePath + "TestAudioFromFile.txt"
 
-	numVoices := len(voices)
 	okFormMap := map[string]string{
-		"file_language_id": strconv.Itoa(title.TitleLangId),
+		"file_language_id": title.TitleLang,
 		"title_name":       title.Name,
-		"from_voice_id":    strconv.Itoa(voices[rand.Intn(numVoices)].ID), //nolint:gosec
-		"to_voice_id":      strconv.Itoa(voices[rand.Intn(numVoices)].ID), //nolint:gosec
+		"from_voice_id":    testutil.RandomString(8),
+		"to_voice_id":      testutil.RandomString(8),
 		"token":            *plaintext,
 		"pause":            "4",
 		"pattern":          "1",

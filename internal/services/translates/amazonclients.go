@@ -4,24 +4,23 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"os"
+	"strconv"
+	"sync"
+
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/polly"
 	"github.com/aws/aws-sdk-go-v2/service/polly/types"
 	"github.com/aws/aws-sdk-go-v2/service/translate"
 	"github.com/labstack/echo/v4"
-	"log"
-	"os"
-	"strconv"
-	"sync"
 	"talkliketv.click/tltv/internal/models"
 )
 
-// AmazonTranslateClientX creates an interface for amazon translate so it can be mocked for testing
 type AmazonTranslateClientX interface {
 	TranslateText(context.Context, *translate.TranslateTextInput, ...func(*translate.Options)) (*translate.TranslateTextOutput, error)
 }
 
-// AmazonTTSClientX creates an interface for amazon texttospeechpb so it can be mocked for testing
 type AmazonTTSClientX interface {
 	SynthesizeSpeech(context.Context, *polly.SynthesizeSpeechInput, ...func(*polly.Options)) (*polly.SynthesizeSpeechOutput, error)
 }
@@ -31,70 +30,47 @@ type AmazonClients struct {
 	atts AmazonTTSClientX
 }
 
-// NewAmazonClients creates new amazon translate and text-to-speech clients; constructs
-// the dependencies and returns them
 func NewAmazonClients(ctx context.Context) *AmazonClients {
-	// Initialize AWS configuration
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		log.Fatalf("unable to load SDK config, %v", err)
+		log.Fatalf("unable to load SDK config: %v", err)
 	}
-
-	// Create an AWS Translate client
-	translateClient := translate.NewFromConfig(cfg)
-
-	// Create a Polly client
-	ttsClient := polly.NewFromConfig(cfg)
-
-	return &AmazonClients{atc: translateClient, atts: ttsClient}
+	return &AmazonClients{
+		atc:  translate.NewFromConfig(cfg),
+		atts: polly.NewFromConfig(cfg),
+	}
 }
 
-// GetTranslate is a helper function for TranslatePhrases that allows concurrent calls to
-// aws translate.Translate.
-// It receives a context.CancelFunc that is invoked on an error so all subsequent calls to
-// aws translate.Translate can be aborted
-func (g *AmazonClients) GetTranslate(e echo.Context,
+func (g *AmazonClients) GetTranslate(
+	e echo.Context,
 	ctx context.Context,
 	cancel context.CancelFunc,
 	phrase models.Phrase,
 	wg *sync.WaitGroup,
-	toLang string,
-	fromLang string,
+	toLang, fromLang string,
 	responses []models.Phrase,
 	i int,
 ) {
 	defer wg.Done()
-	select {
-	case <-ctx.Done():
-		return // Error somewhere, terminate
-	default: // Default to avoid blocking
-
-		resp, err := g.atc.TranslateText(ctx, &translate.TranslateTextInput{
-			Text:               &phrase.Text,
-			SourceLanguageCode: &fromLang,
-			TargetLanguageCode: &toLang,
-		})
-		if err != nil {
-			switch {
-			case errors.Is(err, context.Canceled):
-				return
-			default:
-				e.Logger().Error(fmt.Errorf("error translating text: %s", err))
-				cancel()
-				return
-			}
-		}
-
-		responses[i] = models.Phrase{
-			ID:   phrase.ID,
-			Text: *resp.TranslatedText,
-		}
+	if ctx.Err() != nil {
+		return
 	}
-}
 
-// GetSpeech is a helper function for TextToSpeech that is run concurrently.
-// it is passed a cancel context, so if one routine fails, the following routines can
-// be canceled
+	resp, err := g.atc.TranslateText(ctx, &translate.TranslateTextInput{
+		Text:               &phrase.Text,
+		SourceLanguageCode: &fromLang,
+		TargetLanguageCode: &toLang,
+	})
+	if err != nil {
+		if !errors.Is(err, context.Canceled) {
+			e.Logger().Error(fmt.Errorf("error translating text: %v", err))
+			cancel()
+		}
+		return
+	}
+
+	responses[i] = models.Phrase{ID: phrase.ID, Text: *resp.TranslatedText}
+}
 
 func (g *AmazonClients) GetSpeech(
 	e echo.Context,
@@ -103,50 +79,43 @@ func (g *AmazonClients) GetSpeech(
 	translate models.Phrase,
 	voice models.Voice,
 	wg *sync.WaitGroup,
-	basePath string) {
+	basePath string,
+) {
 	defer wg.Done()
-	select {
-	case <-ctx.Done():
-		return // Error somewhere, terminate
-	default:
-		resp, err := g.atts.SynthesizeSpeech(ctx, &polly.SynthesizeSpeechInput{
-			Text:         &translate.Text,
-			VoiceId:      types.VoiceId(voice.VoiceName), // voice.Name
-			OutputFormat: "mp3",
-			Engine:       types.Engine(voice.Engine),
-		})
-		if err != nil {
-			switch {
-			case errors.Is(err, context.Canceled):
-				return
-			default:
-				e.Logger().Error(fmt.Errorf("error creating Synthesize Speech client: %s", err))
-				cancel()
-				return
-			}
-		}
+	if ctx.Err() != nil {
+		return
+	}
 
-		// Save the output to an MP3 file
-		outputFile := basePath + strconv.Itoa(translate.ID)
-		file, err := os.Create(outputFile)
-		if err != nil {
-			e.Logger().Error(fmt.Errorf("error creating output file: %s", err))
+	resp, err := g.atts.SynthesizeSpeech(ctx, &polly.SynthesizeSpeechInput{
+		Text:         &translate.Text,
+		VoiceId:      types.VoiceId(voice.Name),
+		OutputFormat: "mp3",
+	})
+	if err != nil {
+		if !errors.Is(err, context.Canceled) {
+			e.Logger().Error(fmt.Errorf("error synthesizing speech: %v", err))
 			cancel()
-			return
 		}
-		defer file.Close()
+		return
+	}
 
-		if resp.AudioStream == nil {
-			e.Logger().Error(fmt.Errorf("error synthesizing speech amazon: %s", err))
-			cancel()
-			return
-		}
-		// Write the audio stream to the file
-		_, err = file.ReadFrom(resp.AudioStream)
-		if err != nil {
-			e.Logger().Error(fmt.Errorf("failed to write audio stream to file, %v", err))
-			cancel()
-			return
-		}
+	outputFile := basePath + strconv.Itoa(translate.ID)
+	file, err := os.Create(outputFile)
+	if err != nil {
+		e.Logger().Error(fmt.Errorf("error creating output file: %v", err))
+		cancel()
+		return
+	}
+	defer file.Close()
+
+	if resp.AudioStream == nil {
+		e.Logger().Error("error: audio stream is nil")
+		cancel()
+		return
+	}
+
+	if _, err = file.ReadFrom(resp.AudioStream); err != nil {
+		e.Logger().Error(fmt.Errorf("failed to write audio stream to file: %v", err))
+		cancel()
 	}
 }

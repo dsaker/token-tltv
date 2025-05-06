@@ -26,19 +26,18 @@ type Translate struct {
 	platform      Platform
 }
 
-func New(gc GoogleClients, ac AmazonClients, m models.ModelsX, p Platform) *Translate {
+func New(gc GoogleClients, ac AmazonClients, m models.ModelsX) *Translate {
 	return &Translate{
 		googleClients: gc,
 		amazonClients: ac,
 		m:             m,
-		platform:      p,
 	}
 }
 
 // TranslateX creates an interface for Translates
 type TranslateX interface {
-	CreateTTS(echo.Context, models.Title, int, string) ([]models.Phrase, error)
-	TranslatePhrases(echo.Context, models.Title, models.Language) ([]models.Phrase, error)
+	CreateTTS(e echo.Context, title models.Title, voice models.Voice, basePath string) ([]models.Phrase, error)
+	TranslatePhrases(e echo.Context, title models.Title, lang models.Language) ([]models.Phrase, error)
 }
 
 // TranslatePhrases takes a slice of db.Translate{} and a db.Language and returns a slice
@@ -70,7 +69,7 @@ func (t *Translate) TranslatePhrases(e echo.Context, title models.Title, lang mo
 		if t.platform == Google {
 			go t.googleClients.GetTranslate(e, newCtx, cancel, nextTranslate, &wg, langTag, responses, i)
 		} else {
-			titleLang, err := t.m.GetLanguage(title.TitleLangId)
+			titleLang, err := t.m.GetLanguage(e.Request().Context(), title.TitleLang)
 			if err != nil {
 				e.Logger().Error(err)
 				return nil, err
@@ -90,13 +89,13 @@ func (t *Translate) TranslatePhrases(e echo.Context, title models.Title, lang mo
 
 // CreateTTS is called from api.createAudioFromTitle.
 // It checks if the mp3 audio files exist and if not it creates them.
-func (t *Translate) CreateTTS(e echo.Context, title models.Title, voiceId int, basePath string) ([]models.Phrase, error) {
-	voice, err := t.m.GetVoice(voiceId)
+func (t *Translate) CreateTTS(e echo.Context, title models.Title, voice models.Voice, basePath string) ([]models.Phrase, error) {
+	voice, err := t.m.GetVoice(e.Request().Context(), voice.Name)
 	if err != nil {
 		e.Logger().Error(err)
 		return nil, err
 	}
-	lang, err := t.m.GetLanguage(voice.LangId)
+	lang, err := t.m.GetLanguage(e.Request().Context(), title.ToVoice)
 	if err != nil {
 		e.Logger().Error(err)
 		return nil, err
@@ -143,11 +142,11 @@ func (t *Translate) TextToSpeech(e echo.Context, ts []models.Phrase, voice model
 
 	// set the texttospeec params from the db voice sent in the request
 	voiceSelectionParams := &texttospeechpb.VoiceSelectionParams{
-		LanguageCode: voice.LanguageCodes[0],
+		LanguageCode: voice.LanguageCode,
 		SsmlGender:   texttospeechpb.SsmlVoiceGender_MALE,
-		Name:         voice.VoiceName,
+		Name:         voice.Name,
 	}
-	if voice.Gender == 2 {
+	if voice.SsmlGender == models.FEMALE {
 		voiceSelectionParams.SsmlGender = texttospeechpb.SsmlVoiceGender_FEMALE
 	}
 
@@ -176,14 +175,14 @@ func (t *Translate) TextToSpeech(e echo.Context, ts []models.Phrase, voice model
 
 // CreateTranslates creates the translates in the language
 func (t *Translate) CreateTranslates(e echo.Context, title models.Title, lang models.Language) ([]models.Phrase, error) {
-	titleLang, err := t.m.GetLanguage(title.TitleLangId)
+	titleLang, err := t.m.GetLanguage(e.Request().Context(), title.TitleLang)
 	if err != nil {
 		e.Logger().Error(err)
 		return nil, err
 	}
 
 	// if the original language of file matches the language you desire translates for return original phrases
-	if titleLang.ID == lang.ID {
+	if titleLang.Name == lang.Name {
 		return title.TitlePhrases, nil
 	}
 

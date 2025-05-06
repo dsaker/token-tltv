@@ -237,7 +237,7 @@ func TestGoogleTranslate(t *testing.T) {
 				gtc:  stubs.GoogleTranslateClientX,
 				gtts: stubs.GoogleTTsClientX,
 			}
-			translates := New(clients, AmazonClients{}, stubs.ModelsX, Google)
+			translates := New(clients, AmazonClients{}, stubs.ModelsX)
 			translatesRow, err := translates.TranslatePhrases(c, title, modelsLang)
 			tc.checkTranslate(translatesRow, err)
 		})
