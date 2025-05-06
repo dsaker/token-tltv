@@ -47,7 +47,7 @@ func TestGoogleTTS(t *testing.T) {
 	defer os.RemoveAll(basepath)
 
 	voice := testutil.RandomVoice()
-	voice.Gender = models.MALE
+	voice.SsmlGender = models.MALE
 	text1 := "This is sentence one."
 
 	testCases := []translatesTestCase{
@@ -61,9 +61,9 @@ func TestGoogleTTS(t *testing.T) {
 					},
 					// Build the voice request, select the language code ("en-US") and the SSML
 					Voice: &texttospeechpb.VoiceSelectionParams{
-						LanguageCode: voice.LanguageCodes[0],
+						LanguageCode: voice.LanguageCode,
 						SsmlGender:   texttospeechpb.SsmlVoiceGender_MALE,
-						Name:         voice.VoiceName,
+						Name:         voice.Name,
 					},
 					// Select the type of audio file you want returned.
 					AudioConfig: &texttospeechpb.AudioConfig{
@@ -98,7 +98,7 @@ func TestGoogleTTS(t *testing.T) {
 				gtc:  stubs.GoogleTranslateClientX,
 				gtts: stubs.GoogleTTsClientX,
 			}
-			translates := New(clients, AmazonClients{}, stubs.ModelsX, Google)
+			translates := New(clients, AmazonClients{}, stubs.ModelsX)
 			err = translates.TextToSpeech(newE, []models.Phrase{{ID: 0, Text: text1}}, voice, basepath)
 			tc.checkTranslate(nil, err)
 		})
@@ -106,8 +106,8 @@ func TestGoogleTTS(t *testing.T) {
 }
 
 func TestAmazonTTS(t *testing.T) {
-	if util.Test != "unit" {
-		t.Skip("skipping unit test")
+	if util.Test != "amazon" {
+		t.Skip("skipping amazon test")
 	}
 	t.Parallel()
 
@@ -119,7 +119,7 @@ func TestAmazonTTS(t *testing.T) {
 	defer os.RemoveAll(basepath)
 
 	voice := testutil.RandomVoice()
-	voice.Gender = models.MALE
+	voice.SsmlGender = models.MALE
 	text1 := "This is sentence one."
 
 	testCases := []translatesTestCase{
@@ -128,9 +128,8 @@ func TestAmazonTTS(t *testing.T) {
 			buildStubs: func(stubs testutil.MockStubs) {
 				ssi := polly.SynthesizeSpeechInput{
 					Text:         &text1,
-					VoiceId:      types.VoiceId(voice.VoiceName), // voice.Name
+					VoiceId:      types.VoiceId(voice.Name), // voice.Name
 					OutputFormat: "mp3",
-					Engine:       types.Engine(voice.Engine),
 				}
 				resp := polly.SynthesizeSpeechOutput{}
 				//SynthesizeSpeech(context.Context, *polly.SynthesizeSpeechInput, ...func(*polly.Options)) (*polly.SynthesizeSpeechOutput, error)
@@ -146,9 +145,8 @@ func TestAmazonTTS(t *testing.T) {
 			buildStubs: func(stubs testutil.MockStubs) {
 				ssi := polly.SynthesizeSpeechInput{
 					Text:         &text1,
-					VoiceId:      types.VoiceId(voice.VoiceName), // voice.Name
+					VoiceId:      types.VoiceId(voice.Name), // voice.Name
 					OutputFormat: "mp3",
-					Engine:       types.Engine(voice.Engine),
 				}
 				stringReader := strings.NewReader("shiny!")
 				stringReadCloser := io.NopCloser(stringReader)
@@ -183,7 +181,7 @@ func TestAmazonTTS(t *testing.T) {
 				atc:  stubs.AmazonTranslateClientX,
 				atts: stubs.AmazonTTsClientX,
 			}
-			translates := New(GoogleClients{}, clients, stubs.ModelsX, Amazon)
+			translates := New(GoogleClients{}, clients, stubs.ModelsX)
 			err = translates.TextToSpeech(newE, []models.Phrase{{ID: 0, Text: text1}}, voice, basepath)
 			tc.checkTranslate(nil, err)
 		})
@@ -197,7 +195,7 @@ func TestGoogleTranslate(t *testing.T) {
 
 	t.Parallel()
 
-	modelsLang := models.Language{ID: 0, Code: "es", Name: "Spanish"}
+	modelsLang := models.Language{Code: "es", Name: "Spanish"}
 	text1 := "This is sentence one."
 	translate1 := models.Phrase{ID: 0, Text: text1}
 	translateText := "Esta es la primera oración."

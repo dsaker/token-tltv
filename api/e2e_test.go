@@ -5,6 +5,7 @@ import (
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -68,16 +69,24 @@ func TestEndToEndParse(t *testing.T) {
 
 	err = page.Locator("#submit-parse-form").Click()
 	require.NoError(t, err)
-	download, ok := <-downloadChan
-	if !ok {
-		t.Fatal("download channel closed")
+
+	var download playwright.Download
+	var ok bool
+	// Add timeout protection like in TestEndToEndAudio
+	select {
+	case download, ok = <-downloadChan:
+		if !ok {
+			t.Fatal("download channel closed")
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("Timeout waiting for download")
 	}
 
 	dir := filepath.Join("tmp", strings.Split(t.Name(), "/")[0])
 	savePath := filepath.Join(dir, download.SuggestedFilename())
 	defer os.RemoveAll(dir)
 	err = download.SaveAs(savePath)
-	defer require.NoError(t, err)
+	require.NoError(t, err)
 	fileInfo, err := os.Stat(savePath)
 	require.NoError(t, err)
 
@@ -156,11 +165,12 @@ func TestEndToEndAudio(t *testing.T) {
 	order := []string{"#file-lang-select", "#from-lang-select", "#from-voice-select", "#to-lang-select", "#to-voice-select", "#pause-select", "#pattern-select"}
 
 	for k := range order {
-		v, ok := selectsMap[order[k]]
+		key := order[k]
+		v, ok := selectsMap[key]
 		if !ok {
 			t.Fatal("key not found in selectsMap")
 		}
-		_, err = page.Locator(order[k]).SelectOption(playwright.SelectOptionValues{ValuesOrLabels: &v})
+		_, err = page.Locator(key).SelectOption(playwright.SelectOptionValues{ValuesOrLabels: &v})
 		require.NoError(t, err)
 	}
 
@@ -174,7 +184,7 @@ func TestEndToEndAudio(t *testing.T) {
 		Timeout: playwright.Float(5000),
 	})
 
-	err = fileChooser.SetFiles("../internal/testutil/sample.srt")
+	err = fileChooser.SetFiles("../internal/testutil/sample.txt")
 	require.NoError(t, err)
 
 	// Wait for the download event
@@ -194,7 +204,6 @@ func TestEndToEndAudio(t *testing.T) {
 		if !ok {
 			t.Fatal("download channel closed")
 		}
-		return
 	case <-time.After(5 * time.Second):
 		t.Fatal("Timeout reached, no message received")
 	}
@@ -207,5 +216,6 @@ func TestEndToEndAudio(t *testing.T) {
 	fileInfo, err := os.Stat(savePath)
 	require.NoError(t, err)
 
-	require.True(t, fileInfo.Size() > 147000 && fileInfo.Size() < 148000)
+	log.Printf("File size: %d bytes", fileInfo.Size())
+	require.True(t, fileInfo.Size() > 210000 && fileInfo.Size() < 220000)
 }

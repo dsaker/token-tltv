@@ -95,7 +95,8 @@ func (t *Translate) CreateTTS(e echo.Context, title models.Title, voice models.V
 		e.Logger().Error(err)
 		return nil, err
 	}
-	lang, err := t.m.GetLanguage(e.Request().Context(), title.ToVoice)
+
+	lang, err := t.m.GetLanguage(e.Request().Context(), voice.Language)
 	if err != nil {
 		e.Logger().Error(err)
 		return nil, err

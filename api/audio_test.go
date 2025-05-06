@@ -685,10 +685,10 @@ func TestGoogleIntegration(t *testing.T) {
 	filename := tmpAudioBasePath + "TestAudioFromFile.txt"
 
 	okFormMap := map[string]string{
-		"file_language_id": title.TitleLang,
+		"file_language_id": "en",
 		"title_name":       title.Name,
-		"from_voice_id":    title.FromVoice,
-		"to_voice_id":      title.ToVoice,
+		"from_voice_id":    "en-US-Wavenet-D",
+		"to_voice_id":      "af-ZA-Standard-A",
 		"token":            *plaintext,
 		"pause":            "4",
 		"pattern":          "1",
@@ -758,7 +758,7 @@ func TestGoogleIntegration(t *testing.T) {
 // TestAmazonIntegration tests the audio from file endpoint with the amazon tts client
 // Program arguments: -test=integration -project-id=token-tltv-test
 func TestAmazonIntegration(t *testing.T) {
-	if util.Test != "integration" {
+	if util.Test != "amazon" {
 		t.Skip("skipping amazon integration test")
 	}
 

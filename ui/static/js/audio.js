@@ -13,6 +13,7 @@ fromLangSelect.addEventListener("change", () => {
             elem.style.display = "block";
         }
     })
+    console.log("fromLangSelect", langId);
     fromVoiceDiv.style.display = "block";
 })
 
