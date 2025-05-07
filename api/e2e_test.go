@@ -5,7 +5,6 @@ import (
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -216,6 +215,5 @@ func TestEndToEndAudio(t *testing.T) {
 	fileInfo, err := os.Stat(savePath)
 	require.NoError(t, err)
 
-	log.Printf("File size: %d bytes", fileInfo.Size())
 	require.True(t, fileInfo.Size() > 210000 && fileInfo.Size() < 220000)
 }

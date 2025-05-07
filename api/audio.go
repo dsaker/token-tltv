@@ -78,6 +78,17 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 		return e.String(http.StatusInternalServerError, "unable to process file: "+err.Error())
 	}
 
+	var phraseTexts []string
+	for i := 0; i < len(phrases) && i < 3; i++ {
+		phraseTexts = append(phraseTexts, phrases[i].Text)
+	}
+	detectedFileLanguage, err := s.translate.DetectLanguage(e.Request().Context(), phraseTexts)
+	if err != nil {
+		e.Logger().Error(err)
+		return e.String(http.StatusInternalServerError, "unable to detect language: "+err.Error())
+	}
+
+	title.TitleLang = detectedFileLanguage.String()
 	title.TitlePhrases = phrases
 	zipFile, err := audiofile.AudioFromTitle(e, s.translate, s.af, *fromVoice, *toVoice, *title, s.config.TTSBasePath)
 	if err != nil {

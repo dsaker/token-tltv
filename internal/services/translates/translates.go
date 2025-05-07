@@ -3,6 +3,7 @@ package translates
 import (
 	"cloud.google.com/go/texttospeech/apiv1/texttospeechpb"
 	"context"
+	"fmt"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/text/language"
 	"os"
@@ -38,6 +39,7 @@ func New(gc GoogleClients, ac AmazonClients, m models.ModelsX) *Translate {
 type TranslateX interface {
 	CreateTTS(e echo.Context, title models.Title, voice models.Voice, basePath string) ([]models.Phrase, error)
 	TranslatePhrases(e echo.Context, title models.Title, lang models.Language) ([]models.Phrase, error)
+	DetectLanguage(context.Context, []string) (language.Tag, error)
 }
 
 // TranslatePhrases takes a slice of db.Translate{} and a db.Language and returns a slice
@@ -195,4 +197,64 @@ func (t *Translate) CreateTranslates(e echo.Context, title models.Title, lang mo
 	}
 
 	return translated, nil
+}
+
+// DetectLanguage uses Google's Natural Language API to detect the language of text
+func (t *Translate) DetectLanguage(ctx context.Context, texts []string) (language.Tag, error) {
+	detections, err := t.googleClients.gtc.DetectLanguage(ctx, texts)
+	if err != nil {
+		return language.Und, err
+	}
+
+	if len(detections) == 0 {
+		return language.Und, fmt.Errorf("no languages detected")
+	}
+
+	// Count language occurrences
+	langCounts := make(map[string]int)
+	var highestConfidence float64
+	var mostConfidentLang language.Tag
+
+	for _, textDetections := range detections {
+		if len(textDetections) == 0 {
+			continue
+		}
+
+		// Track the language with highest confidence from each text
+		for _, detection := range textDetections {
+			langCode := detection.Language.String()
+			langCounts[langCode]++
+
+			// Also keep track of the single highest confidence detection
+			if detection.Confidence > highestConfidence {
+				highestConfidence = detection.Confidence
+				mostConfidentLang = detection.Language
+			}
+		}
+	}
+
+	// Find the most common language
+	var mostCommonLang string
+	var maxCount int
+	for lang, count := range langCounts {
+		if count > maxCount {
+			mostCommonLang = lang
+			maxCount = count
+		}
+	}
+
+	// If we found a most common language, use that
+	if mostCommonLang != "" {
+		tag, err := language.Parse(mostCommonLang)
+		if err == nil {
+			return tag, nil
+		}
+	}
+
+	// Fall back to the highest confidence detection
+	if mostConfidentLang != language.Und {
+		return mostConfidentLang, nil
+	}
+
+	return language.Und, fmt.Errorf("could not determine most common language")
 }

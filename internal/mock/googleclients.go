@@ -44,6 +44,21 @@ func (m *MockGoogleTranslateClientX) EXPECT() *MockGoogleTranslateClientXMockRec
 	return m.recorder
 }
 
+// DetectLanguage mocks base method.
+func (m *MockGoogleTranslateClientX) DetectLanguage(arg0 context.Context, arg1 []string) ([][]translate.Detection, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DetectLanguage", arg0, arg1)
+	ret0, _ := ret[0].([][]translate.Detection)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DetectLanguage indicates an expected call of DetectLanguage.
+func (mr *MockGoogleTranslateClientXMockRecorder) DetectLanguage(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DetectLanguage", reflect.TypeOf((*MockGoogleTranslateClientX)(nil).DetectLanguage), arg0, arg1)
+}
+
 // Translate mocks base method.
 func (m *MockGoogleTranslateClientX) Translate(arg0 context.Context, arg1 []string, arg2 language.Tag, arg3 *translate.Options) ([]translate.Translation, error) {
 	m.ctrl.T.Helper()

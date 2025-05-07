@@ -1,6 +1,7 @@
 package translates
 
 import (
+	"errors"
 	"flag"
 	"github.com/aws/aws-sdk-go-v2/service/polly"
 	"github.com/aws/aws-sdk-go-v2/service/polly/types"
@@ -238,6 +239,195 @@ func TestGoogleTranslate(t *testing.T) {
 			translates := New(clients, AmazonClients{}, stubs.ModelsX)
 			translatesRow, err := translates.TranslatePhrases(c, title, modelsLang)
 			tc.checkTranslate(translatesRow, err)
+		})
+	}
+}
+
+func TestDetectLanguage(t *testing.T) {
+	// Define test cases
+	testCases := []struct {
+		name        string
+		phrases     []string
+		buildStubs  func(stubs testutil.MockStubs)
+		checkResult func(t *testing.T, result language.Tag, err error)
+	}{
+		{
+			name:    "Successful language detection",
+			phrases: []string{"Hello world", "This is a test"},
+			buildStubs: func(stubs testutil.MockStubs) {
+				// Create detection response with English as the language
+				detection := translate.Detection{
+					Language:   language.English,
+					Confidence: 0.95,
+				}
+				// Build the expected return type: [][]translate.Detection
+				detections := [][]translate.Detection{
+					{detection}, // First text
+					{detection}, // Second text
+				}
+
+				stubs.GoogleTranslateClientX.EXPECT().
+					DetectLanguage(gomock.Any(), gomock.Eq([]string{"Hello world", "This is a test"})).
+					Return(detections, nil)
+			},
+			checkResult: func(t *testing.T, result language.Tag, err error) {
+				require.NoError(t, err)
+				require.Equal(t, language.English, result)
+			},
+		},
+		{
+			name:    "API error",
+			phrases: []string{"Hello world"},
+			buildStubs: func(stubs testutil.MockStubs) {
+				// Simulate an API error
+				stubs.GoogleTranslateClientX.EXPECT().
+					DetectLanguage(gomock.Any(), gomock.Any()).
+					Return([][]translate.Detection(nil), errors.New("API error"))
+			},
+			checkResult: func(t *testing.T, result language.Tag, err error) {
+				require.Error(t, err)
+				require.Equal(t, language.Und, result)
+			},
+		},
+		{
+			name:    "Empty phrases",
+			phrases: []string{},
+			buildStubs: func(stubs testutil.MockStubs) {
+				// Even with empty phrases, we should call the API
+				stubs.GoogleTranslateClientX.EXPECT().
+					DetectLanguage(gomock.Any(), gomock.Eq([]string{})).
+					Return([][]translate.Detection{}, nil)
+			},
+			checkResult: func(t *testing.T, result language.Tag, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "no languages detected")
+				require.Equal(t, language.Und, result)
+			},
+		},
+		{
+			name:    "Non-English language detection",
+			phrases: []string{"Hola mundo", "Esta es una prueba"},
+			buildStubs: func(stubs testutil.MockStubs) {
+				// Create detection for Spanish
+				detection := translate.Detection{
+					Language:   language.Spanish,
+					Confidence: 0.98,
+				}
+				// Build return structure
+				detections := [][]translate.Detection{
+					{detection}, // First text
+					{detection}, // Second text
+				}
+
+				stubs.GoogleTranslateClientX.EXPECT().
+					DetectLanguage(gomock.Any(), gomock.Any()).
+					Return(detections, nil)
+			},
+			checkResult: func(t *testing.T, result language.Tag, err error) {
+				require.NoError(t, err)
+				require.Equal(t, language.Spanish, result)
+			},
+		},
+		{
+			name:    "Multiple languages with different confidences",
+			phrases: []string{"Hello world", "Bonjour monde", "Hola mundo"},
+			buildStubs: func(stubs testutil.MockStubs) {
+				// Create multiple detections with different languages
+				engDetection := translate.Detection{
+					Language:   language.English,
+					Confidence: 0.90,
+				}
+				frDetection := translate.Detection{
+					Language:   language.French,
+					Confidence: 0.95,
+				}
+				esDetection := translate.Detection{
+					Language:   language.Spanish,
+					Confidence: 0.80,
+				}
+
+				// Build the return structure where French has highest confidence
+				detections := [][]translate.Detection{
+					{frDetection},
+					{engDetection},
+					{esDetection},
+				}
+
+				stubs.GoogleTranslateClientX.EXPECT().
+					DetectLanguage(gomock.Any(), gomock.Any()).
+					Return(detections, nil)
+			},
+			checkResult: func(t *testing.T, result language.Tag, err error) {
+				require.NoError(t, err)
+				// French should be detected as it has the highest confidence
+				require.Equal(t, language.French, result)
+			},
+		},
+		{
+			name:    "Multiple languages with different confidences",
+			phrases: []string{"Hello world", "Bonjour monde", "Hola mundo"},
+			buildStubs: func(stubs testutil.MockStubs) {
+				// Create multiple detections with different languages
+				engDetection := translate.Detection{
+					Language:   language.English,
+					Confidence: 0.90,
+				}
+				frDetection := translate.Detection{
+					Language:   language.French,
+					Confidence: 0.95,
+				}
+				esDetection := translate.Detection{
+					Language:   language.Spanish,
+					Confidence: 0.80,
+				}
+
+				// Build the return structure where French has highest confidence
+				detections := [][]translate.Detection{
+					{frDetection},
+					{engDetection},
+					{esDetection},
+				}
+
+				stubs.GoogleTranslateClientX.EXPECT().
+					DetectLanguage(gomock.Any(), gomock.Eq([]string{"Hello world", "Bonjour monde", "Hola mundo"})).
+					Return(detections, nil)
+			},
+			checkResult: func(t *testing.T, result language.Tag, err error) {
+				require.NoError(t, err)
+				// Make sure we're comparing the right language tags
+				require.Equal(t, language.French, result)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create controller and mock stubs
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			stubs := testutil.NewMockStubs(ctrl)
+
+			// Build stubs
+			tc.buildStubs(stubs)
+
+			// Create echo context
+			e := echo.New()
+			req := httptest.NewRequest(http.MethodPost, "/detect-language", nil)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+
+			// Create the translate service with mock clients
+			clients := GoogleClients{
+				gtc:  stubs.GoogleTranslateClientX,
+				gtts: stubs.GoogleTTsClientX,
+			}
+			translate2 := New(clients, AmazonClients{}, stubs.ModelsX)
+
+			// Call the function
+			result, err := translate2.DetectLanguage(c.Request().Context(), tc.phrases)
+
+			// Check results
+			tc.checkResult(t, result, err)
 		})
 	}
 }

@@ -10,10 +10,12 @@
 package mock
 
 import (
+	context "context"
 	reflect "reflect"
 
 	echo "github.com/labstack/echo/v4"
 	gomock "go.uber.org/mock/gomock"
+	language "golang.org/x/text/language"
 	models "talkliketv.click/tltv/internal/models"
 )
 
@@ -54,6 +56,21 @@ func (m *MockTranslateX) CreateTTS(e echo.Context, title models.Title, voice mod
 func (mr *MockTranslateXMockRecorder) CreateTTS(e, title, voice, basePath any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTTS", reflect.TypeOf((*MockTranslateX)(nil).CreateTTS), e, title, voice, basePath)
+}
+
+// DetectLanguage mocks base method.
+func (m *MockTranslateX) DetectLanguage(arg0 context.Context, arg1 []string) (language.Tag, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DetectLanguage", arg0, arg1)
+	ret0, _ := ret[0].(language.Tag)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DetectLanguage indicates an expected call of DetectLanguage.
+func (mr *MockTranslateXMockRecorder) DetectLanguage(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DetectLanguage", reflect.TypeOf((*MockTranslateX)(nil).DetectLanguage), arg0, arg1)
 }
 
 // TranslatePhrases mocks base method.

@@ -36,7 +36,6 @@ paths:
               type: object
               required:
                 - title_name
-                - file_language_id
                 - from_voice_id
                 - to_voice_id
                 - file_path
@@ -47,10 +46,6 @@ paths:
                 title_name:
                   type: string
                   description: choose a descriptive title that includes to and from languages
-                file_language_id:
-                  type: string
-                  example: "49"
-                  description: the original language of the file you are uploading
                 from_voice_id:
                   type: string
                   example: "162"

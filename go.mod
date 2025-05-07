@@ -4,10 +4,12 @@ go 1.23.8
 
 require (
 	cloud.google.com/go/firestore v1.18.0
+	cloud.google.com/go/language v1.14.3
 	cloud.google.com/go/logging v1.13.0
 	cloud.google.com/go/texttospeech v1.12.1
 	cloud.google.com/go/translate v1.12.5
 	firebase.google.com/go v3.13.0+incompatible
+	github.com/aws/aws-sdk-go-v2 v1.36.3
 	github.com/aws/aws-sdk-go-v2/config v1.29.14
 	github.com/aws/aws-sdk-go-v2/service/polly v1.48.2
 	github.com/aws/aws-sdk-go-v2/service/translate v1.29.2
@@ -28,6 +30,7 @@ require (
 	golang.org/x/text v0.24.0
 	golang.org/x/time v0.11.0
 	google.golang.org/api v0.231.0
+	google.golang.org/genproto v0.0.0-20250303144028-a0af3efb3deb
 )
 
 require (
@@ -47,7 +50,6 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.50.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.50.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.36.3 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.67 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.30 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.34 // indirect
@@ -149,7 +151,6 @@ require (
 	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/tools v0.24.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
-	google.golang.org/genproto v0.0.0-20250303144028-a0af3efb3deb // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250414145226-207652e42e2e // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250425173222-7b384671a197 // indirect
 	google.golang.org/grpc v1.72.0 // indirect

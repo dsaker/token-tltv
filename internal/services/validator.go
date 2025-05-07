@@ -106,15 +106,8 @@ func (v *Validator) In(value string, list ...string) bool {
 func ValidateAudioRequest(e echo.Context, m models.ModelsX) (*models.Title, *models.Voice, *models.Voice, error) {
 	// Extract form values
 	titleName := e.FormValue("title_name")
-	fileLangID := e.FormValue("file_language_id")
 	fromVoiceID := e.FormValue("from_voice_id")
 	toVoiceID := e.FormValue("to_voice_id")
-
-	// Validate language and voices
-	_, err := m.GetLanguage(e.Request().Context(), fileLangID)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("invalid file_language_id: %s", fileLangID)
-	}
 
 	fromVoice, err := m.GetVoice(e.Request().Context(), fromVoiceID)
 	if err != nil {
@@ -145,7 +138,7 @@ func ValidateAudioRequest(e echo.Context, m models.ModelsX) (*models.Title, *mod
 	// Create title object
 	title := &models.Title{
 		Name:      titleName,
-		TitleLang: fileLangID,
+		TitleLang: "",
 		FromVoice: fromVoiceID,
 		ToVoice:   toVoiceID,
 		Pause:     pause,

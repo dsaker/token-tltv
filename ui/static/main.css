@@ -289,3 +289,108 @@ ul {
 li.ul-li {
     margin-bottom: 2px;
 }
+
+.form-step {
+    margin-bottom: 20px;
+}
+
+.navigation-buttons {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+.play_sound {
+    cursor: default;
+}
+
+.smaller-heading {
+    font-size: 24px;
+}
+
+.float-right {
+    float: right;
+}
+
+.form-group {
+    margin-bottom: 15px; /* Adds margin between form groups */
+}
+
+.short-input {
+    width: 200px;
+}
+
+.voice-label {
+    font-weight: 500;
+    margin-right: 5px;
+}
+
+.three-columns {
+    column-count: 3;
+}
+
+.two-columns {
+    column-count: 2;
+}
+
+.voice-columns {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.voice-columns {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.voice-list-group {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    padding-bottom: 80px;
+}
+
+.voice-list-group .form-radio {
+    flex: 1 1 calc(33.333% - 10px); /* Adjust the width of each item */
+    margin: 5px; /* Add some margin between items */
+    box-sizing: border-box;
+}
+
+.upload-form {
+    display: flex;
+    flex-direction: column;
+    margin-top: 5px; /* Adds a small gap between the form and the upload button */
+}
+
+.upload-form .form-group {
+    margin-bottom: 10px; /* Adds a small gap between form groups */
+}
+
+.upload-form .btn {
+    width: 100px; /* Makes the upload button shorter */
+}
+
+.play_sound {
+    cursor: default;
+}
+
+.smaller-heading {
+    font-size: 24px;
+}
+
+.float-right {
+    float: right;
+}
+
+.form-group {
+    margin-bottom: 15px; /* Adds margin between form groups */
+}
+
+.short-input {
+    width: 200px;
+}
+
+.voice-label {
+    font-weight: 500;
+    margin-right: 5px;
+}

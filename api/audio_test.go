@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
+	"golang.org/x/text/language"
 	"io"
 	"maps"
 	"mime/multipart"
@@ -35,6 +36,7 @@ func TestAudioFromFile(t *testing.T) {
 	toVoice := testutil.RandomVoice()
 	title.ToVoice = toVoice.Name
 	title.FromVoice = fromVoice.Name
+	title.TitleLang = "en"
 
 	// create a base path for storing mp3 audio files
 	tmpAudioBasePath := testutil.AudioBasePath + title.Name + "/"
@@ -64,14 +66,16 @@ func TestAudioFromFile(t *testing.T) {
 
 	randomToken := testutil.RandomString(32)
 	okFormMap := map[string]string{
-		"file_language_id": title.TitleLang,
-		"title_name":       title.Name,
-		"from_voice_id":    title.FromVoice,
-		"to_voice_id":      title.ToVoice,
-		"pause":            "5",
-		"pattern":          "1",
-		"token":            randomToken,
+		"title_name":    title.Name,
+		"from_voice_id": title.FromVoice,
+		"to_voice_id":   title.ToVoice,
+		"pause":         "5",
+		"pattern":       "1",
+		"token":         randomToken,
 	}
+
+	// Define phrases for DetectLanguage
+	phraseTexts := []string{phrase1.Text, phrase2.Text}
 
 	testCases := []testCase{
 		{
@@ -84,9 +88,6 @@ func TestAudioFromFile(t *testing.T) {
 					CheckToken(gomock.Any(), randomToken).
 					Return(nil)
 				stubs.ModelsX.EXPECT().
-					GetLanguage(gomock.Any(), title.TitleLang).
-					Return(models.Language{}, nil)
-				stubs.ModelsX.EXPECT().
 					GetVoice(gomock.Any(), title.FromVoice).
 					Return(fromVoice, nil)
 				stubs.ModelsX.EXPECT().
@@ -95,18 +96,19 @@ func TestAudioFromFile(t *testing.T) {
 				stubs.AudioFileX.EXPECT().
 					GetLines(gomock.Any(), gomock.Any()).
 					Return(stringsSlice, nil)
+				// Add this expectation for DetectLanguage
 				stubs.TranslateX.EXPECT().
-					// CreateTTS(e, title, fromVoice, fromAudioBasePath)
+					DetectLanguage(gomock.Any(), gomock.Eq(phraseTexts)).
+					Return(language.English, nil)
+				stubs.TranslateX.EXPECT().
 					CreateTTS(gomock.Any(), title, fromVoice, fromAudioBasePath).
 					Return(title.TitlePhrases, nil)
 				stubs.TranslateX.EXPECT().
 					CreateTTS(gomock.Any(), title, toVoice, toAudioBasePath).
 					Return(title.TitlePhrases, nil)
-				// BuildAudioInputFiles(e, title, fullPausePath, fromAudioBasePath, toAudioBasePath, tmpDirPath); err != nil {
 				stubs.AudioFileX.EXPECT().
 					BuildAudioInputFiles(gomock.Any(), titleWithTranslates, fiveSecSilenceBasePath, fromAudioBasePath, toAudioBasePath, gomock.Any()).
 					Return(nil)
-				// CreateMp3Zip(e echo.Context, t models.Title, tmpDir string) (*os.File, error)
 				stubs.AudioFileX.EXPECT().
 					CreateMp3Zip(gomock.Any(), titleWithTranslates, gomock.Any()).
 					Return(file, nil)
@@ -129,9 +131,6 @@ func TestAudioFromFile(t *testing.T) {
 					CheckToken(gomock.Any(), randomToken).
 					Return(nil)
 				stubs.ModelsX.EXPECT().
-					GetLanguage(gomock.Any(), title.TitleLang).
-					Return(models.Language{}, nil)
-				stubs.ModelsX.EXPECT().
 					GetVoice(gomock.Any(), title.ToVoice).
 					Return(toVoice, nil)
 				stubs.ModelsX.EXPECT().
@@ -151,36 +150,11 @@ func TestAudioFromFile(t *testing.T) {
 			},
 		},
 		{
-			name: "file_language_id out of range",
-			buildStubs: func(stubs testutil.MockStubs) {
-				stubs.TokensX.EXPECT().
-					CheckToken(gomock.Any(), randomToken).
-					Return(nil)
-				stubs.ModelsX.EXPECT().
-					GetLanguage(gomock.Any(), "9999").
-					Return(models.Language{}, models.ErrLanguageIdInvalid)
-			},
-			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
-				data := []byte(validSentences)
-				formMap := maps.Clone(okFormMap)
-				formMap["file_language_id"] = "9999"
-				return createMultiPartBody(t, data, audioFromFileName, formMap)
-			},
-			checkResponse: func(res *http.Response) {
-				require.Equal(t, http.StatusBadRequest, res.StatusCode)
-				resBody := readBody(t, res)
-				require.Contains(t, resBody, "invalid request: invalid file_language_id:")
-			},
-		},
-		{
 			name: "pattern out of range",
 			buildStubs: func(stubs testutil.MockStubs) {
 				stubs.TokensX.EXPECT().
 					CheckToken(gomock.Any(), randomToken).
 					Return(nil)
-				stubs.ModelsX.EXPECT().
-					GetLanguage(gomock.Any(), title.TitleLang).
-					Return(models.Language{}, nil)
 				stubs.ModelsX.EXPECT().
 					GetVoice(gomock.Any(), title.ToVoice).
 					Return(models.Voice{}, nil)
@@ -205,11 +179,10 @@ func TestAudioFromFile(t *testing.T) {
 			multipartBody: func(t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 				data := []byte("This is the first sentence.\nThis is the second sentence.\n")
 				formMap := map[string]string{
-					"file_language_id": title.TitleLang,
-					"from_voice_id":    title.FromVoice,
-					"to_voice_id":      title.ToVoice,
-					"pause":            "10",
-					"token":            randomToken,
+					"from_voice_id": title.FromVoice,
+					"to_voice_id":   title.ToVoice,
+					"pause":         "10",
+					"token":         randomToken,
 				}
 				return createMultiPartBody(t, data, audioFromFileName, formMap)
 			},
@@ -279,9 +252,6 @@ func TestAudioFromFile(t *testing.T) {
 				stubs.TokensX.EXPECT().
 					CheckToken(gomock.Any(), randomToken).
 					Return(nil)
-				stubs.ModelsX.EXPECT().
-					GetLanguage(gomock.Any(), title.TitleLang).
-					Return(models.Language{}, nil)
 				stubs.ModelsX.EXPECT().
 					GetVoice(gomock.Any(), title.ToVoice).
 					Return(models.Voice{}, nil)
@@ -358,13 +328,12 @@ func TestAudioFromFile_FileFormatDetection(t *testing.T) {
 	randomToken := testutil.RandomString(32)
 
 	formMap := map[string]string{
-		"file_language_id": title.TitleLang,
-		"title_name":       title.Name,
-		"from_voice_id":    title.FromVoice,
-		"to_voice_id":      title.ToVoice,
-		"token":            randomToken,
-		"pause":            "5",
-		"pattern":          "1",
+		"title_name":    title.Name,
+		"from_voice_id": title.FromVoice,
+		"to_voice_id":   title.ToVoice,
+		"token":         randomToken,
+		"pause":         "5",
+		"pattern":       "1",
 	}
 
 	testCases := []testCase{
@@ -431,9 +400,6 @@ func TestAudioFromFile_FileFormatDetection(t *testing.T) {
 				if err = multiWriter.WriteField("token", randomToken); err != nil {
 					require.NoError(t, err)
 				}
-				if err = multiWriter.WriteField("file_language_id", title.TitleLang); err != nil {
-					require.NoError(t, err)
-				}
 				if err = multiWriter.WriteField("title_name", title.Name); err != nil {
 					require.NoError(t, err)
 				}
@@ -471,9 +437,6 @@ func TestAudioFromFile_FileFormatDetection(t *testing.T) {
 
 				// Add other form fields but no file
 				if err := multiWriter.WriteField("token", randomToken); err != nil {
-					require.NoError(t, err)
-				}
-				if err := multiWriter.WriteField("file_language_id", title.TitleLang); err != nil {
 					require.NoError(t, err)
 				}
 				if err := multiWriter.WriteField("title_name", title.Name); err != nil {
