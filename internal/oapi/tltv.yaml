@@ -65,10 +65,9 @@ paths:
                   example: "1"
                   description: |
                     pattern is the pattern used to construct the audio files. You have 3 choices: 
-                    1 is beginner and repeats closer together -- 
-                    2 is intermediate -- 
-                    3 is advanced and repeats phrases less often and should only be used if you are at an advanced level -- 
-                    4 is review and repeats each phrase one time and can be used to review already learned phrases
+                    1 is standard and repeats closer together -- 
+                    2 is advanced and repeats phrases less often and should only be used if you are at an advanced level -- 
+                    3 is review and repeats each phrase one time and can be used to review already learned phrases
                 file_path:
                   type: string
                   format: binary

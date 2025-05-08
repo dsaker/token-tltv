@@ -1,0 +1,11 @@
+// sass scss/custom.scss css/custom.css
+
+// Your variable overrides
+$body-bg: #F1F3F6;
+$body-color: #34495E;
+
+$primary: #3498db; // set the $primary variable
+
+// Bootstrap and its default variables
+@import "../bootstrap/scss/bootstrap";
+

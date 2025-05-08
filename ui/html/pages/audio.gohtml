@@ -49,8 +49,8 @@
                         <div id="from-voice-select">
                             <div class="row">
                             <div class="col-md-12">
-                                <div class="voice-columns">
-                                    <ul class="voice-list-group">
+                                <div class="two-columns">
+                                    <ul class="list-group">
                                         {{if .Voices}}
                                         {{range .Voices}}
                                             <div class="form-radio voice-option" data-language="{{.Language}}" style="display: none;">
@@ -113,8 +113,8 @@
                         <div id="to-voice-select">
                             <div class="row">
                                 <div class="col-md-12">
-                                    <div class="voice-columns">
-                                        <ul class="voice-list-group">
+                                    <div class="two-columns">
+                                        <ul class="list-group">
                                             {{if .Voices}}
                                                 {{range .Voices}}
                                                     <div class="form-radio voice-option" data-language="{{.Language}}" style="display: none;">
@@ -164,15 +164,15 @@
                     <div class="accordion-body">
                         <div id="pattern-select" class="three-columns">
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="pattern" value="standard" id="pattern-standard" >
+                                <input class="form-check-input" type="radio" name="pattern" value="1" id="pattern-standard" >
                                 <label class="form-check-label" for="pattern-standard">Standard</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="pattern" value="advanced" id="pattern-advanced" >
+                                <input class="form-check-input" type="radio" name="pattern" value="2" id="pattern-advanced" >
                                 <label class="form-check-label" for="pattern-advanced">Advanced</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="pattern" value="review" id="pattern-review" >
+                                <input class="form-check-input" type="radio" name="pattern" value="3" id="pattern-review" >
                                 <label class="form-check-label" for="pattern-review">Review</label>
                             </div>
                         </div>
@@ -181,21 +181,21 @@
             </div>
         </div>
 
-        <div>
+        <div class="mb-3">
             <label for="token-input">Token:</label>
             <input type="text" id="token-input" name="token" maxlength="26" required>
         </div>
 
-        <div>
+        <div class="mb-3">
             <label for="title-input">Title Name:</label>
             <input id="title-input" type="text" name="title_name" maxlength="32" required>
         </div>
 
-        <div>
+        <div class="mb-3">
             <input type="file" name="file_path" id="text-file" required/>
         </div>
 
-        <button type="submit" id="submit-audio-form" class="btn btn-primary">Generate Audio</button>
+        <button type="submit" id="submit-audio-form" class="btn btn-primary mb-5">Generate Audio</button>
     </form>
 
     <div id="lds-div" style="display: none;" class="text-center my-4">
@@ -312,54 +312,143 @@
             });
         });
 
-        // Handle form submission
-        const audioForm = document.getElementById('audio-form');
+        // Add this code at the beginning of your existing script in audio.gohtml
+        document.addEventListener('DOMContentLoaded', function() {
+            const audioForm = document.getElementById('audio-form');
 
-        if (audioForm) {
-            audioForm.addEventListener('submit', function(event) {
-                event.preventDefault();
-                const formData = new FormData(audioForm);
+            if (audioForm) {
+                audioForm.addEventListener('submit', function(event) {
+                    // Prevent the default submission
+                    event.preventDefault();
 
-                fetch('/v1/audio', {
-                    method: 'POST',
-                    body: formData
-                })
-                    .then(response => {
-                        if (!response.ok) {
-                            return response.text().then(text => {
-                                throw new Error(text || `Server error: ${response.status}`);
-                            });
-                        }
-                        return response.blob();
+                    // Check all required selections
+                    const fromLanguageSelected = document.querySelector('.from-language-radio:checked');
+                    if (!fromLanguageSelected) {
+                        showError("Please select a language to learn from");
+                        openAccordion('collapseFromLang');
+                        return;
+                    }
+
+                    const fromVoiceSelected = document.querySelector('input[name="from_voice_id"]:checked');
+                    if (!fromVoiceSelected) {
+                        showError("Please select a voice to learn from");
+                        openAccordion('collapseFromVoice');
+                        return;
+                    }
+
+                    const toLanguageSelected = document.querySelector('.to-language-radio:checked');
+                    if (!toLanguageSelected) {
+                        showError("Please select a language you want to learn");
+                        openAccordion('collapseToLang');
+                        return;
+                    }
+
+                    const toVoiceSelected = document.querySelector('input[name="to_voice_id"]:checked');
+                    if (!toVoiceSelected) {
+                        showError("Please select a voice you want to learn");
+                        openAccordion('collapseToVoice');
+                        return;
+                    }
+
+                    const pauseSelected = document.querySelector('input[name="pause"]:checked');
+                    if (!pauseSelected) {
+                        showError("Please select a pause duration");
+                        openAccordion('collapsePause');
+                        return;
+                    }
+
+                    const patternSelected = document.querySelector('input[name="pattern"]:checked');
+                    if (!patternSelected) {
+                        showError("Please select a pattern");
+                        openAccordion('collapsePattern');
+                        return;
+                    }
+
+                    const tokenInput = document.getElementById('token-input');
+                    if (!tokenInput.value.trim()) {
+                        showError("Please enter a token");
+                        tokenInput.focus();
+                        return;
+                    }
+
+                    const titleInput = document.getElementById('title-input');
+                    if (!titleInput.value.trim()) {
+                        showError("Please enter a title name");
+                        titleInput.focus();
+                        return;
+                    }
+
+                    const fileInput = document.getElementById('text-file');
+                    if (!fileInput.files.length) {
+                        showError("Please select a file");
+                        fileInput.focus();
+                        return;
+                    }
+
+                    // If everything is valid, show loading spinner and continue with submission
+                    document.getElementById('lds-div').style.display = 'block';
+                    audioForm.style.display = 'none';
+
+                    // Get form data
+                    const formData = new FormData(audioForm);
+
+                    // Submit the form data via fetch
+                    fetch('/v1/audio', {
+                        method: 'POST',
+                        body: formData
                     })
-                    .then(blob => {
-                        // Handle successful response
-                        const url = window.URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = formData.get('title_name') + '.mp3';
-                        document.body.appendChild(a);
-                        a.click();
-                        a.remove();
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
+                        .then(response => {
+                            if (!response.ok) {
+                                return response.text().then(text => {
+                                    throw new Error(text || `Server error: ${response.status}`);
+                                });
+                            }
+                            return response.blob();
+                        })
+                        .then(blob => {
+                            // Handle successful response
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = formData.get('title_name') + '.mp3';
+                            document.body.appendChild(a);
+                            a.click();
+                            a.remove();
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            showError(`Error: ${error.message}`);
+                            audioForm.style.display = 'block';
+                        })
+                        .finally(() => {
+                            document.getElementById('lds-div').style.display = 'none';
+                        });
+                });
+            }
 
-                        // Display error in flash div
-                        const flashDiv = document.getElementById('div-flash');
-                        if (flashDiv) {
-                            flashDiv.textContent = `Error: ${error.message}`;
-                            flashDiv.style.display = 'block';
-                            flashDiv.className = 'flash alert alert-danger';
-                        }
-                    })
-                    .finally(() => {
-                        if (ldsDiv) ldsDiv.style.display = 'none';
-                    });
+            // Helper function to show error messages
+            function showError(message) {
+                const flashDiv = document.getElementById('div-flash');
+                flashDiv.textContent = message;
+                flashDiv.style.display = 'block';
+                flashDiv.className = 'flash alert alert-warning';
+            }
 
-                audioForm.style.display = 'none';
-            });
-        }
+            // Helper function to open accordion sections
+            function openAccordion(accordionId) {
+                const accordionElement = document.getElementById(accordionId);
+                if (accordionElement) {
+                    try {
+                        const bsAccordion = new bootstrap.Collapse(accordionElement, { toggle: false });
+                        bsAccordion.show();
+                    } catch (error) {
+                        console.error("Error opening accordion:", error);
+                        // Fallback if bootstrap is not available
+                        accordionElement.classList.add('show');
+                    }
+                }
+            }
+        });
 
         // Initialize
         attachPlaySoundListeners();
