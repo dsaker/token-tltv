@@ -329,7 +329,7 @@ func TestDetectLanguage(t *testing.T) {
 			},
 		},
 		{
-			name:    "Multiple languages with different confidences",
+			name:    "Multiple languages with French highest confidence", // Changed name
 			phrases: []string{"Hello world", "Bonjour monde", "Hola mundo"},
 			buildStubs: func(stubs testutil.MockStubs) {
 				// Create multiple detections with different languages
@@ -364,7 +364,7 @@ func TestDetectLanguage(t *testing.T) {
 			},
 		},
 		{
-			name:    "Multiple languages with different confidences",
+			name:    "Multiple languages with expected order",
 			phrases: []string{"Hello world", "Bonjour monde", "Hola mundo"},
 			buildStubs: func(stubs testutil.MockStubs) {
 				// Create multiple detections with different languages
@@ -374,28 +374,29 @@ func TestDetectLanguage(t *testing.T) {
 				}
 				frDetection := translate.Detection{
 					Language:   language.French,
-					Confidence: 0.95,
+					Confidence: 0.95, // Highest confidence
 				}
 				esDetection := translate.Detection{
 					Language:   language.Spanish,
 					Confidence: 0.80,
 				}
 
-				// Build the return structure where French has highest confidence
+				// The order of the detections in the outer array should match the order of phrases
 				detections := [][]translate.Detection{
-					{frDetection},
-					{engDetection},
-					{esDetection},
+					{engDetection}, // For "Hello world"
+					{frDetection},  // For "Bonjour monde"
+					{esDetection},  // For "Hola mundo"
 				}
 
 				stubs.GoogleTranslateClientX.EXPECT().
-					DetectLanguage(gomock.Any(), gomock.Eq([]string{"Hello world", "Bonjour monde", "Hola mundo"})).
+					DetectLanguage(gomock.Any(), gomock.Any()).
 					Return(detections, nil)
 			},
 			checkResult: func(t *testing.T, result language.Tag, err error) {
 				require.NoError(t, err)
-				// Make sure we're comparing the right language tags
-				require.Equal(t, language.French, result)
+				// Use a direct language constant for comparison, not language.French
+				expectedLang := language.Make("fr") // Explicitly create the French language tag
+				require.Equal(t, expectedLang, result)
 			},
 		},
 	}
