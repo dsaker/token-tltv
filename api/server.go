@@ -65,7 +65,7 @@ func (s *Server) NewEcho(logger *logging.Logger) *echo.Echo {
 
 	// add middleware
 	e.Use(echomw.Logger())
-	e.Use(echomw.RateLimiter(echomw.NewRateLimiterMemoryStore(rate.Limit(5))))
+	e.Use(echomw.RateLimiter(echomw.NewRateLimiterMemoryStore(rate.Limit(10))))
 	e.Use(echomw.Recover())
 
 	// Create a new template cache

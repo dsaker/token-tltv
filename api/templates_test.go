@@ -56,11 +56,11 @@ func TestTemplateRegistryRender(t *testing.T) {
 	e := echo.New()
 
 	// Create proper language and voice maps
-	languages := map[int]models.Language{
-		1: {Code: "en", Name: "English"},
+	languages := map[string]models.Language{
+		"1": {Code: "en", Name: "English"},
 	}
-	voices := map[int]models.Voice{
-		1: {ID: 1, VoiceName: "en-US-Standard-A", Gender: 1},
+	voices := map[string]models.Voice{
+		"1": {Name: "en-US-Standard-A", SsmlGender: 1},
 	}
 
 	testCases := []struct {
@@ -122,8 +122,8 @@ func TestNewTemplateData(t *testing.T) {
 	}
 	// Test with empty maps
 	t.Run("EmptyMaps", func(t *testing.T) {
-		languages := map[int]models.Language{}
-		voices := map[int]models.Voice{}
+		languages := map[string]models.Language{}
+		voices := map[string]models.Voice{}
 		errorMsg := "test error"
 
 		data := newTemplateData(languages, voices, errorMsg)
@@ -136,13 +136,13 @@ func TestNewTemplateData(t *testing.T) {
 
 	// Test with populated maps
 	t.Run("PopulatedMaps", func(t *testing.T) {
-		languages := map[int]models.Language{
-			1: {Code: "en", Name: "English"},
-			2: {Code: "es", Name: "Spanish"},
+		languages := map[string]models.Language{
+			"1": {Code: "en", Name: "English"},
+			"2": {Code: "es", Name: "Spanish"},
 		}
-		voices := map[int]models.Voice{
-			1: {ID: 1, VoiceName: "voice1", Gender: 2},
-			2: {ID: 2, VoiceName: "voice2", Gender: 1},
+		voices := map[string]models.Voice{
+			"1": {Name: "voice1", SsmlGender: 2},
+			"2": {Name: "voice2", SsmlGender: 1},
 		}
 		errorMsg := ""
 

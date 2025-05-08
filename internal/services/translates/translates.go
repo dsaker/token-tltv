@@ -3,6 +3,7 @@ package translates
 import (
 	"cloud.google.com/go/texttospeech/apiv1/texttospeechpb"
 	"context"
+	"fmt"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/text/language"
 	"os"
@@ -26,19 +27,19 @@ type Translate struct {
 	platform      Platform
 }
 
-func New(gc GoogleClients, ac AmazonClients, m models.ModelsX, p Platform) *Translate {
+func New(gc GoogleClients, ac AmazonClients, m models.ModelsX) *Translate {
 	return &Translate{
 		googleClients: gc,
 		amazonClients: ac,
 		m:             m,
-		platform:      p,
 	}
 }
 
 // TranslateX creates an interface for Translates
 type TranslateX interface {
-	CreateTTS(echo.Context, models.Title, int, string) ([]models.Phrase, error)
-	TranslatePhrases(echo.Context, models.Title, models.Language) ([]models.Phrase, error)
+	CreateTTS(e echo.Context, title models.Title, voice models.Voice, basePath string) ([]models.Phrase, error)
+	TranslatePhrases(e echo.Context, title models.Title, lang models.Language) ([]models.Phrase, error)
+	DetectLanguage(context.Context, []string) (language.Tag, error)
 }
 
 // TranslatePhrases takes a slice of db.Translate{} and a db.Language and returns a slice
@@ -70,7 +71,7 @@ func (t *Translate) TranslatePhrases(e echo.Context, title models.Title, lang mo
 		if t.platform == Google {
 			go t.googleClients.GetTranslate(e, newCtx, cancel, nextTranslate, &wg, langTag, responses, i)
 		} else {
-			titleLang, err := t.m.GetLanguage(title.TitleLangId)
+			titleLang, err := t.m.GetLanguage(e.Request().Context(), title.TitleLang)
 			if err != nil {
 				e.Logger().Error(err)
 				return nil, err
@@ -90,13 +91,14 @@ func (t *Translate) TranslatePhrases(e echo.Context, title models.Title, lang mo
 
 // CreateTTS is called from api.createAudioFromTitle.
 // It checks if the mp3 audio files exist and if not it creates them.
-func (t *Translate) CreateTTS(e echo.Context, title models.Title, voiceId int, basePath string) ([]models.Phrase, error) {
-	voice, err := t.m.GetVoice(voiceId)
+func (t *Translate) CreateTTS(e echo.Context, title models.Title, voice models.Voice, basePath string) ([]models.Phrase, error) {
+	voice, err := t.m.GetVoice(e.Request().Context(), voice.Name)
 	if err != nil {
 		e.Logger().Error(err)
 		return nil, err
 	}
-	lang, err := t.m.GetLanguage(voice.LangId)
+
+	lang, err := t.m.GetLanguage(e.Request().Context(), voice.Language)
 	if err != nil {
 		e.Logger().Error(err)
 		return nil, err
@@ -143,11 +145,11 @@ func (t *Translate) TextToSpeech(e echo.Context, ts []models.Phrase, voice model
 
 	// set the texttospeec params from the db voice sent in the request
 	voiceSelectionParams := &texttospeechpb.VoiceSelectionParams{
-		LanguageCode: voice.LanguageCodes[0],
+		LanguageCode: voice.LanguageCode,
 		SsmlGender:   texttospeechpb.SsmlVoiceGender_MALE,
-		Name:         voice.VoiceName,
+		Name:         voice.Name,
 	}
-	if voice.Gender == 2 {
+	if voice.SsmlGender == models.FEMALE {
 		voiceSelectionParams.SsmlGender = texttospeechpb.SsmlVoiceGender_FEMALE
 	}
 
@@ -176,14 +178,14 @@ func (t *Translate) TextToSpeech(e echo.Context, ts []models.Phrase, voice model
 
 // CreateTranslates creates the translates in the language
 func (t *Translate) CreateTranslates(e echo.Context, title models.Title, lang models.Language) ([]models.Phrase, error) {
-	titleLang, err := t.m.GetLanguage(title.TitleLangId)
+	titleLang, err := t.m.GetLanguage(e.Request().Context(), title.TitleLang)
 	if err != nil {
 		e.Logger().Error(err)
 		return nil, err
 	}
 
 	// if the original language of file matches the language you desire translates for return original phrases
-	if titleLang.ID == lang.ID {
+	if titleLang.Name == lang.Name {
 		return title.TitlePhrases, nil
 	}
 
@@ -195,4 +197,64 @@ func (t *Translate) CreateTranslates(e echo.Context, title models.Title, lang mo
 	}
 
 	return translated, nil
+}
+
+// DetectLanguage uses Google's Natural Language API to detect the language of text
+func (t *Translate) DetectLanguage(ctx context.Context, texts []string) (language.Tag, error) {
+	detections, err := t.googleClients.gtc.DetectLanguage(ctx, texts)
+	if err != nil {
+		return language.Und, err
+	}
+
+	if len(detections) == 0 {
+		return language.Und, fmt.Errorf("no languages detected")
+	}
+
+	// Count language occurrences
+	langCounts := make(map[string]int)
+	var highestConfidence float64
+	var mostConfidentLang language.Tag
+
+	for _, textDetections := range detections {
+		if len(textDetections) == 0 {
+			continue
+		}
+
+		// Track the language with highest confidence from each text
+		for _, detection := range textDetections {
+			langCode := detection.Language.String()
+			langCounts[langCode]++
+
+			// Also keep track of the single highest confidence detection
+			if detection.Confidence > highestConfidence {
+				highestConfidence = detection.Confidence
+				mostConfidentLang = detection.Language
+			}
+		}
+	}
+
+	// Find the most common language
+	var mostCommonLang string
+	var maxCount int
+	for lang, count := range langCounts {
+		if count > maxCount {
+			mostCommonLang = lang
+			maxCount = count
+		}
+	}
+
+	// If we found a most common language, use that
+	if mostCommonLang != "" {
+		tag, err := language.Parse(mostCommonLang)
+		if err == nil {
+			return tag, nil
+		}
+	}
+
+	// Fall back to the highest confidence detection
+	if mostConfidentLang != language.Und {
+		return mostConfidentLang, nil
+	}
+
+	return language.Und, fmt.Errorf("could not determine most common language")
 }

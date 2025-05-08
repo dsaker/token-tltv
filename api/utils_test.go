@@ -73,8 +73,6 @@ func TestMain(m *testing.M) {
 	headless = testflags.Headless
 	saFile = testflags.SAFile
 
-	langsMap, voicesMap = models.MakeGoogleMaps()
-
 	testCfg.url = "http://localhost:8080"
 	if util.Test == "end-to-end" {
 		getBrowserContext(headless, saFile)

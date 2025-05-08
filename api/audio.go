@@ -61,7 +61,7 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 	}
 	src.Close()
 
-	title, err := services.ValidateAudioRequest(e, s.m)
+	title, fromVoice, toVoice, err := services.ValidateAudioRequest(e, s.m)
 	if err != nil {
 		return e.String(http.StatusBadRequest, "invalid request: "+err.Error())
 	}
@@ -78,8 +78,19 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 		return e.String(http.StatusInternalServerError, "unable to process file: "+err.Error())
 	}
 
+	var phraseTexts []string
+	for i := 0; i < len(phrases) && i < 3; i++ {
+		phraseTexts = append(phraseTexts, phrases[i].Text)
+	}
+	detectedFileLanguage, err := s.translate.DetectLanguage(e.Request().Context(), phraseTexts)
+	if err != nil {
+		e.Logger().Error(err)
+		return e.String(http.StatusInternalServerError, "unable to detect language: "+err.Error())
+	}
+
+	title.TitleLang = detectedFileLanguage.String()
 	title.TitlePhrases = phrases
-	zipFile, err := audiofile.AudioFromTitle(e, s.translate, s.af, *title, s.config.TTSBasePath)
+	zipFile, err := audiofile.AudioFromTitle(e, s.translate, s.af, *fromVoice, *toVoice, *title, s.config.TTSBasePath)
 	if err != nil {
 		e.Logger().Error(err)
 		return e.String(http.StatusInternalServerError, "unable to create audio file: "+err.Error())
@@ -90,6 +101,6 @@ func (s *Server) AudioFromFile(e echo.Context) error {
 		return e.String(http.StatusInternalServerError, "unable to update token: "+err.Error())
 	}
 
-	titleName := fmt.Sprintf("%s.%d-%d.zip", title.Name, title.FromVoiceId, title.ToVoiceId)
+	titleName := fmt.Sprintf("%s.%s-%s.zip", title.Name, title.TitleLang, title.ToVoice)
 	return e.Attachment(zipFile.Name(), titleName)
 }

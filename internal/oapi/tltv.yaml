@@ -36,7 +36,6 @@ paths:
               type: object
               required:
                 - title_name
-                - file_language_id
                 - from_voice_id
                 - to_voice_id
                 - file_path
@@ -47,10 +46,6 @@ paths:
                 title_name:
                   type: string
                   description: choose a descriptive title that includes to and from languages
-                file_language_id:
-                  type: string
-                  example: "49"
-                  description: the original language of the file you are uploading
                 from_voice_id:
                   type: string
                   example: "162"
@@ -70,10 +65,9 @@ paths:
                   example: "1"
                   description: |
                     pattern is the pattern used to construct the audio files. You have 3 choices: 
-                    1 is beginner and repeats closer together -- 
-                    2 is intermediate -- 
-                    3 is advanced and repeats phrases less often and should only be used if you are at an advanced level -- 
-                    4 is review and repeats each phrase one time and can be used to review already learned phrases
+                    1 is standard and repeats closer together -- 
+                    2 is advanced and repeats phrases less often and should only be used if you are at an advanced level -- 
+                    3 is review and repeats each phrase one time and can be used to review already learned phrases
                 file_path:
                   type: string
                   format: binary

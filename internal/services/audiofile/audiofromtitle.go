@@ -11,14 +11,14 @@ import (
 
 // AudioFromTitle is a helper function that performs the tasks shared by
 // AudioFromFile and AudioFromTitle
-func AudioFromTitle(e echo.Context, t translates.TranslateX, af AudioFileX, title models.Title, path string) (*os.File, error) {
+func AudioFromTitle(e echo.Context, t translates.TranslateX, af AudioFileX, fromVoice models.Voice, toVoice models.Voice, title models.Title, path string) (*os.File, error) {
 	// TODO if you don't want these files to persist then you need to defer removing them from calling function
 	audioBasePath := path + title.Name
 
-	fromAudioBasePath := fmt.Sprintf("%s/%d/", audioBasePath, title.FromVoiceId)
-	toAudioBasePath := fmt.Sprintf("%s/%d/", audioBasePath, title.ToVoiceId)
+	fromAudioBasePath := fmt.Sprintf("%s/%s/", audioBasePath, fromVoice.Name)
+	toAudioBasePath := fmt.Sprintf("%s/%s/", audioBasePath, toVoice.Name)
 
-	_, err := t.CreateTTS(e, title, title.FromVoiceId, fromAudioBasePath)
+	_, err := t.CreateTTS(e, title, fromVoice, fromAudioBasePath)
 	if err != nil {
 		e.Logger().Error(err)
 		// if error remove all the text-to-speech created up to that point
@@ -29,7 +29,7 @@ func AudioFromTitle(e echo.Context, t translates.TranslateX, af AudioFileX, titl
 		return nil, err
 	}
 
-	toPhrases, err := t.CreateTTS(e, title, title.ToVoiceId, toAudioBasePath)
+	toPhrases, err := t.CreateTTS(e, title, toVoice, toAudioBasePath)
 	if err != nil {
 		e.Logger().Error(err)
 		osErr := os.RemoveAll(audioBasePath)
