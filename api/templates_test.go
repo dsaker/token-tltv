@@ -69,28 +69,43 @@ func TestTemplateRegistryRender(t *testing.T) {
 		templateName  string
 		data          interface{}
 		expectedError bool
-		contains      string
+		contains      []string
 	}{
 		{
-			name:          "Valid template with valid data",
+			name:          "Valid home template",
 			templateName:  "home.gohtml",
 			data:          nil,
 			expectedError: false,
-			contains:      "<title>Home - TalkLikeTV</title>",
+			contains: []string{
+				"<title>Home - TalkLikeTV</title>",
+				"What is it?",
+				"How to use it",
+			},
 		},
 		{
-			name:          "Valid template with template data",
+			name:          "Valid audio template with data",
 			templateName:  "audio.gohtml",
 			data:          newTemplateData(langCodes, voices, ""),
 			expectedError: false,
-			contains:      "<title>Audio - TalkLikeTV</title>",
+			contains: []string{
+				"<title>Audio - TalkLikeTV</title>",
+			},
+		},
+		{
+			name:          "Valid parse template",
+			templateName:  "parse.gohtml",
+			data:          nil,
+			expectedError: false,
+			contains: []string{
+				"<title>Parse - TalkLikeTV</title>",
+			},
 		},
 		{
 			name:          "Non-existent template",
 			templateName:  "nonexistent.gohtml",
 			data:          nil,
 			expectedError: true,
-			contains:      "",
+			contains:      []string{},
 		},
 	}
 
@@ -111,7 +126,9 @@ func TestTemplateRegistryRender(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				result := buf.String()
-				assert.Contains(t, result, tc.contains)
+				for _, expected := range tc.contains {
+					assert.Contains(t, result, expected)
+				}
 			}
 		})
 	}
@@ -133,6 +150,7 @@ func TestNewTemplateData(t *testing.T) {
 		assert.Equal(t, languages, data.LanguageCodes)
 		assert.Equal(t, voices, data.Voices)
 		assert.Equal(t, errorMsg, data.Error)
+		assert.Equal(t, []int{3, 4, 5, 6, 7, 8, 9, 10}, data.PauseDurations)
 	})
 
 	// Test with populated maps
@@ -155,6 +173,15 @@ func TestNewTemplateData(t *testing.T) {
 		assert.Equal(t, errorMsg, data.Error)
 		assert.Len(t, data.LanguageCodes, 2)
 		assert.Len(t, data.Voices, 2)
+		assert.Equal(t, []int{3, 4, 5, 6, 7, 8, 9, 10}, data.PauseDurations)
+	})
+
+	// Test PauseDurations specifically
+	t.Run("PauseDurations", func(t *testing.T) {
+		data := newTemplateData(nil, nil, "")
+		expectedDurations := []int{3, 4, 5, 6, 7, 8, 9, 10}
+		assert.Equal(t, expectedDurations, data.PauseDurations)
+		assert.Len(t, data.PauseDurations, 8)
 	})
 }
 

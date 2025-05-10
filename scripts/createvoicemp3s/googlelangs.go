@@ -52,12 +52,12 @@ func (p *GoogleProvider) updateLanguageCode(ctx context.Context, languageMap map
 	}
 
 	// Count unique language codes per language
-	for l, _ := range uniqueLanguageCodes {
+	for l := range uniqueLanguageCodes {
 		languageId := strings.Split(l, "-")[0]
 		languageCount[languageId]++
 	}
 
-	for langCode, _ := range uniqueLanguageCodes {
+	for langCode := range uniqueLanguageCodes {
 		languageId := strings.Split(langCode, "-")[0]
 		countryCode := strings.Split(langCode, "-")[1]
 		if languageId == "nb" {

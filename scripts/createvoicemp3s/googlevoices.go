@@ -20,7 +20,7 @@ func (p *GoogleProvider) GetVoices(ctx context.Context, outputDir string) ([]mod
 	}
 
 	// Get existing records from Firestore
-	existingLanguages, existingVoices, existingLanguageCodes, err := p.getExistingRecords(ctx)
+	existingLanguages, existingVoices, err := p.getExistingRecords(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -32,7 +32,7 @@ func (p *GoogleProvider) GetVoices(ctx context.Context, outputDir string) ([]mod
 	}
 
 	// Fetch and process Google voices
-	googleVoices, voicesToAdd, languagesToAdd, err := p.processAndFilterVoices(ctx, languageMap, voicesToKeep, existingLanguages, existingVoices, existingLanguageCodes)
+	googleVoices, voicesToAdd, languagesToAdd, err := p.processAndFilterVoices(languageMap, voicesToKeep, existingLanguages, existingVoices)
 	if err != nil {
 		return nil, nil, err
 	}

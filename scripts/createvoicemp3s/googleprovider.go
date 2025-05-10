@@ -53,8 +53,8 @@ func (p *GoogleProvider) Close() {
 }
 
 // processGoogleVoices fetches and processes Google voices
-func (p *GoogleProvider) processAndFilterVoices(ctx context.Context, languageMap map[string]string, voicesToKeep map[string]models.Voice,
-	existingLanguages, existingVoices, existingLanguageCodes map[string]bool) ([]models.Voice, []models.Voice, []models.Language, error) {
+func (p *GoogleProvider) processAndFilterVoices(languageMap map[string]string, voicesToKeep map[string]models.Voice,
+	existingLanguages, existingVoices map[string]bool) ([]models.Voice, []models.Voice, []models.Language, error) {
 
 	var googleVoices []models.Voice
 	var voicesToAdd []models.Voice

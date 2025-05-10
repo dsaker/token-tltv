@@ -8,11 +8,11 @@ import (
 )
 
 // getExistingRecords retrieves existing languages and voices from Firestore
-func (p *GoogleProvider) getExistingRecords(ctx context.Context) (map[string]bool, map[string]bool, map[string]bool, error) {
+func (p *GoogleProvider) getExistingRecords(ctx context.Context) (map[string]bool, map[string]bool, error) {
 	// Get languages that are in firestore
 	languageDocs, err := p.firestoreClient.Collection("languages").Where("platform", "==", "google").Documents(ctx).GetAll()
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to get languages from Firestore: %w", err)
+		return nil, nil, fmt.Errorf("failed to get languages from Firestore: %w", err)
 	}
 
 	// Create a map for quick lookup of existing language codes
@@ -24,7 +24,7 @@ func (p *GoogleProvider) getExistingRecords(ctx context.Context) (map[string]boo
 	// Get voices that are in firestore
 	voiceDocs, err := p.firestoreClient.Collection("voices").Where("platform", "==", "google").Documents(ctx).GetAll()
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to get voices from Firestore: %w", err)
+		return nil, nil, fmt.Errorf("failed to get voices from Firestore: %w", err)
 	}
 
 	// Create a map for quick lookup of existing voice names
@@ -36,7 +36,7 @@ func (p *GoogleProvider) getExistingRecords(ctx context.Context) (map[string]boo
 	// Get languageCodes that are in firestore
 	languageCodeDocs, err := p.firestoreClient.Collection("languageCodes").Where("platform", "==", "google").Documents(ctx).GetAll()
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to get voices from Firestore: %w", err)
+		return nil, nil, fmt.Errorf("failed to get voices from Firestore: %w", err)
 	}
 
 	// Create a map for quick lookup of existing language codes
@@ -45,7 +45,7 @@ func (p *GoogleProvider) getExistingRecords(ctx context.Context) (map[string]boo
 		existingLanguageCodes[doc.Ref.ID] = true
 	}
 
-	return existingLanguages, existingVoices, existingLanguageCodes, nil
+	return existingLanguages, existingVoices, nil
 }
 
 // addNewRecordsToFirestore adds new voices and languages to Firestore
