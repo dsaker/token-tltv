@@ -1,19 +1,20 @@
 package main
 
 import (
-	"cloud.google.com/go/firestore"
 	"context"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/polly"
-	"github.com/aws/aws-sdk-go-v2/service/polly/types"
-	"github.com/aws/aws-sdk-go-v2/service/translate"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"cloud.google.com/go/firestore"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/polly"
+	"github.com/aws/aws-sdk-go-v2/service/polly/types"
+	"github.com/aws/aws-sdk-go-v2/service/translate"
 	"talkliketv.click/tltv/internal/models"
 )
 
@@ -40,7 +41,7 @@ func NewAmazonProvider(ctx context.Context, firestoreClient *firestore.Client) (
 }
 
 // Implement the GetVoices method for AmazonProvider
-func (p *AmazonProvider) GetVoices(ctx context.Context) ([]models.Voice, map[string]string, error) {
+func (p *AmazonProvider) GetVoices(ctx context.Context, outputDir string) ([]models.Voice, map[string]string, error) {
 	// Get list of available voices
 	resp, err := p.pollyClient.DescribeVoices(ctx, &polly.DescribeVoicesInput{})
 	if err != nil {
@@ -137,13 +138,19 @@ func (p *AmazonProvider) GetVoices(ctx context.Context) ([]models.Voice, map[str
 
 	// Add new voices and languages to Firestore if needed
 	if len(voicesToAdd) > 0 {
-		if err := AddVoicesToFirestore(ctx, p.firestoreClient, voicesToAdd); err != nil {
+		err = AddToFirestore(ctx, p.firestoreClient, "voices", voicesToAdd, func(v models.Voice) string {
+			return v.Name
+		})
+		if err != nil {
 			return nil, nil, fmt.Errorf("warning: failed to add voices to Firestore: %v", err)
 		}
 	}
 
 	if len(languagesToAdd) > 0 {
-		if err := AddLanguagesToFirestore(ctx, p.firestoreClient, languagesToAdd); err != nil {
+		err = AddToFirestore(ctx, p.firestoreClient, "languages", languagesToAdd, func(v models.Language) string {
+			return v.Name
+		})
+		if err != nil {
 			return nil, nil, fmt.Errorf("warning: failed to add languages to Firestore: %v", err)
 		}
 	}

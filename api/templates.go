@@ -12,7 +12,7 @@ import (
 )
 
 type templateData struct {
-	Languages      map[string]models.Language
+	LanguageCodes  map[string]models.LanguageCode
 	Voices         map[string]models.Voice
 	Error          string
 	PauseDurations []int
@@ -68,10 +68,10 @@ func newTemplateCache() (map[string]*template.Template, error) {
 }
 
 // newTemplateDatachecks if the user is authenticated and adds the base data needed for the templates
-func newTemplateData(l map[string]models.Language, v map[string]models.Voice, err string) *templateData {
+func newTemplateData(l map[string]models.LanguageCode, v map[string]models.Voice, err string) *templateData {
 	return &templateData{
 		PauseDurations: []int{3, 4, 5, 6, 7, 8, 9, 10},
-		Languages:      l,
+		LanguageCodes:  l,
 		Voices:         v,
 		Error:          err,
 	}

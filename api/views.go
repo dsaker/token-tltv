@@ -13,9 +13,9 @@ func homeView(e echo.Context) error {
 
 // audioView renders the frontend html page to upload a file for mp3 creation
 func (s *Server) audioView(e echo.Context) error {
-	languages, err := s.m.GetLanguages(e.Request().Context())
+	languages, err := s.m.GetLanguageCodes(e.Request().Context())
 	if err != nil {
-		return e.String(http.StatusInternalServerError, "error getting languages: "+err.Error())
+		return e.String(http.StatusInternalServerError, "error getting language codes: "+err.Error())
 	}
 	voices, err := s.m.GetVoices(e.Request().Context())
 	if err != nil {

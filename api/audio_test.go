@@ -3,25 +3,26 @@ package api
 import (
 	"bufio"
 	"bytes"
-	"cloud.google.com/go/firestore"
 	"context"
 	"fmt"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
-	"golang.org/x/text/language"
 	"io"
 	"maps"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"testing"
+
+	"cloud.google.com/go/firestore"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
+	"golang.org/x/text/language"
 	"talkliketv.click/tltv/internal/models"
 	"talkliketv.click/tltv/internal/services"
 	"talkliketv.click/tltv/internal/services/audiofile"
 	"talkliketv.click/tltv/internal/services/translates"
 	"talkliketv.click/tltv/internal/testutil"
 	"talkliketv.click/tltv/internal/util"
-	"testing"
 )
 
 func TestAudioFromFile(t *testing.T) {
@@ -616,7 +617,7 @@ func TestGoogleIntegration(t *testing.T) {
 	defer fClient.Close()
 
 	// Initialize Firestore models
-	mods := models.NewModels(fClient, "languages", "voices")
+	mods := models.NewModels(fClient, "languages", "voices", "langcodes")
 
 	// generate new token and add it to the collection
 	plaintext, tokens := addTokenFirestore(t, fClient, ctx)
@@ -745,7 +746,7 @@ func TestAmazonIntegration(t *testing.T) {
 	}(ctx, fClient, tokens.Coll)
 
 	// Initialize Firestore models
-	mods := models.NewModels(fClient, "languages", "voices")
+	mods := models.NewModels(fClient, "languages", "voices", "langcodes")
 
 	// defer deleting the collection
 	defer func(ctx context.Context, client *firestore.Client, coll *firestore.CollectionRef) {

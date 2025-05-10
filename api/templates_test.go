@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
+	"testing"
+
 	"talkliketv.click/tltv/internal/models"
 	"talkliketv.click/tltv/internal/util"
 	"talkliketv.click/tltv/ui"
-	"testing"
 
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
@@ -56,7 +57,7 @@ func TestTemplateRegistryRender(t *testing.T) {
 	e := echo.New()
 
 	// Create proper language and voice maps
-	languages := map[string]models.Language{
+	langCodes := map[string]models.LanguageCode{
 		"1": {Code: "en", Name: "English"},
 	}
 	voices := map[string]models.Voice{
@@ -80,7 +81,7 @@ func TestTemplateRegistryRender(t *testing.T) {
 		{
 			name:          "Valid template with template data",
 			templateName:  "audio.gohtml",
-			data:          newTemplateData(languages, voices, ""),
+			data:          newTemplateData(langCodes, voices, ""),
 			expectedError: false,
 			contains:      "<title>Audio - TalkLikeTV</title>",
 		},
@@ -122,21 +123,21 @@ func TestNewTemplateData(t *testing.T) {
 	}
 	// Test with empty maps
 	t.Run("EmptyMaps", func(t *testing.T) {
-		languages := map[string]models.Language{}
+		languages := map[string]models.LanguageCode{}
 		voices := map[string]models.Voice{}
 		errorMsg := "test error"
 
 		data := newTemplateData(languages, voices, errorMsg)
 
 		assert.NotNil(t, data)
-		assert.Equal(t, languages, data.Languages)
+		assert.Equal(t, languages, data.LanguageCodes)
 		assert.Equal(t, voices, data.Voices)
 		assert.Equal(t, errorMsg, data.Error)
 	})
 
 	// Test with populated maps
 	t.Run("PopulatedMaps", func(t *testing.T) {
-		languages := map[string]models.Language{
+		languages := map[string]models.LanguageCode{
 			"1": {Code: "en", Name: "English"},
 			"2": {Code: "es", Name: "Spanish"},
 		}
@@ -149,10 +150,10 @@ func TestNewTemplateData(t *testing.T) {
 		data := newTemplateData(languages, voices, errorMsg)
 
 		assert.NotNil(t, data)
-		assert.Equal(t, languages, data.Languages)
+		assert.Equal(t, languages, data.LanguageCodes)
 		assert.Equal(t, voices, data.Voices)
 		assert.Equal(t, errorMsg, data.Error)
-		assert.Len(t, data.Languages, 2)
+		assert.Len(t, data.LanguageCodes, 2)
 		assert.Len(t, data.Voices, 2)
 	})
 }

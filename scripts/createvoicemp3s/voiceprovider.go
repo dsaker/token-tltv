@@ -1,17 +1,18 @@
 package main
 
 import (
-	"cloud.google.com/go/firestore"
 	"context"
-	firebase "firebase.google.com/go"
 	"fmt"
+
+	"cloud.google.com/go/firestore"
+	firebase "firebase.google.com/go"
 	"talkliketv.click/tltv/internal/models"
 )
 
 // VoiceProvider is an interface for different TTS providers
 type VoiceProvider interface {
 	// GetVoices retrieves all available voices from the provider
-	GetVoices(ctx context.Context) ([]models.Voice, map[string]string, error)
+	GetVoices(ctx context.Context, outputDir string) ([]models.Voice, map[string]string, error)
 
 	// CreateSampleMP3 creates a sample MP3 for a given voice
 	CreateSampleMP3(ctx context.Context, voice models.Voice, langName string, outputDir string) error

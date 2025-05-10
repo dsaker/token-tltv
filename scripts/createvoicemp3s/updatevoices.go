@@ -1,54 +1,35 @@
 package main
 
 import (
-	"cloud.google.com/go/firestore"
 	"context"
 	"flag"
 	"fmt"
 	"log"
 	"os"
-	"talkliketv.click/tltv/internal/models"
+
+	"cloud.google.com/go/firestore"
 )
 
-// AddVoicesToFirestore adds voices to Firestore in a batch operation
-func AddVoicesToFirestore(ctx context.Context, client *firestore.Client, voices []models.Voice) error {
-	// Create a batch
-	batch := client.Batch()
-
-	// Process each voice
-	for _, voice := range voices {
-		docRef := client.Collection("voices").Doc(voice.Name)
-		batch.Set(docRef, voice)
+// AddToFirestore adds any slice of documents to the specified Firestore collection in a batch operation
+func AddToFirestore[T any](ctx context.Context, client *firestore.Client, collection string, docs []T, idFunc func(T) string) error {
+	if len(docs) == 0 {
+		return nil
 	}
 
-	// Commit the batch
-	_, err := batch.Commit(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to commit voices batch: %w", err)
+	// Create a bulk writer
+	bw := client.BulkWriter(ctx)
+
+	// Process each document
+	for _, doc := range docs {
+		docID := idFunc(doc)
+		docRef := client.Collection(collection).Doc(docID)
+		bw.Set(docRef, doc)
 	}
 
-	log.Printf("Added %d voices to Firestore", len(voices))
-	return nil
-}
+	// Close the bulk writer to ensure all operations are completed
+	bw.End()
 
-// AddLanguagesToFirestore adds languages to Firestore in a batch operation
-func AddLanguagesToFirestore(ctx context.Context, client *firestore.Client, languages []models.Language) error {
-	// Create a batch
-	batch := client.Batch()
-
-	// Process each language
-	for _, lang := range languages {
-		docRef := client.Collection("languages").Doc(lang.Code)
-		batch.Set(docRef, lang)
-	}
-
-	// Commit the batch
-	_, err := batch.Commit(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to commit languages batch: %w", err)
-	}
-
-	log.Printf("Added %d languages to Firestore", len(languages))
+	log.Printf("Added %d documents to %s collection", len(docs), collection)
 	return nil
 }
 
@@ -95,18 +76,18 @@ func main() {
 	// Select provider based on flag
 	if *platform == "amazon" {
 		provider = client.amazonProvider
-		outputDirectory = "../../ui/static/voices/amazon/"
+		outputDirectory = *outputDir
 	} else {
 		provider = client.googleProvider
 		outputDirectory = *outputDir
 	}
 	// Check if the output directory exists
-	if _, err := os.Stat(outputDirectory); os.IsNotExist(err) {
+	if _, err = os.Stat(outputDirectory); os.IsNotExist(err) {
 		log.Fatalf("output directory does not exist: %v", outputDir)
 	}
-	
+
 	// Process voices with the selected provider
-	voices, langMap, err := provider.GetVoices(ctx)
+	voices, langMap, err := provider.GetVoices(ctx, outputDirectory)
 	if err != nil {
 		log.Fatalf("Failed to get voices: %v", err)
 	}

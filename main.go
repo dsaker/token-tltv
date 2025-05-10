@@ -77,7 +77,7 @@ func main() {
 	}
 
 	// Initialize Firestore models
-	mods := models.NewModels(fClient, "languages", "voices")
+	mods := models.NewModels(fClient, "languages", "voices", "languageCodes")
 	tokens := models.Tokens{Coll: fClient.Collection(util.TokenColl)}
 
 	t := translates.New(

@@ -10,10 +10,12 @@ import (
 )
 
 var (
-	ErrTooManyPhrases    = errors.New("too many phrases")
-	ErrVoiceIdInvalid    = errors.New("voice id invalid")
-	ErrPauseNotFound     = errors.New("audio pause file not found")
-	ErrLanguageIdInvalid = errors.New("language id invalid")
+	ErrTooManyPhrases      = errors.New("too many phrases")
+	ErrVoiceIdInvalid      = errors.New("voice id invalid")
+	ErrPauseNotFound       = errors.New("audio pause file not found")
+	ErrLanguageIdInvalid   = errors.New("language id invalid")
+	ErrVoiceNotFound       = errors.New("voice not found")
+	ErrLanguageCodeInvalid = errors.New("language code invalid")
 )
 
 type Title struct {
@@ -47,29 +49,34 @@ type ModelsX interface {
 	GetVoicesByLanguage(ctx context.Context, languageCode string) (map[string]Voice, error)
 	GetVoicesByPlatform(ctx context.Context, platform string) (map[string]Voice, error)
 	GetVoicesByPlatformAndLanguage(ctx context.Context, platform, languageCode string) (map[string]Voice, error)
+	GetLanguageCodes(ctx context.Context) (map[string]LanguageCode, error)
 }
 
 // Models implements ModelsX interface using Firestore
 type Models struct {
-	client          *firestore.Client
-	langCollection  string
-	voiceCollection string
-	languageCache   map[string]Language
-	voiceCache      map[string]Voice
-	cacheExpiration time.Time
-	cacheDuration   time.Duration
-	cacheMutex      sync.RWMutex
+	client             *firestore.Client
+	langCollection     string
+	voiceCollection    string
+	langCodeCollection string
+	languageCache      map[string]Language
+	languageCodeCache  map[string]LanguageCode
+	voiceCache         map[string]Voice
+	cacheExpiration    time.Time
+	cacheDuration      time.Duration
+	cacheMutex         sync.RWMutex
 }
 
 // NewModels creates a new Models instance
-func NewModels(client *firestore.Client, langCollection, voiceCollection string) *Models {
+func NewModels(client *firestore.Client, langCollection, voiceCollection, langCodeCollection string) *Models {
 	return &Models{
-		client:          client,
-		langCollection:  langCollection,
-		voiceCollection: voiceCollection,
-		cacheDuration:   15 * time.Minute,
-		languageCache:   make(map[string]Language),
-		voiceCache:      make(map[string]Voice),
+		client:             client,
+		langCollection:     langCollection,
+		langCodeCollection: langCodeCollection,
+		voiceCollection:    voiceCollection,
+		cacheDuration:      60 * time.Minute,
+		languageCache:      make(map[string]Language),
+		languageCodeCache:  make(map[string]LanguageCode),
+		voiceCache:         make(map[string]Voice),
 	}
 }
 
