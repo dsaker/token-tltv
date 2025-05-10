@@ -12,7 +12,6 @@ import (
 	tts "cloud.google.com/go/texttospeech/apiv1"
 	"cloud.google.com/go/texttospeech/apiv1/texttospeechpb"
 	"cloud.google.com/go/translate"
-	"golang.org/x/text/language"
 	"talkliketv.click/tltv/internal/models"
 )
 
@@ -53,201 +52,18 @@ func (p *GoogleProvider) Close() {
 	}
 }
 
-// GetVoices retrieves all available voices and language information
-func (p *GoogleProvider) GetVoices(ctx context.Context, outputDir string) ([]models.Voice, map[string]string, error) {
-	// Get language data
-	languageMap, err := p.getLanguageMap(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Get existing records from Firestore
-	existingLanguages, existingVoices, existingLanguageCodes, err := p.getExistingRecords(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	voicesToKeep := p.getFilteredVoices(ctx, outputDir)
-
-	// Fetch and process Google voices
-	googleVoices, voicesToAdd, languagesToAdd, languageCodesToAdd, err := p.processAndFilterVoices(ctx, languageMap, voicesToKeep, existingLanguages, existingVoices, existingLanguageCodes)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Add new voices and languages to Firestore if needed
-	if err := p.addNewRecordsToFirestore(ctx, voicesToAdd, languagesToAdd, languageCodesToAdd); err != nil {
-		return nil, nil, err
-	}
-
-	return googleVoices, languageMap, nil
-}
-
-// CreateSampleMP3 creates a sample MP3 file for a given voice
-func (p *GoogleProvider) CreateSampleMP3(ctx context.Context, voice models.Voice, langName string, outputDir string) error {
-	return p.createSampleMP3(ctx, voice, langName, outputDir)
-}
-
-func (p *GoogleProvider) getFilteredVoices(ctx context.Context, outputDir string) map[string]models.Voice {
-	resp, err := p.ttsClient.ListVoices(ctx, &texttospeechpb.ListVoicesRequest{})
-	if err != nil {
-		log.Fatalf("failed to list voices: %v", err)
-	}
-
-	// Group voices by language code
-	voicesByLanguage := make(map[string][]models.Voice)
-	for _, v := range resp.Voices {
-		// Map Google SSML gender to our model
-		gender := mapGender(v.SsmlGender)
-
-		// Create a voice model
-		voice := models.Voice{
-			Name:                   v.Name,
-			SsmlGender:             gender,
-			NaturalSampleRateHertz: v.NaturalSampleRateHertz,
-			Platform:               "google",
-			SampleURL:              outputDir + v.Name + ".mp3",
-		}
-
-		// Each voice may support multiple language codes
-		for _, langCode := range v.LanguageCodes {
-			voice.LanguageCode = langCode
-			voice.Language = strings.Split(langCode, "-")[0]
-
-			// Add the voice to the appropriate language code list
-			voicesByLanguage[langCode] = append(voicesByLanguage[langCode], voice)
-		}
-	}
-
-	// Filter to keep only Chirp and Studio voices if we have enough of them
-	for langCode, voices := range voicesByLanguage {
-		filteredVoices := make([]models.Voice, 0, len(voices))
-		for _, voice := range voices {
-			if strings.Contains(voice.Name, "Chirp") || strings.Contains(voice.Name, "Studio") {
-				filteredVoices = append(filteredVoices, voice)
-			}
-		}
-		if len(filteredVoices) > 4 {
-			voicesByLanguage[langCode] = filteredVoices
-		}
-	}
-
-	// Log the count of voices per language code
-	for langCode, voices := range voicesByLanguage {
-		log.Printf("Language code %s has %d voices", langCode, len(voices))
-	}
-
-	// Create a set of all voice names that should be kept
-	voicesToKeep := make(map[string]models.Voice)
-	for _, voices := range voicesByLanguage {
-		for _, voice := range voices {
-			voicesToKeep[voice.Name] = voice
-		}
-	}
-
-	// After filtering the voices, clean up MP3 files that aren't in the map
-	p.cleanupUnusedMP3Files(outputDir, voicesToKeep)
-
-	return voicesToKeep
-}
-
-func (p *GoogleProvider) cleanupUnusedMP3Files(outputDir string, voicesToKeep map[string]models.Voice) {
-
-	// Get all MP3 files in the output directory
-	files, err := os.ReadDir(outputDir)
-	if err != nil {
-		log.Printf("Failed to read output directory: %v", err)
-		return
-	}
-
-	// Remove any MP3 files for voices not in our keep set
-	for _, file := range files {
-		if !file.IsDir() && strings.HasSuffix(file.Name(), ".mp3") {
-			voiceName := strings.TrimSuffix(file.Name(), ".mp3")
-			if _, keep := voicesToKeep[voiceName]; !keep {
-				filePath := filepath.Join(outputDir, file.Name())
-				if err := os.Remove(filePath); err != nil {
-					log.Printf("Failed to remove unused MP3 file %s: %v", filePath, err)
-				} else {
-					log.Printf("Removed unused MP3 file: %s", filePath)
-				}
-			}
-		}
-	}
-}
-
-// getLanguageMap gets supported languages and creates a lookup map
-func (p *GoogleProvider) getLanguageMap(ctx context.Context) (map[string]string, error) {
-	languages, err := p.transClient.SupportedLanguages(ctx, language.English)
-	if err != nil {
-		return nil, fmt.Errorf("error getting supported languages: %w", err)
-	}
-
-	// Create a map for quick lookup of name for language tag
-	languageMap := map[string]string{}
-	for _, lang := range languages {
-		languageMap[lang.Tag.String()] = lang.Name
-	}
-
-	return languageMap, nil
-}
-
-// getExistingRecords retrieves existing languages and voices from Firestore
-func (p *GoogleProvider) getExistingRecords(ctx context.Context) (map[string]bool, map[string]bool, map[string]bool, error) {
-	// Get languages that are in firestore
-	languageDocs, err := p.firestoreClient.Collection("languages").Where("platform", "==", "google").Documents(ctx).GetAll()
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to get languages from Firestore: %w", err)
-	}
-
-	// Create a map for quick lookup of existing language codes
-	existingLanguages := map[string]bool{}
-	for _, doc := range languageDocs {
-		existingLanguages[doc.Ref.ID] = true
-	}
-
-	// Get voices that are in firestore
-	voiceDocs, err := p.firestoreClient.Collection("voices").Where("platform", "==", "google").Documents(ctx).GetAll()
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to get voices from Firestore: %w", err)
-	}
-
-	// Create a map for quick lookup of existing voice names
-	existingVoices := make(map[string]bool)
-	for _, doc := range voiceDocs {
-		existingVoices[doc.Ref.ID] = true
-	}
-
-	// Get languageCodes that are in firestore
-	languageCodeDocs, err := p.firestoreClient.Collection("languageCodes").Where("platform", "==", "google").Documents(ctx).GetAll()
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to get voices from Firestore: %w", err)
-	}
-
-	// Create a map for quick lookup of existing language codes
-	existingLanguageCodes := make(map[string]bool)
-	for _, doc := range languageCodeDocs {
-		existingLanguageCodes[doc.Ref.ID] = true
-	}
-
-	return existingLanguages, existingVoices, existingLanguageCodes, nil
-}
-
 // processGoogleVoices fetches and processes Google voices
 func (p *GoogleProvider) processAndFilterVoices(ctx context.Context, languageMap map[string]string, voicesToKeep map[string]models.Voice,
-	existingLanguages, existingVoices, existingLanguageCodes map[string]bool) ([]models.Voice, []models.Voice, []models.Language, []models.LanguageCode, error) {
+	existingLanguages, existingVoices, existingLanguageCodes map[string]bool) ([]models.Voice, []models.Voice, []models.Language, error) {
 
 	var googleVoices []models.Voice
 	var voicesToAdd []models.Voice
 	var languagesToAdd []models.Language
-	var languageCodesToAdd []models.LanguageCode
 	alreadyAddedLanguage := map[string]bool{}
-	alreadyAddedLanguageCode := map[string]bool{}
 
 	for _, v := range voicesToKeep {
 		languageCode := v.LanguageCode
 		languageId := strings.Split(languageCode, "-")[0]
-		countryCode := strings.Split(languageCode, "-")[1]
 		// Norwegian Bokmål is represented as "nb" in Google TTS, but we want to use "no"
 		if languageId == "nb" {
 			languageId = "no"
@@ -269,31 +85,6 @@ func (p *GoogleProvider) processAndFilterVoices(ctx context.Context, languageMap
 					Platform: "google",
 				})
 				alreadyAddedLanguage[languageId] = true
-			}
-		}
-
-		// Check if we need to add this language code
-		if _, exists := existingLanguageCodes[languageCode]; !exists {
-			if _, exists = alreadyAddedLanguageCode[languageCode]; !exists {
-				langName, ok := languageMap[languageId]
-				if !ok {
-					log.Printf("Warning: Language %s not found for voice: %v", languageCode, v.Name)
-					continue
-				}
-
-				log.Printf("LanguageCode to add to firestore: %s", languageCode)
-				// Use the country name from the map
-				country, ok := CountryNames[strings.ToUpper(countryCode)]
-				if !ok {
-					log.Fatalf("Warning: Country code %s not found for voice: %v", countryCode, v.Name)
-				}
-				languageCodesToAdd = append(languageCodesToAdd, models.LanguageCode{
-					Code:     languageCode,
-					Country:  country,
-					Language: langName,
-					Platform: "google",
-				})
-				alreadyAddedLanguageCode[languageCode] = true
 			}
 		}
 
@@ -320,7 +111,7 @@ func (p *GoogleProvider) processAndFilterVoices(ctx context.Context, languageMap
 		}
 	}
 
-	return googleVoices, voicesToAdd, languagesToAdd, languageCodesToAdd, nil
+	return googleVoices, voicesToAdd, languagesToAdd, nil
 }
 
 // ListVoicesInOutputDir returns a map of voice names that already have sample files in the output directory
@@ -363,36 +154,58 @@ func mapGender(ssmlGender texttospeechpb.SsmlVoiceGender) models.Gender {
 	return gender
 }
 
-// addNewRecordsToFirestore adds new voices and languages to Firestore
-func (p *GoogleProvider) addNewRecordsToFirestore(ctx context.Context, voicesToAdd []models.Voice, languagesToAdd []models.Language, languageCodesToAdd []models.LanguageCode) error {
-	if len(voicesToAdd) > 0 {
-		// Using the generic function for voices
-		err := AddToFirestore(ctx, p.firestoreClient, "voices", voicesToAdd, func(v models.Voice) string {
-			return v.Name
-		})
-		if err != nil {
-			return fmt.Errorf("warning: failed to add voices to Firestore: %v", err)
-		}
+// CreateSampleMP3 creates a sample MP3 file for the given voice
+func (p *GoogleProvider) CreateSampleMP3(ctx context.Context, voice models.Voice, langName string, outputDir string) error {
+	// Create output directory if it doesn't exist
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
-	if len(languagesToAdd) > 0 {
-		// Using the generic function for languages
-		err := AddToFirestore(ctx, p.firestoreClient, "languages", languagesToAdd, func(l models.Language) string {
-			return l.Code
-		})
-		if err != nil {
-			return fmt.Errorf("warning: failed to add languages to Firestore: %v", err)
-		}
+	// Check if file already exists
+	outputFile := filepath.Join(outputDir, fmt.Sprintf("%s.mp3", voice.Name))
+	if _, err := os.Stat(outputFile); err == nil {
+		//log.Printf("MP3 file already exists for Google voice: %s", voice.Name)
+		return nil
 	}
 
-	if len(languageCodesToAdd) > 0 {
-		err := AddToFirestore(ctx, p.firestoreClient, "languageCodes", languageCodesToAdd, func(lc models.LanguageCode) string {
-			return lc.Code
-		})
-		if err != nil {
-			return fmt.Errorf("warning: failed to add language codes to Firestore: %v", err)
-		}
+	// Create sample text
+	baseSampleText := "Hello, I am %s, a %s voice from Google Cloud Text-to-Speech. I hope you enjoy learning %s."
+	sampleText := fmt.Sprintf(baseSampleText, voice.Name, langName, langName)
+
+	// Create the synthesis input
+	input := &texttospeechpb.SynthesisInput{
+		InputSource: &texttospeechpb.SynthesisInput_Text{
+			Text: sampleText,
+		},
 	}
 
+	// Build the voice request
+	voiceReq := &texttospeechpb.VoiceSelectionParams{
+		LanguageCode: voice.LanguageCode,
+		Name:         voice.Name,
+		SsmlGender:   texttospeechpb.SsmlVoiceGender(voice.SsmlGender),
+	}
+
+	// Select the audio file type
+	audioConfig := &texttospeechpb.AudioConfig{
+		AudioEncoding: texttospeechpb.AudioEncoding_MP3,
+	}
+
+	// Perform the text-to-speech request
+	resp, err := p.ttsClient.SynthesizeSpeech(ctx, &texttospeechpb.SynthesizeSpeechRequest{
+		Input:       input,
+		Voice:       voiceReq,
+		AudioConfig: audioConfig,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to synthesize speech: %w", err)
+	}
+
+	// Write the response to the output file
+	if err := os.WriteFile(outputFile, resp.AudioContent, 0644); err != nil {
+		return fmt.Errorf("failed to write audio file: %w", err)
+	}
+
+	log.Printf("Created MP3 for Google voice: %s (%s)", voice.Name, voice.LanguageCode)
 	return nil
 }
