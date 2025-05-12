@@ -153,22 +153,22 @@ func TestEndToEndAudio(t *testing.T) {
 	require.NoError(t, err)
 
 	// Select English as the "from" language
-	err = page.Locator("#from-en").Click()
+	err = page.Locator("#from-af-ZA").Click()
 	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 500)
 
 	// Select a voice for the "from" language
-	err = page.Locator("#from-voice-input-en-US-Standard-A").Click()
+	err = page.Locator("#from-voice-input-af-ZA-Standard-A").Click()
 	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 500)
 
 	// Select Spanish as the "to" language
-	err = page.Locator("#to-es").Click()
+	err = page.Locator("#to-pt-BR").Click()
 	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 500)
 
 	// Select a voice for the "to" language
-	err = page.Locator("#to-voice-input-es-ES-Standard-A").Click()
+	err = page.Locator("#to-voice-input-pt-BR-Chirp3-HD-Achernar").Click()
 	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 500)
 
@@ -224,5 +224,6 @@ func TestEndToEndAudio(t *testing.T) {
 	fileInfo, err := os.Stat(savePath)
 	require.NoError(t, err)
 
-	require.True(t, fileInfo.Size() > 210000 && fileInfo.Size() < 220000)
+	t.Logf("fileSize: %v", fileInfo.Size())
+	require.True(t, fileInfo.Size() > 145000 && fileInfo.Size() < 155000)
 }

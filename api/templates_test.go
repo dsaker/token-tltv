@@ -92,15 +92,6 @@ func TestTemplateRegistryRender(t *testing.T) {
 			},
 		},
 		{
-			name:          "Valid parse template",
-			templateName:  "parse.gohtml",
-			data:          newTemplateData(langCodes, voices, ""),
-			expectedError: false,
-			contains: []string{
-				"<title>Parse - TalkLikeTV</title>",
-			},
-		},
-		{
 			name:          "Non-existent template",
 			templateName:  "nonexistent.gohtml",
 			data:          nil,
@@ -190,6 +181,6 @@ func TestMockEmbeddedFile(t *testing.T) {
 	assert.NoError(t, err, "Should be able to open home template from embedded filesystem")
 
 	// Test common templates
-	_, err = ui.Files.Open("html/common/header.gohtml")
+	_, err = ui.Files.Open("html/common/nav.gohtml")
 	assert.NoError(t, err, "Should be able to open common header template from embedded filesystem")
 }

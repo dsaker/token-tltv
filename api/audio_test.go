@@ -649,13 +649,12 @@ func TestGoogleIntegration(t *testing.T) {
 	filename := tmpAudioBasePath + "TestAudioFromFile.txt"
 
 	okFormMap := map[string]string{
-		"file_language_id": "en",
-		"title_name":       title.Name,
-		"from_voice_id":    "en-US-Wavenet-D",
-		"to_voice_id":      "af-ZA-Standard-A",
-		"token":            *plaintext,
-		"pause":            "4",
-		"pattern":          "1",
+		"title_name":    title.Name,
+		"from_voice_id": "af-ZA-Standard-A",
+		"to_voice_id":   "am-ET-Standard-A",
+		"token":         *plaintext,
+		"pause":         "4",
+		"pattern":       "1",
 	}
 
 	testCases := []testCase{
@@ -687,13 +686,12 @@ func TestGoogleIntegration(t *testing.T) {
 				err = tokens.AddToken(ctx, *token2)
 				require.NoError(t, err)
 				okFormMap2 := map[string]string{
-					"file_language_id": title.TitleLang,
-					"title_name":       title.Name,
-					"from_voice_id":    title.FromVoice,
-					"to_voice_id":      title.ToVoice,
-					"token":            plaintext2,
-					"pause":            "4",
-					"pattern":          "1",
+					"title_name":    title.Name,
+					"from_voice_id": title.FromVoice,
+					"to_voice_id":   title.ToVoice,
+					"token":         plaintext2,
+					"pause":         "4",
+					"pattern":       "1",
 				}
 				return createMultiPartBody(t, data, filename, okFormMap2)
 			},

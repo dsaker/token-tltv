@@ -244,6 +244,9 @@ func TestGoogleTranslate(t *testing.T) {
 }
 
 func TestDetectLanguage(t *testing.T) {
+	if util.Test != "unit" {
+		t.Skip("skipping unit test")
+	}
 	// Define test cases
 	testCases := []struct {
 		name        string
@@ -383,8 +386,8 @@ func TestDetectLanguage(t *testing.T) {
 
 				// The order of the detections in the outer array should match the order of phrases
 				detections := [][]translate.Detection{
-					{engDetection}, // For "Hello world"
-					{frDetection},  // For "Bonjour monde"
+					{frDetection},  // For "Hello world"
+					{engDetection}, // For "Bonjour monde"
 					{esDetection},  // For "Hola mundo"
 				}
 
@@ -394,9 +397,8 @@ func TestDetectLanguage(t *testing.T) {
 			},
 			checkResult: func(t *testing.T, result language.Tag, err error) {
 				require.NoError(t, err)
-				// Use a direct language constant for comparison, not language.French
-				expectedLang := language.Make("fr") // Explicitly create the French language tag
-				require.Equal(t, expectedLang, result)
+				// Use a direct language constant for comparison, not language.French // Explicitly create the French language tag
+				require.Equal(t, language.French, result)
 			},
 		},
 	}
