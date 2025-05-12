@@ -347,6 +347,13 @@
                     // Prevent the default submission
                     event.preventDefault();
 
+                    // Clear the flash div
+                    const flashDiv = document.getElementById('div-flash');
+                    if (flashDiv) {
+                        flashDiv.style.display = 'none';
+                        flashDiv.textContent = '';
+                    }
+
                     // Check all required selections
                     const fromLanguageSelected = document.querySelector('.from-language-radio:checked');
                     if (!fromLanguageSelected) {
