@@ -57,10 +57,10 @@ func (mr *MockModelsXMockRecorder) GetLanguage(ctx, code any) *gomock.Call {
 }
 
 // GetLanguageCodes mocks base method.
-func (m *MockModelsX) GetLanguageCodes(ctx context.Context) (map[string]models.LanguageCode, error) {
+func (m *MockModelsX) GetLanguageCodes(ctx context.Context) ([]models.LanguageCode, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLanguageCodes", ctx)
-	ret0, _ := ret[0].(map[string]models.LanguageCode)
+	ret0, _ := ret[0].([]models.LanguageCode)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -102,10 +102,10 @@ func (mr *MockModelsXMockRecorder) GetVoice(ctx, name any) *gomock.Call {
 }
 
 // GetVoices mocks base method.
-func (m *MockModelsX) GetVoices(ctx context.Context) (map[string]models.Voice, error) {
+func (m *MockModelsX) GetVoices(ctx context.Context) ([]models.Voice, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetVoices", ctx)
-	ret0, _ := ret[0].(map[string]models.Voice)
+	ret0, _ := ret[0].([]models.Voice)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -117,10 +117,10 @@ func (mr *MockModelsXMockRecorder) GetVoices(ctx any) *gomock.Call {
 }
 
 // GetVoicesByLanguage mocks base method.
-func (m *MockModelsX) GetVoicesByLanguage(ctx context.Context, languageCode string) (map[string]models.Voice, error) {
+func (m *MockModelsX) GetVoicesByLanguage(ctx context.Context, languageCode string) ([]models.Voice, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetVoicesByLanguage", ctx, languageCode)
-	ret0, _ := ret[0].(map[string]models.Voice)
+	ret0, _ := ret[0].([]models.Voice)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -132,10 +132,10 @@ func (mr *MockModelsXMockRecorder) GetVoicesByLanguage(ctx, languageCode any) *g
 }
 
 // GetVoicesByPlatform mocks base method.
-func (m *MockModelsX) GetVoicesByPlatform(ctx context.Context, platform string) (map[string]models.Voice, error) {
+func (m *MockModelsX) GetVoicesByPlatform(ctx context.Context, platform string) ([]models.Voice, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetVoicesByPlatform", ctx, platform)
-	ret0, _ := ret[0].(map[string]models.Voice)
+	ret0, _ := ret[0].([]models.Voice)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -147,10 +147,10 @@ func (mr *MockModelsXMockRecorder) GetVoicesByPlatform(ctx, platform any) *gomoc
 }
 
 // GetVoicesByPlatformAndLanguage mocks base method.
-func (m *MockModelsX) GetVoicesByPlatformAndLanguage(ctx context.Context, platform, languageCode string) (map[string]models.Voice, error) {
+func (m *MockModelsX) GetVoicesByPlatformAndLanguage(ctx context.Context, platform, languageCode string) ([]models.Voice, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetVoicesByPlatformAndLanguage", ctx, platform, languageCode)
-	ret0, _ := ret[0].(map[string]models.Voice)
+	ret0, _ := ret[0].([]models.Voice)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

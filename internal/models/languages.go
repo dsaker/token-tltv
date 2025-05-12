@@ -39,21 +39,3 @@ func (m *Models) GetLanguage(ctx context.Context, code string) (Language, error)
 	}
 	return lang, nil
 }
-
-// GetLanguages returns all languages
-func (m *Models) GetLanguages(ctx context.Context) (map[string]Language, error) {
-	if err := m.refreshCache(ctx); err != nil {
-		return nil, fmt.Errorf("failed to load languages: %w", err)
-	}
-
-	m.cacheMutex.RLock()
-	defer m.cacheMutex.RUnlock()
-
-	// Create a copy of the map to avoid concurrent access issues
-	result := make(map[string]Language, len(m.languageCache))
-	for k, v := range m.languageCache {
-		result[k] = v
-	}
-
-	return result, nil
-}

@@ -68,11 +68,24 @@ func (p *GoogleProvider) processAndFilterVoices(languageMap map[string]string, v
 		if languageId == "nb" {
 			languageId = "no"
 		}
+		if languageId == "cmn" {
+			if languageCode == "cmn-CN" {
+				languageId = "zh-CN"
+			} else if languageCode == "cmn-TW" {
+				languageId = "zh-TW"
+			}
+		}
 
 		// Check if we need to add this language
 		if _, exists := existingLanguages[languageId]; !exists {
 			if _, exists = alreadyAddedLanguage[languageId]; !exists {
 				langName, ok := languageMap[languageId]
+				if languageId == "zh-CN" {
+					langName = "Chinese"
+				}
+				if languageId == "zh-TW" {
+					langName = "Chinese"
+				}
 				if !ok {
 					log.Printf("Warning: Language %s not found for voice: %v", languageId, v.Name)
 					continue

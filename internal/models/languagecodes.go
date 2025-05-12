@@ -35,15 +35,16 @@ func (m *Models) GetLanguageCode(ctx context.Context, code string) (LanguageCode
 	m.cacheMutex.RLock()
 	defer m.cacheMutex.RUnlock()
 
-	langCode, ok := m.languageCodeCache[code]
-	if !ok {
-		return LanguageCode{}, ErrLanguageCodeInvalid
+	for _, langCode := range m.languageCodeCache {
+		if langCode.Code == code {
+			return langCode, nil
+		}
 	}
-	return langCode, nil
+	return LanguageCode{}, ErrLanguageCodeInvalid
 }
 
-// GetLanguageCodes returns all languages codes
-func (m *Models) GetLanguageCodes(ctx context.Context) (map[string]LanguageCode, error) {
+// GetLanguageCodes returns all languages codes sorted by name
+func (m *Models) GetLanguageCodes(ctx context.Context) ([]LanguageCode, error) {
 	if err := m.refreshCache(ctx); err != nil {
 		return nil, fmt.Errorf("failed to load languages: %w", err)
 	}
@@ -51,11 +52,8 @@ func (m *Models) GetLanguageCodes(ctx context.Context) (map[string]LanguageCode,
 	m.cacheMutex.RLock()
 	defer m.cacheMutex.RUnlock()
 
-	// Create a copy of the map to avoid concurrent access issues
-	result := make(map[string]LanguageCode, len(m.languageCodeCache))
-	for k, v := range m.languageCodeCache {
-		result[k] = v
-	}
-
+	// Return a copy of the cached slice
+	result := make([]LanguageCode, len(m.languageCodeCache))
+	copy(result, m.languageCodeCache)
 	return result, nil
 }

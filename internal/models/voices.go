@@ -46,15 +46,16 @@ func (m *Models) GetVoice(ctx context.Context, name string) (Voice, error) {
 	m.cacheMutex.RLock()
 	defer m.cacheMutex.RUnlock()
 
-	voice, ok := m.voiceCache[name]
-	if !ok {
-		return Voice{}, ErrVoiceIdInvalid
+	for _, voice := range m.voiceCache {
+		if voice.Name == name {
+			return voice, nil
+		}
 	}
-	return voice, nil
+	return Voice{}, ErrLanguageCodeInvalid
 }
 
 // GetVoices returns all voices
-func (m *Models) GetVoices(ctx context.Context) (map[string]Voice, error) {
+func (m *Models) GetVoices(ctx context.Context) ([]Voice, error) {
 	if err := m.refreshCache(ctx); err != nil {
 		return nil, fmt.Errorf("failed to load voices: %w", err)
 	}
@@ -62,17 +63,17 @@ func (m *Models) GetVoices(ctx context.Context) (map[string]Voice, error) {
 	m.cacheMutex.RLock()
 	defer m.cacheMutex.RUnlock()
 
-	// Create a copy of the map to avoid concurrent access issues
-	result := make(map[string]Voice, len(m.voiceCache))
-	for k, v := range m.voiceCache {
-		result[k] = v
+	// Convert map to slice
+	result := make([]Voice, 0, len(m.voiceCache))
+	for _, v := range m.voiceCache {
+		result = append(result, v)
 	}
 
 	return result, nil
 }
 
 // GetVoicesByLanguage returns all voices for a specific language code
-func (m *Models) GetVoicesByLanguage(ctx context.Context, languageCode string) (map[string]Voice, error) {
+func (m *Models) GetVoicesByLanguage(ctx context.Context, languageCode string) ([]Voice, error) {
 	// First get all voices
 	voices, err := m.GetVoices(ctx)
 	if err != nil {
@@ -80,11 +81,10 @@ func (m *Models) GetVoicesByLanguage(ctx context.Context, languageCode string) (
 	}
 
 	// Filter by language code
-	result := make(map[string]Voice)
-	for name, voice := range voices {
+	result := make([]Voice, 0)
+	for _, voice := range voices {
 		if strings.HasPrefix(voice.LanguageCode, languageCode) {
-			result[name] = voice
-			break
+			result = append(result, voice)
 		}
 	}
 
@@ -92,7 +92,7 @@ func (m *Models) GetVoicesByLanguage(ctx context.Context, languageCode string) (
 }
 
 // GetVoicesByPlatform returns all voices for a specific platform
-func (m *Models) GetVoicesByPlatform(ctx context.Context, platform string) (map[string]Voice, error) {
+func (m *Models) GetVoicesByPlatform(ctx context.Context, platform string) ([]Voice, error) {
 	// First get all voices
 	voices, err := m.GetVoices(ctx)
 	if err != nil {
@@ -100,10 +100,10 @@ func (m *Models) GetVoicesByPlatform(ctx context.Context, platform string) (map[
 	}
 
 	// Filter by platform
-	result := make(map[string]Voice)
-	for name, voice := range voices {
+	result := make([]Voice, 0)
+	for _, voice := range voices {
 		if voice.Platform == platform {
-			result[name] = voice
+			result = append(result, voice)
 		}
 	}
 
@@ -111,7 +111,7 @@ func (m *Models) GetVoicesByPlatform(ctx context.Context, platform string) (map[
 }
 
 // GetVoicesByPlatformAndLanguage returns all voices for a specific platform and language code
-func (m *Models) GetVoicesByPlatformAndLanguage(ctx context.Context, platform, languageCode string) (map[string]Voice, error) {
+func (m *Models) GetVoicesByPlatformAndLanguage(ctx context.Context, platform, languageCode string) ([]Voice, error) {
 	// First get all voices
 	voices, err := m.GetVoices(ctx)
 	if err != nil {
@@ -119,15 +119,14 @@ func (m *Models) GetVoicesByPlatformAndLanguage(ctx context.Context, platform, l
 	}
 
 	// Filter by both platform and language code
-	result := make(map[string]Voice)
-	for name, voice := range voices {
+	result := make([]Voice, 0)
+	for _, voice := range voices {
 		if voice.Platform != platform {
 			continue
 		}
 
 		if strings.HasPrefix(voice.LanguageCode, languageCode) {
-			result[name] = voice
-			break
+			result = append(result, voice)
 		}
 	}
 

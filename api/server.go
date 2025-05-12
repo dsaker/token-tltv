@@ -158,12 +158,20 @@ var _ oapi.ServerInterface = (*Server)(nil)
 
 // initSilence copies the silence mp3's from the embedded filesystem to the config TTSBasePath
 func initSilence(cfg config.Config) {
+	exists := true
+	var err error
 	// check if silence mp3s exist in your base path
-	silencePath := cfg.TTSBasePath + audiofile.AudioPauseFilePath[4]
-	exists, err := util.PathExists(silencePath)
-	if err != nil {
-		log.Fatal(err)
+	for key, _ := range audiofile.AudioPauseFilePath {
+		silencePath := cfg.TTSBasePath + audiofile.AudioPauseFilePath[key]
+		exists, err = util.PathExists(silencePath)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if !exists {
+			break
+		}
 	}
+
 	// if it doesn't exist copy it from embedded FS to TTSBasePath
 	if !exists {
 		err = os.MkdirAll(cfg.TTSBasePath+"silence/", 0777)

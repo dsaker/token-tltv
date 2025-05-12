@@ -19,8 +19,8 @@
                                 <div class="col-md-12">
                                     <div class="three-columns">
                                         <ul class="list-group">
-                                            {{if .Languages}}
-                                            {{range .Languages}}
+                                            {{if .LanguageCodes}}
+                                            {{range .LanguageCodes}}
                                             <div class="form-check">
                                                 <input class="form-check-input from-language-radio" type="radio" value="{{.Code}}" id="from-{{.Code}}">
                                                 <label class="form-check-label" for="from-{{.Code}}">
@@ -53,7 +53,7 @@
                                     <ul class="list-group">
                                         {{if .Voices}}
                                         {{range .Voices}}
-                                            <div class="form-radio voice-option" data-language="{{.Language}}" style="display: none;">
+                                            <div class="form-radio voice-option" data-language="{{.LanguageCode}}" style="display: none;">
                                             <input name="from_voice_id" class="form-check-input" type="radio" value="{{.Name}}" id="from-voice-input-{{.Name}}">
                                             <label class="form-check-label" for="from-voice-input-{{.Name}}">{{.Name}}</label>
                                             <span class="play_sound" id="play-sound-{{.Name}}"> - &#127925;</span>
@@ -83,8 +83,8 @@
                                 <div class="col-md-12">
                                     <div class="three-columns">
                                         <ul class="list-group">
-                                            {{if .Languages}}
-                                                {{range .Languages}}
+                                            {{if .LanguageCodes}}
+                                                {{range .LanguageCodes}}
                                                     <div class="form-check">
                                                         <input class="form-check-input to-language-radio" type="radio" value="{{.Code}}" id="to-{{.Code}}">
                                                         <label class="form-check-label" for="to-{{.Code}}">
@@ -117,7 +117,7 @@
                                         <ul class="list-group">
                                             {{if .Voices}}
                                                 {{range .Voices}}
-                                                    <div class="form-radio voice-option" data-language="{{.Language}}" style="display: none;">
+                                                    <div class="form-radio voice-option" data-language="{{.LanguageCode}}" style="display: none;">
                                                         <input name="to_voice_id" class="form-check-input" type="radio" value="{{.Name}}" id="to-voice-input-{{.Name}}">
                                                         <label class="form-check-label" for="to-voice-input-{{.Name}}">{{.Name}}</label>
                                                         <span class="play_sound" id="play-sound-{{.Name}}"> - &#127925;</span>
@@ -265,6 +265,32 @@
                 }
             }
         }
+
+        // uncheck all radios if accordion is reopened
+        document.getElementById('collapseFromLang').addEventListener('show.bs.collapse', function () {
+            // Uncheck all radio buttons in the from-language-select section
+            document.querySelectorAll('#from-language-select .from-language-radio').forEach(radio => {
+                radio.checked = false;
+            });
+
+            // Also uncheck all related voice options since they depend on language selection
+            document.querySelectorAll('input[name="from_voice_id"]').forEach(radio => {
+                radio.checked = false;
+            });
+        });
+
+        //uncheck all radios if accordion is reopened
+        document.getElementById('collapseToLang').addEventListener('show.bs.collapse', function () {
+            // Uncheck all radio buttons in the to-language-select section
+            document.querySelectorAll('#to-language-select .to-language-radio').forEach(radio => {
+                radio.checked = false;
+            });
+
+            // Also uncheck all related voice options since they depend on language selection
+            document.querySelectorAll('input[name="to_voice_id"]').forEach(radio => {
+                radio.checked = false;
+            });
+        });
 
         // Attach event listeners for language selection
         document.querySelectorAll('.to-language-radio').forEach(radio => {

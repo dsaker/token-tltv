@@ -27,6 +27,11 @@ func (p *GoogleProvider) GetVoices(ctx context.Context, outputDir string) ([]mod
 
 	voicesToKeep := p.getFilteredVoices(ctx, outputDir)
 
+	err = p.deleteOldVoices(ctx, voicesToKeep, existingVoices)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	if err := p.updateLanguageCode(ctx, languageMap, voicesToKeep); err != nil {
 		return nil, nil, err
 	}
@@ -131,4 +136,30 @@ func (p *GoogleProvider) cleanupUnusedMP3Files(outputDir string, voicesToKeep ma
 			}
 		}
 	}
+}
+
+func (p *GoogleProvider) deleteOldVoices(ctx context.Context, voicesToKeep map[string]models.Voice, existingVoices map[string]bool) error {
+	bulkWriter := p.firestoreClient.BulkWriter(ctx)
+	voicesCollection := p.firestoreClient.Collection("voices")
+
+	deletedCount := 0
+
+	for voiceName := range existingVoices {
+		if _, keep := voicesToKeep[voiceName]; !keep {
+			docRef := voicesCollection.Doc(voiceName)
+			bulkWriter.Delete(docRef)
+			deletedCount++
+			log.Printf("Marking voice for deletion: %s", voiceName)
+		}
+	}
+
+	if deletedCount > 0 {
+		log.Printf("Deleting %d voices from Firestore", deletedCount)
+		bulkWriter.End()
+		log.Printf("Successfully deleted %d voices from Firestore", deletedCount)
+	} else {
+		log.Printf("No voices to delete from Firestore")
+	}
+
+	return nil
 }

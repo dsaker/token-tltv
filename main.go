@@ -28,18 +28,12 @@ func main() {
 	flag.Parse()
 
 	// Validate project ID
-	if cfg.Env == "dev" {
-		if cfg.ProjectId == "" {
-			cfg.ProjectId = os.Getenv("TEST_PROJECT_ID")
-			if cfg.ProjectId == "" {
-				log.Fatal("Provide PROJECT_ID in dev mode")
-			}
-		}
-	} else if cfg.Env == "prod" && cfg.ProjectId == "" {
+	if cfg.ProjectId == "" {
 		cfg.ProjectId = os.Getenv("PROJECT_ID")
-		if cfg.ProjectId == "" {
-			log.Fatal("Provide PROJECT_ID in prod mode")
-		}
+	}
+
+	if cfg.ProjectId == "" {
+		log.Fatal("Provide PROJECT_ID environment variable or use -p flag.")
 	}
 
 	ctx := context.Background()

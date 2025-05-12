@@ -65,6 +65,14 @@ func (p *GoogleProvider) updateLanguageCode(ctx context.Context, languageMap map
 		}
 		// Check if we need to add or update this language code
 		langName, ok := languageMap[languageId]
+		if langCode == "cmn-CN" || langCode == "cmn-TW" {
+			langName = "Chinese"
+		}
+
+		if langCode == "pt-PT" || langCode == "pt-BR" {
+			langName = "Portuguese"
+		}
+
 		if !ok {
 			log.Printf("Warning: Language not found for language code: %v", langCode)
 		}
