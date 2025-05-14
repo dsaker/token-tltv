@@ -2,19 +2,21 @@ package api
 
 import (
 	"errors"
-	"github.com/labstack/echo/v4"
 	"html/template"
 	"io"
 	"io/fs"
 	"path/filepath"
+
+	"github.com/labstack/echo/v4"
 	"talkliketv.click/tltv/internal/models"
 	"talkliketv.click/tltv/ui"
 )
 
 type templateData struct {
-	Languages map[int]models.Language
-	Voices    map[int]models.Voice
-	Error     string
+	LanguageCodes  []models.LanguageCode
+	Voices         []models.Voice
+	Error          string
+	PauseDurations []int
 }
 
 type TemplateRegistry struct {
@@ -67,10 +69,11 @@ func newTemplateCache() (map[string]*template.Template, error) {
 }
 
 // newTemplateDatachecks if the user is authenticated and adds the base data needed for the templates
-func newTemplateData(l map[int]models.Language, v map[int]models.Voice, err string) *templateData {
+func newTemplateData(l []models.LanguageCode, v []models.Voice, err string) *templateData {
 	return &templateData{
-		Languages: l,
-		Voices:    v,
-		Error:     err,
+		PauseDurations: []int{3, 4, 5, 6, 7, 8, 9, 10},
+		LanguageCodes:  l,
+		Voices:         v,
+		Error:          err,
 	}
 }

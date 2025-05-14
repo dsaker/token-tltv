@@ -21,6 +21,7 @@ import (
 // be mocked for testing
 type GoogleTranslateClientX interface {
 	Translate(context.Context, []string, language.Tag, *translate.Options) ([]translate.Translation, error)
+	DetectLanguage(context.Context, []string) ([][]translate.Detection, error)
 }
 
 // GoogleTTSClientX creates an interface for google texttospeechpb.SynthesizeSpeech so

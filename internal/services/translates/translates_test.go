@@ -1,6 +1,7 @@
 package translates
 
 import (
+	"errors"
 	"flag"
 	"github.com/aws/aws-sdk-go-v2/service/polly"
 	"github.com/aws/aws-sdk-go-v2/service/polly/types"
@@ -47,7 +48,7 @@ func TestGoogleTTS(t *testing.T) {
 	defer os.RemoveAll(basepath)
 
 	voice := testutil.RandomVoice()
-	voice.Gender = models.MALE
+	voice.SsmlGender = models.MALE
 	text1 := "This is sentence one."
 
 	testCases := []translatesTestCase{
@@ -61,9 +62,9 @@ func TestGoogleTTS(t *testing.T) {
 					},
 					// Build the voice request, select the language code ("en-US") and the SSML
 					Voice: &texttospeechpb.VoiceSelectionParams{
-						LanguageCode: voice.LanguageCodes[0],
+						LanguageCode: voice.LanguageCode,
 						SsmlGender:   texttospeechpb.SsmlVoiceGender_MALE,
-						Name:         voice.VoiceName,
+						Name:         voice.Name,
 					},
 					// Select the type of audio file you want returned.
 					AudioConfig: &texttospeechpb.AudioConfig{
@@ -98,7 +99,7 @@ func TestGoogleTTS(t *testing.T) {
 				gtc:  stubs.GoogleTranslateClientX,
 				gtts: stubs.GoogleTTsClientX,
 			}
-			translates := New(clients, AmazonClients{}, stubs.ModelsX, Google)
+			translates := New(clients, AmazonClients{}, stubs.ModelsX)
 			err = translates.TextToSpeech(newE, []models.Phrase{{ID: 0, Text: text1}}, voice, basepath)
 			tc.checkTranslate(nil, err)
 		})
@@ -106,8 +107,8 @@ func TestGoogleTTS(t *testing.T) {
 }
 
 func TestAmazonTTS(t *testing.T) {
-	if util.Test != "unit" {
-		t.Skip("skipping unit test")
+	if util.Test != "amazon" {
+		t.Skip("skipping amazon test")
 	}
 	t.Parallel()
 
@@ -119,7 +120,7 @@ func TestAmazonTTS(t *testing.T) {
 	defer os.RemoveAll(basepath)
 
 	voice := testutil.RandomVoice()
-	voice.Gender = models.MALE
+	voice.SsmlGender = models.MALE
 	text1 := "This is sentence one."
 
 	testCases := []translatesTestCase{
@@ -128,9 +129,8 @@ func TestAmazonTTS(t *testing.T) {
 			buildStubs: func(stubs testutil.MockStubs) {
 				ssi := polly.SynthesizeSpeechInput{
 					Text:         &text1,
-					VoiceId:      types.VoiceId(voice.VoiceName), // voice.Name
+					VoiceId:      types.VoiceId(voice.Name), // voice.Name
 					OutputFormat: "mp3",
-					Engine:       types.Engine(voice.Engine),
 				}
 				resp := polly.SynthesizeSpeechOutput{}
 				//SynthesizeSpeech(context.Context, *polly.SynthesizeSpeechInput, ...func(*polly.Options)) (*polly.SynthesizeSpeechOutput, error)
@@ -146,9 +146,8 @@ func TestAmazonTTS(t *testing.T) {
 			buildStubs: func(stubs testutil.MockStubs) {
 				ssi := polly.SynthesizeSpeechInput{
 					Text:         &text1,
-					VoiceId:      types.VoiceId(voice.VoiceName), // voice.Name
+					VoiceId:      types.VoiceId(voice.Name), // voice.Name
 					OutputFormat: "mp3",
-					Engine:       types.Engine(voice.Engine),
 				}
 				stringReader := strings.NewReader("shiny!")
 				stringReadCloser := io.NopCloser(stringReader)
@@ -183,7 +182,7 @@ func TestAmazonTTS(t *testing.T) {
 				atc:  stubs.AmazonTranslateClientX,
 				atts: stubs.AmazonTTsClientX,
 			}
-			translates := New(GoogleClients{}, clients, stubs.ModelsX, Amazon)
+			translates := New(GoogleClients{}, clients, stubs.ModelsX)
 			err = translates.TextToSpeech(newE, []models.Phrase{{ID: 0, Text: text1}}, voice, basepath)
 			tc.checkTranslate(nil, err)
 		})
@@ -197,7 +196,7 @@ func TestGoogleTranslate(t *testing.T) {
 
 	t.Parallel()
 
-	modelsLang := models.Language{ID: 0, Code: "es", Name: "Spanish"}
+	modelsLang := models.Language{Code: "es", Name: "Spanish"}
 	text1 := "This is sentence one."
 	translate1 := models.Phrase{ID: 0, Text: text1}
 	translateText := "Esta es la primera oración."
@@ -237,9 +236,201 @@ func TestGoogleTranslate(t *testing.T) {
 				gtc:  stubs.GoogleTranslateClientX,
 				gtts: stubs.GoogleTTsClientX,
 			}
-			translates := New(clients, AmazonClients{}, stubs.ModelsX, Google)
+			translates := New(clients, AmazonClients{}, stubs.ModelsX)
 			translatesRow, err := translates.TranslatePhrases(c, title, modelsLang)
 			tc.checkTranslate(translatesRow, err)
+		})
+	}
+}
+
+func TestDetectLanguage(t *testing.T) {
+	if util.Test != "unit" {
+		t.Skip("skipping unit test")
+	}
+	// Define test cases
+	testCases := []struct {
+		name        string
+		phrases     []string
+		buildStubs  func(stubs testutil.MockStubs)
+		checkResult func(t *testing.T, result language.Tag, err error)
+	}{
+		{
+			name:    "Successful language detection",
+			phrases: []string{"Hello world", "This is a test"},
+			buildStubs: func(stubs testutil.MockStubs) {
+				// Create detection response with English as the language
+				detection := translate.Detection{
+					Language:   language.English,
+					Confidence: 0.95,
+				}
+				// Build the expected return type: [][]translate.Detection
+				detections := [][]translate.Detection{
+					{detection}, // First text
+					{detection}, // Second text
+				}
+
+				stubs.GoogleTranslateClientX.EXPECT().
+					DetectLanguage(gomock.Any(), gomock.Eq([]string{"Hello world", "This is a test"})).
+					Return(detections, nil)
+			},
+			checkResult: func(t *testing.T, result language.Tag, err error) {
+				require.NoError(t, err)
+				require.Equal(t, language.English, result)
+			},
+		},
+		{
+			name:    "API error",
+			phrases: []string{"Hello world"},
+			buildStubs: func(stubs testutil.MockStubs) {
+				// Simulate an API error
+				stubs.GoogleTranslateClientX.EXPECT().
+					DetectLanguage(gomock.Any(), gomock.Any()).
+					Return([][]translate.Detection(nil), errors.New("API error"))
+			},
+			checkResult: func(t *testing.T, result language.Tag, err error) {
+				require.Error(t, err)
+				require.Equal(t, language.Und, result)
+			},
+		},
+		{
+			name:    "Empty phrases",
+			phrases: []string{},
+			buildStubs: func(stubs testutil.MockStubs) {
+				// Even with empty phrases, we should call the API
+				stubs.GoogleTranslateClientX.EXPECT().
+					DetectLanguage(gomock.Any(), gomock.Eq([]string{})).
+					Return([][]translate.Detection{}, nil)
+			},
+			checkResult: func(t *testing.T, result language.Tag, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "no languages detected")
+				require.Equal(t, language.Und, result)
+			},
+		},
+		{
+			name:    "Non-English language detection",
+			phrases: []string{"Hola mundo", "Esta es una prueba"},
+			buildStubs: func(stubs testutil.MockStubs) {
+				// Create detection for Spanish
+				detection := translate.Detection{
+					Language:   language.Spanish,
+					Confidence: 0.98,
+				}
+				// Build return structure
+				detections := [][]translate.Detection{
+					{detection}, // First text
+					{detection}, // Second text
+				}
+
+				stubs.GoogleTranslateClientX.EXPECT().
+					DetectLanguage(gomock.Any(), gomock.Any()).
+					Return(detections, nil)
+			},
+			checkResult: func(t *testing.T, result language.Tag, err error) {
+				require.NoError(t, err)
+				require.Equal(t, language.Spanish, result)
+			},
+		},
+		{
+			name:    "Multiple languages with French highest confidence", // Changed name
+			phrases: []string{"Hello world", "Bonjour monde", "Hola mundo"},
+			buildStubs: func(stubs testutil.MockStubs) {
+				// Create multiple detections with different languages
+				engDetection := translate.Detection{
+					Language:   language.English,
+					Confidence: 0.90,
+				}
+				frDetection := translate.Detection{
+					Language:   language.French,
+					Confidence: 0.95,
+				}
+				esDetection := translate.Detection{
+					Language:   language.Spanish,
+					Confidence: 0.80,
+				}
+
+				// Build the return structure where French has highest confidence
+				detections := [][]translate.Detection{
+					{frDetection},
+					{engDetection},
+					{esDetection},
+				}
+
+				stubs.GoogleTranslateClientX.EXPECT().
+					DetectLanguage(gomock.Any(), gomock.Any()).
+					Return(detections, nil)
+			},
+			checkResult: func(t *testing.T, result language.Tag, err error) {
+				require.NoError(t, err)
+				// French should be detected as it has the highest confidence
+				require.Equal(t, language.French, result)
+			},
+		},
+		{
+			name:    "Multiple languages with expected order",
+			phrases: []string{"Hello world", "Bonjour monde", "Hola mundo"},
+			buildStubs: func(stubs testutil.MockStubs) {
+				// Create multiple detections with different languages
+				engDetection := translate.Detection{
+					Language:   language.English,
+					Confidence: 0.90,
+				}
+				frDetection := translate.Detection{
+					Language:   language.French,
+					Confidence: 0.95, // Highest confidence
+				}
+				esDetection := translate.Detection{
+					Language:   language.Spanish,
+					Confidence: 0.80,
+				}
+
+				// The order of the detections in the outer array should match the order of phrases
+				detections := [][]translate.Detection{
+					{frDetection},  // For "Hello world"
+					{engDetection}, // For "Bonjour monde"
+					{esDetection},  // For "Hola mundo"
+				}
+
+				stubs.GoogleTranslateClientX.EXPECT().
+					DetectLanguage(gomock.Any(), gomock.Any()).
+					Return(detections, nil)
+			},
+			checkResult: func(t *testing.T, result language.Tag, err error) {
+				require.NoError(t, err)
+				// Use a direct language constant for comparison, not language.French // Explicitly create the French language tag
+				require.Equal(t, language.French, result)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create controller and mock stubs
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			stubs := testutil.NewMockStubs(ctrl)
+
+			// Build stubs
+			tc.buildStubs(stubs)
+
+			// Create echo context
+			e := echo.New()
+			req := httptest.NewRequest(http.MethodPost, "/detect-language", nil)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+
+			// Create the translate service with mock clients
+			clients := GoogleClients{
+				gtc:  stubs.GoogleTranslateClientX,
+				gtts: stubs.GoogleTTsClientX,
+			}
+			translate2 := New(clients, AmazonClients{}, stubs.ModelsX)
+
+			// Call the function
+			result, err := translate2.DetectLanguage(c.Request().Context(), tc.phrases)
+
+			// Check results
+			tc.checkResult(t, result, err)
 		})
 	}
 }

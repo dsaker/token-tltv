@@ -3,111 +3,487 @@
 {{define "title"}}Audio{{end}}
 
 {{define "content"}}
-    <form id="audio-form" type="POST" enctype="multipart/form-data" >
-        <div>
+    <form id="audio-form" method="POST" action="/v1/audio" enctype="multipart/form-data">
+        <h1 >Design your audio</h1>
+        <div class="accordion accordion-flush" id="audioAccordion">
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingFromLang">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFromLang" aria-expanded="true" aria-controls="collapseFromLang">
+                        Language to learn from
+                    </button>
+                </h2>
+                <div id="collapseFromLang" class="accordion-collapse collapse show" aria-labelledby="headingFromLang" data-bs-parent="#audioAccordion">
+                    <div class="accordion-body">
+                        <div id="from-language-select">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="three-columns">
+                                        <ul class="list-group">
+                                            {{if .LanguageCodes}}
+                                            {{range .LanguageCodes}}
+                                            <div class="form-check">
+                                                <input class="form-check-input from-language-radio" type="radio" value="{{.Code}}" id="from-{{.Code}}">
+                                                <label class="form-check-label" for="from-{{.Code}}">
+                                                    {{.Name}}
+                                                </label>
+                                            </div>
+                                            {{end}}
+                                            {{end}}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingFromVoice">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFromVoice" aria-expanded="true" aria-controls="collapseFromVoice">
+                        Voice to learn from
+                    </button>
+                </h2>
+                <div id="collapseFromVoice" class="accordion-collapse collapse" aria-labelledby="headingFromVoice" data-bs-parent="#audioAccordion">
+                    <div class="accordion-body">
+                        <div id="from-voice-select">
+                            <div class="row">
+                            <div class="col-md-12">
+                                <div class="two-columns">
+                                    <ul class="list-group">
+                                        {{if .Voices}}
+                                        {{range .Voices}}
+                                            <div class="form-radio voice-option" data-language="{{.LanguageCode}}" style="display: none;">
+                                            <input name="from_voice_id" class="form-check-input" type="radio" value="{{.Name}}" id="from-voice-input-{{.Name}}">
+                                            <label class="form-check-label" for="from-voice-input-{{.Name}}">{{.Name}}</label>
+                                            <span class="play_sound" id="play-sound-{{.Name}}"> - &#127925;</span>
+                                            <audio id="sound-{{.Name}}" data-src="/static/voices/google/{{.Name}}.mp3" preload="none"></audio>
+                                        </div>
+                                        {{end}}
+                                        {{end}}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingToLang">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseToLang" aria-expanded="true" aria-controls="collapseToLang">
+                        Language you want to learn
+                    </button>
+                </h2>
+                <div id="collapseToLang" class="accordion-collapse collapse" aria-labelledby="headingToLang" data-bs-parent="#audioAccordion">
+                    <div class="accordion-body">
+                        <div id="to-language-select">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="three-columns">
+                                        <ul class="list-group">
+                                            {{if .LanguageCodes}}
+                                                {{range .LanguageCodes}}
+                                                    <div class="form-check">
+                                                        <input class="form-check-input to-language-radio" type="radio" value="{{.Code}}" id="to-{{.Code}}">
+                                                        <label class="form-check-label" for="to-{{.Code}}">
+                                                            {{.Name}}
+                                                        </label>
+                                                    </div>
+                                                {{end}}
+                                            {{end}}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingToVoice">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseToVoice" aria-expanded="false" aria-controls="collapseToVoice">
+                        Voice you want to learn
+                    </button>
+                </h2>
+                <div id="collapseToVoice" class="accordion-collapse collapse" aria-labelledby="headingToVoice" data-bs-parent="#audioAccordion">
+                    <div class="accordion-body">
+                        <div id="to-voice-select">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="two-columns">
+                                        <ul class="list-group">
+                                            {{if .Voices}}
+                                                {{range .Voices}}
+                                                    <div class="form-radio voice-option" data-language="{{.LanguageCode}}" style="display: none;">
+                                                        <input name="to_voice_id" class="form-check-input" type="radio" value="{{.Name}}" id="to-voice-input-{{.Name}}">
+                                                        <label class="form-check-label" for="to-voice-input-{{.Name}}">{{.Name}}</label>
+                                                        <span class="play_sound" id="play-sound-{{.Name}}"> - &#127925;</span>
+                                                        <audio id="sound-{{.Name}}" data-src="/static/voices/google/{{.Name}}.mp3" preload="none"></audio>
+                                                    </div>
+                                                {{end}}
+                                            {{end}}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingPause">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePause" aria-expanded="false" aria-controls="collapsePause">
+                        Pause Duration (seconds)
+                    </button>
+                </h2>
+                <div id="collapsePause" class="accordion-collapse collapse" aria-labelledby="headingPause" data-bs-parent="#audioAccordion">
+                    <div class="accordion-body">
+                        <div id="pause-select" class="three-columns">
+                            {{range $i, $seconds := .PauseDurations}}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="pause" value="{{$seconds}}" id="pause-{{$seconds}}" >
+                                    <label class="form-check-label" for="pause-{{$seconds}}">{{$seconds}} seconds</label>
+                                </div>
+                            {{end}}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingPattern">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePattern" aria-expanded="false" aria-controls="collapsePattern">
+                        Pattern
+                    </button>
+                </h2>
+                <div id="collapsePattern" class="accordion-collapse collapse" aria-labelledby="headingPattern" data-bs-parent="#audioAccordion">
+                    <div class="accordion-body">
+                        <div id="pattern-select" class="three-columns">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="pattern" value="1" id="pattern-standard" >
+                                <label class="form-check-label" for="pattern-standard">Standard</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="pattern" value="2" id="pattern-advanced" >
+                                <label class="form-check-label" for="pattern-advanced">Advanced</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="pattern" value="3" id="pattern-review" >
+                                <label class="form-check-label" for="pattern-review">Review</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-3">
             <label for="token-input">Token:</label>
-            <input
-                    type="text"
-                    id="token-input"
-                    name="token"
-                    maxlength="26"
-                    required >
+            <input type="text" id="token-input" name="token" maxlength="26" required>
         </div>
-        <div>
+
+        <div class="mb-3">
             <label for="title-input">Title Name:</label>
-            <input
-                    id="title-input"
-                    type="text"
-                    name="title_name"
-                    maxlength="32"
-                    required >
+            <input id="title-input" type="text" name="title_name" maxlength="32" required>
         </div>
-        <div>
-            <label for="file-lang-select">Language of File: </label>
-            <select  id="file-lang-select" name="file_language_id" required>
-                <option disabled selected value> -- select an option -- </option>
-                {{if .Languages}}
-                    {{range .Languages}}
-                        <option value="{{.ID}}">{{.Name}}</option>
-                    {{end}}
-                {{end}}
-            </select>
-        </div>
-        <div>
-            <label for="from-lang-select">Language to learn from: </label>
-            <select id="from-lang-select" required>
-                <option disabled selected value> -- select an option -- </option>
-                {{if .Languages}}
-                    {{range .Languages}}
-                        <option value="{{.ID}}">{{.Name}}</option>
-                    {{end}}
-                {{end}}
-            </select>
-        </div>
-        <div id="from-voice-div" style="display: none;">
-            <label for="from-voice-select">Voice to learn from: </label>
-            <select id="from-voice-select" name="from_voice_id" required>
-                <option disabled selected value> -- select an option -- </option>
-                {{if .Voices}}
-                    {{range $index, $value := .Voices}}
-                        <option style="display: none;" class="{{.LangId}}" value="{{.ID}}" name="from-voice-option" >{{.VoiceName}}</option>
-                    {{end}}
-                {{end}}
-            </select>
-        </div>
-        <div>
-            <label for="to-lang-select">Language you want to learn: </label>
-            <select id="to-lang-select">
-                <option disabled selected value> -- select an option -- </option>
-                {{if .Languages}}
-                    {{range .Languages}}
-                        <option value="{{.ID}}">{{.Name}}</option>
-                    {{end}}
-                {{end}}
-            </select>
-        </div>
-        <div id="to-voice-div" style="display: none;">
-            <label for="to-voice-select">Voice of language to learn: </label>
-            <select  id="to-voice-select" name="to_voice_id" required>
-                <option disabled selected value> -- select an option -- </option>
-                {{if .Voices}}
-                    {{range $index, $value := .Voices}}
-                        <option style="display: none;" class="{{.LangId}}" value="{{.ID}}" name="to-voice-option" >{{.VoiceName}}</option>
-                    {{end}}
-                {{end}}
-            </select>
-        </div>
-        <div id="pause-div" >
-            <label for="pause-select">Pause between phrases: </label>
-            <select  id="pause-select" name="pause" required>
-                <option value="3">3</option>
-                <option value="4" selected>4</option>
-                <option value="5">5</option>
-                <option value="6">6</option>
-                <option value="7">7</option>
-                <option value="8">8</option>
-                <option value="9">9</option>
-                <option value="10">10</option>
-            </select>
-        </div>
-        <div id="pattern-div" >
-            <label for="pattern-select">Repetition pattern: </label>
-            <select  id="pattern-select" name="pattern" required>
-                <option value="1" selected>standard</option>
-                <option value="2" >advanced</option>
-                <option value="3">review</option>
-            </select>
-        </div>
-        <div>
+
+        <div class="mb-3">
             <input type="file" name="file_path" id="text-file" required/>
         </div>
-        <div>
-            <input id="submit-audio-form" type="submit">
-        </div>
+
+        <button type="submit" id="submit-audio-form" class="btn btn-primary mb-5">Generate Audio</button>
     </form>
 
-    <div class="lds-div" id="lds-div">
-        <div class="lds-roller"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+    <div id="lds-div" style="display: none;" class="text-center my-4">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p>Generating audio, please wait...</p>
     </div>
-    <script src="/static/audio.js" type="text/javascript"></script>
+
+    <script>
+        function attachPlaySoundListeners() {
+            document.querySelectorAll('.play_sound').forEach(function(playButton) {
+                playButton.addEventListener('click', function() {
+                    var audioId = this.id.replace('play-sound-', 'sound-');
+                    var audio = document.getElementById(audioId);
+
+                    // Set the src attribute only when playing for the first time
+                    if (!audio.getAttribute('src')) {
+                        audio.setAttribute('src', audio.getAttribute('data-src'));
+                    }
+
+                    // Play the audio
+                    audio.play().catch(error => {
+                        console.error("Error playing audio:", error);
+                        const flashDiv = document.getElementById('div-flash');
+                        if (flashDiv) {
+                            flashDiv.textContent = "Error playing audio: " + error.message;
+                            flashDiv.style.display = 'block';
+                            flashDiv.className = 'flash alert alert-warning';
+
+                            setTimeout(() => {
+                                flashDiv.style.display = 'none';
+                            }, 3000);
+                        }
+                    });
+                });
+            });
+        }
+
+        // Function to filter voices based on selected language
+        function showVoicesForLanguage(languageCode, isFromLanguage) {
+            const voiceOptions = document.querySelectorAll('.voice-option');
+            const targetName = isFromLanguage ? 'from-voice-select' : 'to-voice-select';
+
+            voiceOptions.forEach(option => {
+                if (option.dataset.language === languageCode) {
+                    option.style.display = 'block';
+                } else {
+                    option.style.display = 'none';
+                    // Uncheck any hidden inputs
+                    const input = option.querySelector(`input[name="${targetName}"]`);
+                    if (input) input.checked = false;
+                }
+            });
+
+            // Open the corresponding voice accordion - moved inside the function
+            const accordionId = isFromLanguage ? 'collapseFromVoice' : 'collapseToVoice';
+            const accordionElem = document.getElementById(accordionId);
+            if (accordionElem) {
+                try {
+                    const bsAccordion = new bootstrap.Collapse(accordionElem, {toggle: false});
+                    bsAccordion.show();
+                } catch (error) {
+                    console.error("Error showing accordion:", error);
+                    // Fallback if bootstrap is not available
+                    accordionElem.classList.add('show');
+                }
+            }
+        }
+
+        // uncheck all radios if accordion is reopened
+        document.getElementById('collapseFromLang').addEventListener('show.bs.collapse', function () {
+            // Uncheck all radio buttons in the from-language-select section
+            document.querySelectorAll('#from-language-select .from-language-radio').forEach(radio => {
+                radio.checked = false;
+            });
+
+            // Also uncheck all related voice options since they depend on language selection
+            document.querySelectorAll('input[name="from_voice_id"]').forEach(radio => {
+                radio.checked = false;
+            });
+        });
+
+        //uncheck all radios if accordion is reopened
+        document.getElementById('collapseToLang').addEventListener('show.bs.collapse', function () {
+            // Uncheck all radio buttons in the to-language-select section
+            document.querySelectorAll('#to-language-select .to-language-radio').forEach(radio => {
+                radio.checked = false;
+            });
+
+            // Also uncheck all related voice options since they depend on language selection
+            document.querySelectorAll('input[name="to_voice_id"]').forEach(radio => {
+                radio.checked = false;
+            });
+        });
+
+        // Attach event listeners for language selection
+        document.querySelectorAll('.to-language-radio').forEach(radio => {
+            radio.addEventListener('change', function() {
+                showVoicesForLanguage(this.value, false);
+            });
+        });
+
+        document.querySelectorAll('.from-language-radio').forEach(radio => {
+            radio.addEventListener('change', function() {
+                console.log("this value: " + this.value);
+                showVoicesForLanguage(this.value, true);
+            });
+        });
+
+        // When voice is selected, open next section
+        document.querySelectorAll('input[name="from_voice_id"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const toLanguageAccordion = document.getElementById('collapseToLang');
+                if (toLanguageAccordion) {
+                    const bsAccordion = new bootstrap.Collapse(toLanguageAccordion, { toggle: false });
+                    bsAccordion.show();
+                }
+            });
+        });
+
+        document.querySelectorAll('input[name="to_voice_id"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const pauseAccordion = document.getElementById('collapsePause');
+                if (pauseAccordion) {
+                    const bsAccordion = new bootstrap.Collapse(pauseAccordion, { toggle: false });
+                    bsAccordion.show();
+                }
+            });
+        });
+
+        // When pause is selected, open pattern section
+        document.querySelectorAll('input[name="pause"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const patternAccordion = document.getElementById('collapsePattern');
+                if (patternAccordion) {
+                    const bsAccordion = new bootstrap.Collapse(patternAccordion, { toggle: false });
+                    bsAccordion.show();
+                }
+            });
+        });
+
+        // Add this code at the beginning of your existing script in audio.gohtml
+        document.addEventListener('DOMContentLoaded', function() {
+            const audioForm = document.getElementById('audio-form');
+
+            if (audioForm) {
+                audioForm.addEventListener('submit', function(event) {
+                    // Prevent the default submission
+                    event.preventDefault();
+
+                    // Clear the flash div
+                    const flashDiv = document.getElementById('div-flash');
+                    if (flashDiv) {
+                        flashDiv.style.display = 'none';
+                        flashDiv.textContent = '';
+                    }
+
+                    // Check all required selections
+                    const fromLanguageSelected = document.querySelector('.from-language-radio:checked');
+                    if (!fromLanguageSelected) {
+                        showError("Please select a language to learn from");
+                        openAccordion('collapseFromLang');
+                        return;
+                    }
+
+                    const fromVoiceSelected = document.querySelector('input[name="from_voice_id"]:checked');
+                    if (!fromVoiceSelected) {
+                        showError("Please select a voice to learn from");
+                        openAccordion('collapseFromVoice');
+                        return;
+                    }
+
+                    const toLanguageSelected = document.querySelector('.to-language-radio:checked');
+                    if (!toLanguageSelected) {
+                        showError("Please select a language you want to learn");
+                        openAccordion('collapseToLang');
+                        return;
+                    }
+
+                    const toVoiceSelected = document.querySelector('input[name="to_voice_id"]:checked');
+                    if (!toVoiceSelected) {
+                        showError("Please select a voice you want to learn");
+                        openAccordion('collapseToVoice');
+                        return;
+                    }
+
+                    const pauseSelected = document.querySelector('input[name="pause"]:checked');
+                    if (!pauseSelected) {
+                        showError("Please select a pause duration");
+                        openAccordion('collapsePause');
+                        return;
+                    }
+
+                    const patternSelected = document.querySelector('input[name="pattern"]:checked');
+                    if (!patternSelected) {
+                        showError("Please select a pattern");
+                        openAccordion('collapsePattern');
+                        return;
+                    }
+
+                    const tokenInput = document.getElementById('token-input');
+                    if (!tokenInput.value.trim()) {
+                        showError("Please enter a token");
+                        tokenInput.focus();
+                        return;
+                    }
+
+                    const titleInput = document.getElementById('title-input');
+                    if (!titleInput.value.trim()) {
+                        showError("Please enter a title name");
+                        titleInput.focus();
+                        return;
+                    }
+
+                    const fileInput = document.getElementById('text-file');
+                    if (!fileInput.files.length) {
+                        showError("Please select a file");
+                        fileInput.focus();
+                        return;
+                    }
+
+                    // If everything is valid, show loading spinner and continue with submission
+                    document.getElementById('lds-div').style.display = 'block';
+                    audioForm.style.display = 'none';
+
+                    // Get form data
+                    const formData = new FormData(audioForm);
+
+                    // Submit the form data via fetch
+                    fetch('/v1/audio', {
+                        method: 'POST',
+                        body: formData
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                return response.text().then(text => {
+                                    throw new Error(text || `Server error: ${response.status}`);
+                                });
+                            }
+                            return response.blob();
+                        })
+                        .then(blob => {
+                            // Handle successful response
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = formData.get('title_name') + '.mp3';
+                            document.body.appendChild(a);
+                            a.click();
+                            a.remove();
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            showError(`Error: ${error.message}`);
+                            audioForm.style.display = 'block';
+                        })
+                        .finally(() => {
+                            document.getElementById('lds-div').style.display = 'none';
+                        });
+                });
+            }
+
+            // Helper function to show error messages
+            function showError(message) {
+                const flashDiv = document.getElementById('div-flash');
+                flashDiv.textContent = message;
+                flashDiv.style.display = 'block';
+                flashDiv.className = 'flash alert alert-warning';
+            }
+
+            // Helper function to open accordion sections
+            function openAccordion(accordionId) {
+                const accordionElement = document.getElementById(accordionId);
+                if (accordionElement) {
+                    try {
+                        const bsAccordion = new bootstrap.Collapse(accordionElement, { toggle: false });
+                        bsAccordion.show();
+                    } catch (error) {
+                        console.error("Error opening accordion:", error);
+                        // Fallback if bootstrap is not available
+                        accordionElement.classList.add('show');
+                    }
+                }
+            }
+        });
+
+        // Initialize
+        attachPlaySoundListeners();
+    </script>
 {{end}}

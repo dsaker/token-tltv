@@ -103,53 +103,47 @@ func (v *Validator) In(value string, list ...string) bool {
 	return false
 }
 
-func ValidateAudioRequest(e echo.Context, m models.ModelsX) (*models.Title, error) {
+func ValidateAudioRequest(e echo.Context, m models.ModelsX) (*models.Title, *models.Voice, *models.Voice, error) {
+	// Extract form values
 	titleName := e.FormValue("title_name")
-	fileLangId, err := strconv.Atoi(e.FormValue("file_language_id"))
-	if err != nil || !isValidLanguage(m, fileLangId) {
-		return nil, fmt.Errorf("invalid file_language_id: %v", err)
+	fromVoiceID := e.FormValue("from_voice_id")
+	toVoiceID := e.FormValue("to_voice_id")
+
+	fromVoice, err := m.GetVoice(e.Request().Context(), fromVoiceID)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("invalid from_voice_id: %s", fromVoiceID)
 	}
 
-	toVoiceId, err := strconv.Atoi(e.FormValue("to_voice_id"))
-	if err != nil || !isValidVoice(m, toVoiceId) {
-		return nil, fmt.Errorf("invalid to_voice_id: %v", err)
+	toVoice, err := m.GetVoice(e.Request().Context(), toVoiceID)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("invalid to_voice_id: %s", toVoiceID)
 	}
 
-	fromVoiceId, err := strconv.Atoi(e.FormValue("from_voice_id"))
-	if err != nil || !isValidVoice(m, fromVoiceId) {
-		return nil, fmt.Errorf("invalid from_voice_id: %v", err)
-	}
-
+	// Parse and validate numeric parameters
 	pause, err := strconv.Atoi(e.FormValue("pause"))
 	if err != nil || pause < 3 || pause > 10 {
-		return nil, errors.New("pause must be between 3 and 10")
-	}
-
-	if len(titleName) < 5 || len(titleName) > 32 {
-		return nil, errors.New("title_name must be between 5 and 32")
+		return nil, nil, nil, errors.New("pause must be between 3 and 10")
 	}
 
 	pattern, err := strconv.Atoi(e.FormValue("pattern"))
 	if err != nil || pattern < 1 || pattern > 3 {
-		return nil, errors.New("pattern must be between 1 and 3")
+		return nil, nil, nil, errors.New("pattern must be between 1 and 3")
 	}
 
-	return &models.Title{
-		Name:        titleName,
-		TitleLangId: fileLangId,
-		ToVoiceId:   toVoiceId,
-		FromVoiceId: fromVoiceId,
-		Pause:       pause,
-		Pattern:     pattern,
-	}, nil
-}
+	// Validate title name length
+	if len(titleName) < 5 || len(titleName) > 32 {
+		return nil, nil, nil, errors.New("title_name must be between 5 and 32")
+	}
 
-func isValidLanguage(m models.ModelsX, id int) bool {
-	_, err := m.GetLanguage(id)
-	return err == nil
-}
+	// Create title object
+	title := &models.Title{
+		Name:      titleName,
+		TitleLang: "",
+		FromVoice: fromVoiceID,
+		ToVoice:   toVoiceID,
+		Pause:     pause,
+		Pattern:   pattern,
+	}
 
-func isValidVoice(m models.ModelsX, id int) bool {
-	_, err := m.GetVoice(id)
-	return err == nil
+	return title, &fromVoice, &toVoice, nil
 }

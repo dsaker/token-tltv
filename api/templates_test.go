@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
+	"testing"
+
 	"talkliketv.click/tltv/internal/models"
 	"talkliketv.click/tltv/internal/util"
 	"talkliketv.click/tltv/ui"
-	"testing"
 
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
@@ -25,8 +26,8 @@ func TestNewTemplateCache(t *testing.T) {
 
 	// Verify expected templates are loaded
 	expectedTemplates := []string{
-		"audio.gohtml",
 		"home.gohtml",
+		"audio.gohtml",
 		"parse.gohtml",
 	}
 
@@ -56,11 +57,11 @@ func TestTemplateRegistryRender(t *testing.T) {
 	e := echo.New()
 
 	// Create proper language and voice maps
-	languages := map[int]models.Language{
-		1: {Code: "en", Name: "English"},
+	langCodes := []models.LanguageCode{
+		{Code: "en", Name: "English"},
 	}
-	voices := map[int]models.Voice{
-		1: {ID: 1, VoiceName: "en-US-Standard-A", Gender: 1},
+	voices := []models.Voice{
+		{Name: "en-US-Standard-A", SsmlGender: 1},
 	}
 
 	testCases := []struct {
@@ -68,28 +69,34 @@ func TestTemplateRegistryRender(t *testing.T) {
 		templateName  string
 		data          interface{}
 		expectedError bool
-		contains      string
+		contains      []string
 	}{
 		{
-			name:          "Valid template with valid data",
+			name:          "Valid home template",
 			templateName:  "home.gohtml",
-			data:          nil,
+			data:          newTemplateData(langCodes, voices, ""),
 			expectedError: false,
-			contains:      "<title>Home - TalkLikeTV</title>",
+			contains: []string{
+				"<title>Home - TalkLikeTV</title>",
+				"What is it?",
+				"How to use it",
+			},
 		},
 		{
-			name:          "Valid template with template data",
+			name:          "Valid audio template with data",
 			templateName:  "audio.gohtml",
-			data:          newTemplateData(languages, voices, ""),
+			data:          newTemplateData(langCodes, voices, ""),
 			expectedError: false,
-			contains:      "<title>Audio - TalkLikeTV</title>",
+			contains: []string{
+				"<title>Audio - TalkLikeTV</title>",
+			},
 		},
 		{
 			name:          "Non-existent template",
 			templateName:  "nonexistent.gohtml",
 			data:          nil,
 			expectedError: true,
-			contains:      "",
+			contains:      []string{},
 		},
 	}
 
@@ -110,7 +117,9 @@ func TestTemplateRegistryRender(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				result := buf.String()
-				assert.Contains(t, result, tc.contains)
+				for _, expected := range tc.contains {
+					assert.Contains(t, result, expected)
+				}
 			}
 		})
 	}
@@ -120,40 +129,42 @@ func TestNewTemplateData(t *testing.T) {
 	if util.Test != "unit" {
 		t.Skip("skipping unit test")
 	}
-	// Test with empty maps
-	t.Run("EmptyMaps", func(t *testing.T) {
-		languages := map[int]models.Language{}
-		voices := map[int]models.Voice{}
+	// Test with empty slices
+	t.Run("EmptySlices", func(t *testing.T) {
+		languages := []models.LanguageCode{}
+		voices := []models.Voice{}
 		errorMsg := "test error"
 
 		data := newTemplateData(languages, voices, errorMsg)
 
 		assert.NotNil(t, data)
-		assert.Equal(t, languages, data.Languages)
+		assert.Equal(t, languages, data.LanguageCodes)
 		assert.Equal(t, voices, data.Voices)
 		assert.Equal(t, errorMsg, data.Error)
+		assert.Equal(t, []int{3, 4, 5, 6, 7, 8, 9, 10}, data.PauseDurations)
 	})
 
-	// Test with populated maps
-	t.Run("PopulatedMaps", func(t *testing.T) {
-		languages := map[int]models.Language{
-			1: {Code: "en", Name: "English"},
-			2: {Code: "es", Name: "Spanish"},
+	// Test with populated slices
+	t.Run("PopulatedSlices", func(t *testing.T) {
+		languages := []models.LanguageCode{
+			{Code: "en", Name: "English"},
+			{Code: "es", Name: "Spanish"},
 		}
-		voices := map[int]models.Voice{
-			1: {ID: 1, VoiceName: "voice1", Gender: 2},
-			2: {ID: 2, VoiceName: "voice2", Gender: 1},
+		voices := []models.Voice{
+			{Name: "voice1", SsmlGender: 2},
+			{Name: "voice2", SsmlGender: 1},
 		}
 		errorMsg := ""
 
 		data := newTemplateData(languages, voices, errorMsg)
 
 		assert.NotNil(t, data)
-		assert.Equal(t, languages, data.Languages)
+		assert.Equal(t, languages, data.LanguageCodes)
 		assert.Equal(t, voices, data.Voices)
 		assert.Equal(t, errorMsg, data.Error)
-		assert.Len(t, data.Languages, 2)
+		assert.Len(t, data.LanguageCodes, 2)
 		assert.Len(t, data.Voices, 2)
+		assert.Equal(t, []int{3, 4, 5, 6, 7, 8, 9, 10}, data.PauseDurations)
 	})
 }
 
@@ -168,4 +179,8 @@ func TestMockEmbeddedFile(t *testing.T) {
 
 	_, err = ui.Files.Open("html/pages/home.gohtml")
 	assert.NoError(t, err, "Should be able to open home template from embedded filesystem")
+
+	// Test common templates
+	_, err = ui.Files.Open("html/common/nav.gohtml")
+	assert.NoError(t, err, "Should be able to open common header template from embedded filesystem")
 }

@@ -1,9 +1,10 @@
 package api
 
 import (
-	"github.com/labstack/echo/v4"
 	"io/fs"
 	"net/http"
+
+	"github.com/labstack/echo/v4"
 	"talkliketv.click/tltv/ui"
 )
 
@@ -13,7 +14,15 @@ func homeView(e echo.Context) error {
 
 // audioView renders the frontend html page to upload a file for mp3 creation
 func (s *Server) audioView(e echo.Context) error {
-	return e.Render(http.StatusOK, "audio.gohtml", newTemplateData(s.m.GetLanguages(), s.m.GetVoices(), ""))
+	languageCodes, err := s.m.GetLanguageCodes(e.Request().Context())
+	if err != nil {
+		return e.String(http.StatusInternalServerError, "error getting language codes: "+err.Error())
+	}
+	voices, err := s.m.GetVoices(e.Request().Context())
+	if err != nil {
+		return e.String(http.StatusInternalServerError, "error getting voices: "+err.Error())
+	}
+	return e.Render(http.StatusOK, "audio.gohtml", newTemplateData(languageCodes, voices, ""))
 }
 
 // parseView renders the frontend html page to upload a file to parsefile it
