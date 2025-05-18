@@ -13,14 +13,15 @@ import (
 	"os"
 	"strconv"
 	"sync"
-	"talkliketv.click/tltv/internal/config"
-	"talkliketv.click/tltv/internal/models"
-	"talkliketv.click/tltv/internal/oapi"
-	"talkliketv.click/tltv/internal/services"
-	"talkliketv.click/tltv/internal/services/audiofile"
-	"talkliketv.click/tltv/internal/services/translates"
-	"talkliketv.click/tltv/internal/util"
-	"talkliketv.click/tltv/ui"
+	"talkliketv.com/tltv/internal/config"
+	"talkliketv.com/tltv/internal/interfaces"
+	"talkliketv.com/tltv/internal/oapi"
+	"talkliketv.com/tltv/internal/services"
+	"talkliketv.com/tltv/internal/services/audiofile"
+	"talkliketv.com/tltv/internal/services/templates"
+	"talkliketv.com/tltv/internal/services/translates"
+	"talkliketv.com/tltv/internal/util"
+	"talkliketv.com/tltv/ui"
 	"time"
 )
 
@@ -28,8 +29,7 @@ type Server struct {
 	sync.RWMutex
 	translate translates.TranslateX
 	af        audiofile.AudioFileX
-	m         models.ModelsX
-	tokens    models.TokensX
+	m         interfaces.ModelsStore
 	config    config.Config
 }
 
@@ -37,14 +37,12 @@ func NewServer(
 	c config.Config,
 	t translates.TranslateX,
 	af audiofile.AudioFileX,
-	tok models.TokensX,
-	m models.ModelsX,
+	m interfaces.ModelsStore,
 ) *Server {
 	return &Server{
 		translate: t,
 		config:    c,
 		af:        af,
-		tokens:    tok,
 		m:         m,
 	}
 }
@@ -65,15 +63,15 @@ func (s *Server) NewEcho(logger *logging.Logger) *echo.Echo {
 
 	// add middleware
 	e.Use(echomw.Logger())
-	e.Use(echomw.RateLimiter(echomw.NewRateLimiterMemoryStore(rate.Limit(5))))
+	e.Use(echomw.RateLimiter(echomw.NewRateLimiterMemoryStore(rate.Limit(10))))
 	e.Use(echomw.Recover())
 
 	// Create a new template cache
-	tempC, err := newTemplateCache()
+	tempC, err := templates.NewTemplateCache()
 	if err != nil {
 		log.Fatal(err)
 	}
-	e.Renderer = &TemplateRegistry{templates: tempC}
+	e.Renderer = &templates.TemplateRegistry{Templates: tempC}
 
 	// Use our validation middleware to check all requests against the OpenAPI schema.
 	apiGrp := e.Group("/v1")
@@ -94,12 +92,12 @@ func (s *Server) NewEcho(logger *logging.Logger) *echo.Echo {
 		log.Fatal(err)
 	}
 	uiGrp.StaticFS("/static", staticFiles)
-	uiGrp.GET("/", homeView)
-	uiGrp.GET("/ads.txt", adsView)
-	uiGrp.GET("/robots.txt", robotsView)
-	uiGrp.GET("/favicon.ico", faviconView)
-	uiGrp.GET("/audio", s.audioView)
-	uiGrp.GET("/parse", s.parseView)
+	uiGrp.GET("/", templates.HomeView)
+	uiGrp.GET("/ads.txt", templates.AdsView)
+	uiGrp.GET("/robots.txt", templates.RobotsView)
+	uiGrp.GET("/favicon.ico", templates.FaviconView)
+	uiGrp.GET("/audio", templates.AudioView(s.m))
+	uiGrp.GET("/parse", templates.ParseView(s.config.MaxNumPhrases))
 
 	oapi.RegisterHandlersWithBaseURL(apiGrp, s, "")
 	return e
@@ -120,6 +118,34 @@ func GoogleCloudLoggingMiddleWare(logger *logging.Logger) echo.MiddlewareFunc {
 			req := c.Request()
 			res := c.Response()
 
+			// Create labels and payload maps
+			labels := map[string]string{
+				"method":     req.Method,
+				"uri":        req.RequestURI,
+				"status":     strconv.Itoa(res.Status),
+				"latency":    latency.String(),
+				"user_agent": req.UserAgent(),
+				"message":    message,
+				"real_ip":    c.RealIP(),
+			}
+
+			payload := map[string]any{
+				"method":     req.Method,
+				"uri":        req.RequestURI,
+				"status":     res.Status,
+				"latency":    latency.String(),
+				"user_agent": req.UserAgent(),
+				"message":    message,
+				"real_ip":    c.RealIP(),
+			}
+
+			// Check if token exists in form values and add masked version to logs
+			if token := c.FormValue("token"); token != "" {
+				maskedToken := maskToken(token)
+				labels["token"] = maskedToken
+				payload["token"] = maskedToken
+			}
+
 			severity := logging.Info
 			if res.Status >= 400 {
 				severity = logging.Warning
@@ -127,30 +153,27 @@ func GoogleCloudLoggingMiddleWare(logger *logging.Logger) echo.MiddlewareFunc {
 			if res.Status >= 500 {
 				severity = logging.Error
 			}
+
 			logger.Log(logging.Entry{
-				Labels: map[string]string{
-					"method":     req.Method,
-					"uri":        req.RequestURI,
-					"status":     strconv.Itoa(res.Status),
-					"latency":    latency.String(),
-					"user_agent": req.UserAgent(),
-					"message":    message,
-					"real_ip":    c.RealIP(),
-				},
+				Labels:   labels,
 				Severity: severity,
-				Payload: map[string]any{
-					"method":     req.Method,
-					"uri":        req.RequestURI,
-					"status":     res.Status,
-					"latency":    latency.String(),
-					"user_agent": req.UserAgent(),
-					"message":    message,
-					"real_ip":    c.RealIP(),
-				},
+				Payload:  payload,
 			})
 			return err
 		}
 	}
+}
+
+// maskToken returns a masked version of the token for logging purposes
+// Tokens are always 26 characters long
+func maskToken(token string) string {
+	// Show first 4 and last 4 characters, mask the middle with asterisks
+	if len(token) != 26 {
+		return "invalid-token-length"
+	}
+
+	// Show first 4 and last 4 characters
+	return token[:4] + "******************" + token[22:]
 }
 
 // Make sure we conform to ServerInterface
@@ -158,12 +181,20 @@ var _ oapi.ServerInterface = (*Server)(nil)
 
 // initSilence copies the silence mp3's from the embedded filesystem to the config TTSBasePath
 func initSilence(cfg config.Config) {
+	exists := true
+	var err error
 	// check if silence mp3s exist in your base path
-	silencePath := cfg.TTSBasePath + audiofile.AudioPauseFilePath[4]
-	exists, err := util.PathExists(silencePath)
-	if err != nil {
-		log.Fatal(err)
+	for key := range audiofile.AudioPauseFilePath {
+		silencePath := cfg.TTSBasePath + audiofile.AudioPauseFilePath[key]
+		exists, err = util.PathExists(silencePath)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if !exists {
+			break
+		}
 	}
+
 	// if it doesn't exist copy it from embedded FS to TTSBasePath
 	if !exists {
 		err = os.MkdirAll(cfg.TTSBasePath+"silence/", 0777)

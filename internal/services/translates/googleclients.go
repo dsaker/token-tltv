@@ -5,22 +5,29 @@ import (
 	"cloud.google.com/go/texttospeech/apiv1/texttospeechpb"
 	"cloud.google.com/go/translate"
 	"context"
-	"errors"
 	"fmt"
 	"github.com/googleapis/gax-go/v2"
-	"github.com/labstack/echo/v4"
 	"golang.org/x/text/language"
-	"log"
-	"os"
-	"strconv"
-	"sync"
-	"talkliketv.click/tltv/internal/models"
+	"talkliketv.com/tltv/internal/interfaces"
 )
+
+// TTSClientInterface defines the operations needed from a text-to-speech client
+type TTSClientInterface interface {
+	// ProcessPhrase handles the TTS process for a single phrase
+	ProcessPhrase(ctx context.Context, phrase interfaces.Phrase, params *texttospeechpb.VoiceSelectionParams) (*texttospeechpb.SynthesizeSpeechResponse, error)
+
+	// TranslateTexts translates a set of texts from one language to another
+	TranslateTexts(ctx context.Context, texts []string, targetLang language.Tag) ([]string, error)
+
+	// DetectLanguage detects the language of provided texts
+	DetectLanguage(ctx context.Context, texts []string) (language.Tag, error)
+}
 
 // GoogleTranslateClientX creates an interface for google translate.Translate so it can
 // be mocked for testing
 type GoogleTranslateClientX interface {
 	Translate(context.Context, []string, language.Tag, *translate.Options) ([]translate.Translation, error)
+	DetectLanguage(context.Context, []string) ([][]translate.Detection, error)
 }
 
 // GoogleTTSClientX creates an interface for google texttospeechpb.SynthesizeSpeech so
@@ -29,117 +36,139 @@ type GoogleTTSClientX interface {
 	SynthesizeSpeech(context.Context, *texttospeechpb.SynthesizeSpeechRequest, ...gax.CallOption) (*texttospeechpb.SynthesizeSpeechResponse, error)
 }
 
+// GoogleClients implements TTSClientInterface using Google APIs
 type GoogleClients struct {
 	gtc  GoogleTranslateClientX
 	gtts GoogleTTSClientX
 }
 
-// NewGoogleClients creates a new google translate and text-to-speech clients; constructs
-// the translate and audiofile dependencies and returns them
-func NewGoogleClients(ctx context.Context) *GoogleClients {
-	// create google translate and text-to-speech clients
-	transClient, err := translate.NewClient(ctx)
+// Ensure GoogleClients implements TTSClientInterface
+var _ TTSClientInterface = (*GoogleClients)(nil)
+
+// NewGoogleTTSClient creates a new TTSClientInterface implementation using Google services
+func NewGoogleTTSClient(c context.Context) (TTSClientInterface, error) {
+	// Create Google clients
+	transClient, err := translate.NewClient(c)
 	if err != nil {
-		log.Fatalf("Error creating google api translate client\n: %s", err)
+		return nil, fmt.Errorf("creating Google Translate client: %w", err)
 	}
-	ttsClient, err := tts.NewClient(ctx)
+
+	ttsClient, err := tts.NewClient(c)
 	if err != nil {
-		log.Fatalf("Error creating google api translate client\n: %s", err)
+		return nil, fmt.Errorf("creating Google Text-to-Speech client: %w", err)
 	}
+
 	return &GoogleClients{
 		gtc:  transClient,
 		gtts: ttsClient,
-	}
+	}, nil
 }
 
-// GetTranslate is a helper function for TranslatePhrases that allows concurrent calls to
-// google translate.Translate.
-// It receives a context.CancelFunc that is invoked on an error so all subsequent calls to
-// google translate.Translate can be aborted
-func (g *GoogleClients) GetTranslate(e echo.Context,
+// ProcessPhrase handles the TTS process for a single phrase
+func (g *GoogleClients) ProcessPhrase(
 	ctx context.Context,
-	cancel context.CancelFunc,
-	phrase models.Phrase,
-	wg *sync.WaitGroup,
-	lang language.Tag,
-	responses []models.Phrase,
-	i int,
-) {
-	defer wg.Done()
-	select {
-	case <-ctx.Done():
-		return // Error somewhere, terminate
-	default: // Default to avoid blocking
-		resp, err := g.gtc.Translate(ctx, []string{phrase.Text}, lang, nil)
-		if err != nil {
-			switch {
-			case errors.Is(err, context.Canceled):
-				return
-			default:
-				e.Logger().Error(fmt.Errorf("error translating text: %s", err))
-				cancel()
-			}
-			return
-		}
-
-		if len(resp) == 0 {
-			e.Logger().Error(fmt.Errorf("translate returned empty response to text: %s", err))
-			cancel()
-		}
-
-		responses[i] = models.Phrase{
-			ID:   phrase.ID,
-			Text: resp[0].Text,
-		}
-	}
-}
-
-// GetSpeech is a helper function for TextToSpeech that is run concurrently.
-// it is passed a cancel context, so if one routine fails, the following routines can
-// be canceled
-func (g *GoogleClients) GetSpeech(
-	e echo.Context,
-	ctx context.Context,
-	cancel context.CancelFunc,
-	translate models.Phrase,
-	wg *sync.WaitGroup,
+	phrase interfaces.Phrase,
 	params *texttospeechpb.VoiceSelectionParams,
-	basePath string) {
-	defer wg.Done()
-	select {
-	case <-ctx.Done():
-		return // Error somewhere, terminate
-	default:
-		// Perform the text-to-speech request on the text input with the selected
-		// voice parameters and audio file type.
-		req := texttospeechpb.SynthesizeSpeechRequest{
-			// Set the text input to be synthesized.
-			Input: &texttospeechpb.SynthesisInput{
-				InputSource: &texttospeechpb.SynthesisInput_Text{Text: translate.Text},
-			},
-			// Build the voice request, select the language code ("en-US") and the SSML
-			// voice gender ("neutral").
-			Voice: params,
-			// Select the type of audio file you want returned.
-			AudioConfig: &texttospeechpb.AudioConfig{
-				AudioEncoding: texttospeechpb.AudioEncoding_MP3,
-			},
+) (*texttospeechpb.SynthesizeSpeechResponse, error) {
+	// Check if context is already canceled
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+
+	// Build the TTS request
+	req := &texttospeechpb.SynthesizeSpeechRequest{
+		Input: &texttospeechpb.SynthesisInput{
+			InputSource: &texttospeechpb.SynthesisInput_Text{Text: phrase.Text},
+		},
+		Voice: params,
+		AudioConfig: &texttospeechpb.AudioConfig{
+			AudioEncoding: texttospeechpb.AudioEncoding_MP3,
+		},
+	}
+
+	// Execute TTS request
+	return g.gtts.SynthesizeSpeech(ctx, req)
+}
+
+// TranslateTexts translates a set of texts from one language to another
+func (g *GoogleClients) TranslateTexts(
+	ctx context.Context,
+	texts []string,
+	targetLang language.Tag,
+) ([]string, error) {
+	translations, err := g.gtc.Translate(ctx, texts, targetLang, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]string, len(translations))
+	for i, t := range translations {
+		result[i] = t.Text
+	}
+	return result, nil
+}
+
+// DetectLanguage detects the language of provided texts
+func (g *GoogleClients) DetectLanguage(ctx context.Context, texts []string) (language.Tag, error) {
+	if len(texts) == 0 {
+		return language.Und, fmt.Errorf("no texts provided")
+	}
+
+	detections, err := g.gtc.DetectLanguage(ctx, texts)
+	if err != nil {
+		return language.Und, err
+	}
+
+	// Language detection logic (same as original implementation)
+	if len(detections) == 0 {
+		return language.Und, fmt.Errorf("no languages detected")
+	}
+
+	// Count language occurrences
+	langCounts := make(map[string]int)
+	var highestConfidence float64
+	var mostConfidentLang language.Tag
+
+	for _, textDetections := range detections {
+		if len(textDetections) == 0 {
+			continue
 		}
 
-		resp, err := g.gtts.SynthesizeSpeech(ctx, &req)
-		if err != nil {
-			e.Logger().Error(fmt.Errorf("error creating Synthesize Speech client: %s", err))
-			cancel()
-			return
-		}
+		// Track the language with highest confidence from each text
+		for _, detection := range textDetections {
+			langCode := detection.Language.String()
+			langCounts[langCode]++
 
-		// The resp AudioContent is binary.
-		filename := basePath + strconv.Itoa(translate.ID)
-		err = os.WriteFile(filename, resp.AudioContent, 0600)
-		if err != nil {
-			e.Logger().Error(fmt.Errorf("error creating translate client: %s", err))
-			cancel()
-			return
+			// Also keep track of the single highest confidence detection
+			if detection.Confidence > highestConfidence {
+				highestConfidence = detection.Confidence
+				mostConfidentLang = detection.Language
+			}
 		}
 	}
+
+	// Find the most common language
+	var mostCommonLang string
+	maxCount := 1
+	for lang, count := range langCounts {
+		if count > maxCount {
+			mostCommonLang = lang
+			maxCount = count
+		}
+	}
+
+	// If we found a most common language, use that
+	if mostCommonLang != "" {
+		tag, err := language.Parse(mostCommonLang)
+		if err == nil {
+			return tag, nil
+		}
+	}
+
+	// Fall back to the highest confidence detection
+	if mostConfidentLang != language.Und {
+		return mostConfidentLang, nil
+	}
+
+	return language.Und, fmt.Errorf("could not determine most common language")
 }

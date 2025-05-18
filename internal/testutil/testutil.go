@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"cloud.google.com/go/firestore"
 	"context"
 	"errors"
 	"fmt"
@@ -8,15 +9,15 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.uber.org/mock/gomock"
+	"google.golang.org/api/iterator"
 	"log"
 	"math/rand"
 	"os"
-	"path/filepath"
 	"reflect"
 	"slices"
 	"strings"
-	"talkliketv.click/tltv/internal/mock"
-	"talkliketv.click/tltv/internal/models"
+	"talkliketv.com/tltv/internal/interfaces"
+	"talkliketv.com/tltv/internal/mock"
 	"testing"
 	"time"
 )
@@ -69,20 +70,20 @@ const (
 	FirestoreTestCollection = "token-tltv-test"
 )
 
-func RandomPhrase() models.Phrase {
-	return models.Phrase{
+func RandomPhrase() interfaces.Phrase {
+	return interfaces.Phrase{
 		ID:   rand.Intn(100), //nolint:gosec
 		Text: RandomString(20),
 	}
 }
 
 // RandomVoice creates a random Voice for testing
-func RandomVoice() models.Voice {
-	return models.Voice{
-		LangId:                 rand.Intn(MaxLanguages), //nolint:gosec
-		LanguageCodes:          []string{RandomString(8), RandomString(8)},
-		Gender:                 2,
-		VoiceName:              RandomString(8),
+func RandomVoice() interfaces.Voice {
+	return interfaces.Voice{
+		Language:               RandomString(8),
+		LanguageCode:           RandomString(8),
+		SsmlGender:             interfaces.MALE,
+		Name:                   RandomString(8),
 		NaturalSampleRateHertz: 24000,
 	}
 }
@@ -100,14 +101,14 @@ func RandomString(n int) string {
 	return sb.String()
 }
 
-func RandomTitle(voices map[int]models.Voice) (title models.Title) {
-	return models.Title{
-		Name:        RandomString(8),
-		TitleLangId: ValidLangId,
-		ToVoiceId:   voices[rand.Intn(MaxVoices)].ID, //nolint:gosec
-		FromVoiceId: voices[rand.Intn(MaxVoices)].ID, //nolint:gosec
-		Pause:       DefaultPause,
-		Pattern:     DefaultPattern,
+func RandomTitle() (title interfaces.Title) {
+	return interfaces.Title{
+		Name:      RandomString(8),
+		TitleLang: RandomString(8),
+		ToVoice:   RandomString(8),
+		FromVoice: RandomString(8),
+		Pause:     DefaultPause,
+		Pattern:   DefaultPattern,
 	}
 }
 
@@ -115,11 +116,8 @@ type MockStubs struct {
 	TranslateX             *mock.MockTranslateX
 	GoogleTranslateClientX *mock.MockGoogleTranslateClientX
 	GoogleTTsClientX       *mock.MockGoogleTTSClientX
-	AmazonTranslateClientX *mock.MockAmazonTranslateClientX
-	AmazonTTsClientX       *mock.MockAmazonTTSClientX
 	AudioFileX             *mock.MockAudioFileX
-	TokensX                *mock.MockTokensX
-	ModelsX                *mock.MockModelsX
+	ModelsX                *mock.MockModelsStore
 }
 
 // NewMockStubs creates instantiates new instances of all the mock interfaces for testing
@@ -129,10 +127,7 @@ func NewMockStubs(ctrl *gomock.Controller) MockStubs {
 		GoogleTranslateClientX: mock.NewMockGoogleTranslateClientX(ctrl),
 		GoogleTTsClientX:       mock.NewMockGoogleTTSClientX(ctrl),
 		AudioFileX:             mock.NewMockAudioFileX(ctrl),
-		AmazonTranslateClientX: mock.NewMockAmazonTranslateClientX(ctrl),
-		AmazonTTsClientX:       mock.NewMockAmazonTTSClientX(ctrl),
-		TokensX:                mock.NewMockTokensX(ctrl),
-		ModelsX:                mock.NewMockModelsX(ctrl),
+		ModelsX:                mock.NewMockModelsStore(ctrl),
 	}
 }
 
@@ -149,33 +144,33 @@ func (lc *StdoutLogConsumer) Accept(l testcontainers.Log) {
 }
 
 func StartContainer(ctx context.Context, projectId, saFile string) (*TltvContainer, error) {
-	g := StdoutLogConsumer{}
+	g := &StdoutLogConsumer{}
 
-	absPath, err := filepath.Abs(saFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	r, err := os.Open(absPath)
+	r, err := os.Open("/Users/dustysaker/secrets/token-tltv-test-898847de130d.json")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	req := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    "../",
-			Dockerfile: "/deploy/docker/dev/Dockerfile",
+			Context:    "..",
+			Dockerfile: "deploy/docker/dev/Dockerfile",
 			KeepImage:  true,
+			BuildArgs: map[string]*string{
+				"BUILDKIT_INLINE_CACHE": ptr("1"),
+			},
+			BuildLogWriter: os.Stdout, // Add this to see build logs
 		},
+
 		ExposedPorts: []string{"8080/tcp"},
 		Env: map[string]string{
-			"TEST_PROJECT_ID":                projectId,
+			"PROJECT_ID":                     projectId,
 			"GOOGLE_APPLICATION_CREDENTIALS": "/secrets/acp/application_default_credentials.json",
 		},
 		Files: []testcontainers.ContainerFile{
 			{
 				Reader:            r,
-				HostFilePath:      absPath, // will be discarded internally
+				HostFilePath:      saFile,
 				ContainerFilePath: "/secrets/acp/application_default_credentials.json",
 				FileMode:          0o400,
 			},
@@ -184,7 +179,7 @@ func StartContainer(ctx context.Context, projectId, saFile string) (*TltvContain
 		LogConsumerCfg: &testcontainers.LogConsumerConfig{
 			Opts: []testcontainers.LogProductionOption{
 				testcontainers.WithLogProductionTimeout(10 * time.Second)},
-			Consumers: []testcontainers.LogConsumer{&g},
+			Consumers: []testcontainers.LogConsumer{g},
 		},
 	}
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -213,4 +208,44 @@ func StartContainer(ctx context.Context, projectId, saFile string) (*TltvContain
 
 	tltvC.URI = fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
 	return tltvC, nil
+}
+
+func ptr[T any](v T) *T {
+	return &v
+}
+
+func DeleteCollection(ctx context.Context, client *firestore.Client, collectionName string, batchSize int) error {
+	col := client.Collection(collectionName)
+	bulkwriter := client.BulkWriter(ctx)
+
+	for {
+		iter := col.Limit(batchSize).Documents(ctx)
+		numDeleted := 0
+
+		for {
+			doc, err := iter.Next()
+			if errors.Is(err, iterator.Done) {
+				break
+			}
+			if err != nil {
+				return fmt.Errorf("error iterating documents: %v", err)
+			}
+			_, err = bulkwriter.Delete(doc.Ref)
+			if err != nil {
+				return err
+			}
+			numDeleted++
+		}
+
+		if numDeleted == 0 {
+			break
+		}
+
+		bulkwriter.Flush()
+	}
+
+	bulkwriter.End()
+
+	fmt.Printf("Deleted collection '%s'\n", collectionName)
+	return nil
 }

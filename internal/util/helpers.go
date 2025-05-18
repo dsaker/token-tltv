@@ -1,10 +1,6 @@
 package util
 
 import (
-	"cloud.google.com/go/firestore"
-	"context"
-	"errors"
-	"google.golang.org/api/iterator"
 	"io"
 	"net/http"
 	"os"
@@ -16,7 +12,6 @@ var (
 
 const (
 	StarString  = "*********************************************\n"
-	TokenColl   = "tokens"
 	metadataURL = "http://metadata.google.internal/computeMetadata/v1/instance/name"
 )
 
@@ -57,43 +52,6 @@ func RemoveLongStr(strSlice []string) []string {
 		}
 	}
 	return list
-}
-
-func DeleteFirestoreCollection(ctx context.Context, client *firestore.Client, coll *firestore.CollectionRef) error {
-	// delete all documents in test collection
-	bulkwriter := client.BulkWriter(ctx)
-	for {
-		// Get a batch of documents
-		iter := coll.Documents(ctx)
-		numDeleted := 0
-
-		// Iterate through the documents, adding
-		// a delete operation for each one to the BulkWriter.
-		for {
-			doc, err := iter.Next()
-			if errors.Is(err, iterator.Done) {
-				break
-			}
-			if err != nil {
-				return err
-			}
-
-			_, err = bulkwriter.Delete(doc.Ref)
-			if err != nil {
-				return err
-			}
-			numDeleted++
-		}
-
-		// If there are no documents to delete, the process is over.
-		if numDeleted == 0 {
-			bulkwriter.End()
-			break
-		}
-
-		bulkwriter.Flush()
-	}
-	return nil
 }
 
 func GetVMName() (string, error) {

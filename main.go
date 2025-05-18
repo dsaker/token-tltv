@@ -1,4 +1,4 @@
-//go:build go1.22
+//go:build go1.23
 
 package main
 
@@ -11,37 +11,36 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"talkliketv.click/tltv/api"
-	"talkliketv.click/tltv/internal/config"
-	"talkliketv.click/tltv/internal/models"
-	"talkliketv.click/tltv/internal/services/audiofile"
-	"talkliketv.click/tltv/internal/services/translates"
-	"talkliketv.click/tltv/internal/util"
+	"talkliketv.com/tltv/api"
+	"talkliketv.com/tltv/internal/config"
+	"talkliketv.com/tltv/internal/models"
+	"talkliketv.com/tltv/internal/services/audiofile"
+	"talkliketv.com/tltv/internal/services/translates"
+	"talkliketv.com/tltv/internal/util"
 )
 
 func main() {
-	// load config
+	// Load configuration
 	var cfg config.Config
-	err := cfg.SetConfigs()
-	if err != nil {
+	if err := cfg.SetConfigs(); err != nil {
 		log.Fatal(err)
 	}
 	flag.Parse()
 
-	if cfg.Env == "dev" && cfg.ProjectId == "" {
-		cfg.ProjectId = os.Getenv("TEST_PROJECT_ID")
-		if cfg.ProjectId == "" {
-			log.Fatal("In dev mode you must provide PROJECT_ID as environment variable or command argument")
-		}
+	// Validate project ID
+	if cfg.ProjectId == "" {
+		cfg.ProjectId = os.Getenv("PROJECT_ID")
 	}
 
+	if cfg.ProjectId == "" {
+		log.Fatal("Provide PROJECT_ID environment variable or use -p flag.")
+	}
+
+	ctx := context.Background()
+
+	// Initialize logger for production
 	var logger *logging.Logger
 	if cfg.Env == "prod" {
-		cfg.ProjectId = os.Getenv("PROJECT_ID")
-		if cfg.ProjectId == "" {
-			log.Fatal("In prod mode you must provide PROJECT_ID as environment variable")
-		}
-		ctx := context.Background()
 		client, err := logging.NewClient(ctx, cfg.ProjectId)
 		if err != nil {
 			log.Fatalf("Failed to create logging client: %v", err)
@@ -53,55 +52,48 @@ func main() {
 			log.Println("Error getting VM name:", err)
 			vmName = "tltv-logger"
 		}
-		// Create a logger
 		logger = client.Logger(vmName)
-		log.Println("logger name: ", vmName)
+		log.Println("Logger name:", vmName)
 	}
 
-	// if ffmpeg is not installed and in PATH of host machine fail immediately
-	cmd := exec.Command("ffmpeg", "-version")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatalf("Please make sure ffmep is installed and in PATH\n: %s", err)
-	}
-	if !strings.Contains(string(output), "ffmpeg version") {
-		log.Fatalf("Please make sure ffmep is installed and in PATH\n: %s", string(output))
+	// Ensure ffmpeg is installed
+	if output, err := exec.Command("ffmpeg", "-version").CombinedOutput(); err != nil || !strings.Contains(string(output), "ffmpeg version") {
+		log.Fatalf("Ensure ffmpeg is installed and in PATH: %s", err)
 	}
 
-	//initialize audiofile with the real command runner
+	// Initialize services
 	af := audiofile.New(&audiofile.RealCmdRunner{})
 
-	// create translates with google or amazon clients depending on the flag set in conifg
-	// create maps of voices and languages depending on platform
-	langs, voices := models.MakeGoogleMaps()
-	if cfg.Platform == "amazon" {
-		langs, voices = models.MakeAmazonMaps()
-	}
-
-	mods := models.Models{Languages: langs, Voices: voices}
-	t := translates.New(*translates.NewGoogleClients(context.Background()), translates.AmazonClients{}, &mods, translates.Google)
-	if cfg.Platform == "amazon" {
-		t = translates.New(translates.GoogleClients{}, *translates.NewAmazonClients(context.Background()), &mods, translates.Amazon)
-	}
-
+	// Firestore client setup
 	fClient, err := cfg.FirestoreClient()
 	if err != nil {
-		log.Fatal("Error creating firestore client: ", err)
+		log.Fatal("Error creating Firestore client: ", err)
 	}
 
-	tokensColl := fClient.Collection(util.TokenColl)
-	tokens := models.Tokens{Coll: tokensColl}
-	// create new server
-	server := api.NewServer(cfg, t, af, &tokens, &mods)
-
-	// running in local mode allows you to create audio without using tokens
-	// this should never be used in the cloud
-	if cfg.Env == "local" {
-		server = api.NewServer(cfg, t, af, &models.LocalTokens{}, &mods)
+	// Initialize Firestore models
+	mods, err := models.NewModels(fClient, cfg.Env, models.LangCollString, models.LangCodeCollString, models.VoiceCollString, models.TokenCollString)
+	if err != nil {
+		log.Fatal("Error creating models: ", err)
 	}
 
+	// Create Google clients
+	googleClients, err := translates.NewGoogleTTSClient(ctx)
+	if err != nil {
+		log.Fatal("Failed to create Google clients: ", err)
+	}
+
+	if googleClients == nil {
+		log.Fatal("Failed to create Google clients")
+	}
+
+	// Create the translate service with the clients
+	t := translates.New(googleClients, mods)
+
+	// Create server with proper token store based on environment
+	server := api.NewServer(cfg, t, af, mods)
+
+	// Start server
 	e := server.NewEcho(logger)
-	log.Print("\n\n" + util.StarString + "environment: " + cfg.Env + "\n" + util.StarString)
-
+	log.Printf("\n\n%senvironment: %s\n%s", util.StarString, cfg.Env, util.StarString)
 	e.Logger.Fatal(e.Start(net.JoinHostPort("0.0.0.0", cfg.Port)))
 }

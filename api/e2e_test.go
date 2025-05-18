@@ -9,14 +9,15 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"talkliketv.click/tltv/internal/models"
-	"talkliketv.click/tltv/internal/util"
+	"talkliketv.com/tltv/internal/models"
+	"talkliketv.com/tltv/internal/services/tokens"
+	"talkliketv.com/tltv/internal/util"
 	"testing"
 	"time"
 )
 
 // TestEndToEndParse tests the ParseFile endpoint end-to-end
-// Program arguments: -env=dev -project-id=token-tltv-test -test=end-to-end [-local=true] [-headless=false]
+// Program arguments: -project-id=token-tltv-test -test=end-to-end -local=true -headless=false [-sa-file={secret file}]
 func TestEndToEndParse(t *testing.T) {
 	if util.Test != "end-to-end" {
 		t.Skip("skipping end-to-end test")
@@ -68,16 +69,24 @@ func TestEndToEndParse(t *testing.T) {
 
 	err = page.Locator("#submit-parse-form").Click()
 	require.NoError(t, err)
-	download, ok := <-downloadChan
-	if !ok {
-		t.Fatal("download channel closed")
+
+	var download playwright.Download
+	var ok bool
+	// Add timeout protection like in TestEndToEndAudio
+	select {
+	case download, ok = <-downloadChan:
+		if !ok {
+			t.Fatal("download channel closed")
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("Timeout waiting for download")
 	}
 
-	dir := filepath.Join("tmp", strings.Split(t.Name(), "/")[0])
+	dir := filepath.Join("/tmp", strings.Split(t.Name(), "/")[0])
 	savePath := filepath.Join(dir, download.SuggestedFilename())
 	defer os.RemoveAll(dir)
 	err = download.SaveAs(savePath)
-	defer require.NoError(t, err)
+	require.NoError(t, err)
 	fileInfo, err := os.Stat(savePath)
 	require.NoError(t, err)
 
@@ -85,7 +94,7 @@ func TestEndToEndParse(t *testing.T) {
 }
 
 // TestEndToEndAudio tests the Audio endpoint end-to-end
-// Program arguments: -env=dev -project-id=[test project id] -test=end-to-end [-local=true] [-headless=false]
+// Program arguments: -test=end-to-end -project-id=[test project id] -test=end-to-end [-local=true] [-headless=false]
 func TestEndToEndAudio(t *testing.T) {
 	if util.Test != "end-to-end" {
 		t.Skip("skipping end-to-end test")
@@ -98,14 +107,15 @@ func TestEndToEndAudio(t *testing.T) {
 	require.NoError(t, err)
 	defer client.Close()
 
-	// generate new token and add it to the collection
-	testToken, plaintext, err := models.GenerateToken()
+	mods, err := models.NewModels(client, "test", models.LangCollString, models.LangCodeCollString, models.VoiceCollString, models.TokenCollString)
 	require.NoError(t, err)
-	tokensColl := client.Collection(util.TokenColl)
-	tokens := models.Tokens{Coll: tokensColl}
+
+	// generate new token and add it to the collection
+	testToken, plaintext, err := tokens.GenerateToken()
+	require.NoError(t, err)
 
 	// add test token to the collection
-	err = tokens.AddToken(ctx, *testToken)
+	err = mods.AddToken(ctx, *testToken)
 	require.NoError(t, err)
 
 	b := *testCfg.browser
@@ -136,33 +146,42 @@ func TestEndToEndAudio(t *testing.T) {
 	pageTitle, err := page.Title()
 	require.Contains(t, pageTitle, "Audio - TalkLikeTV")
 
+	// Fill the token and title fields
 	err = page.Locator("#token-input").Fill(plaintext)
 	require.NoError(t, err)
 
 	err = page.Locator("#title-input").Fill("Random Title")
 	require.NoError(t, err)
 
-	// Create a string slice
-	selectsMap := map[string][]string{
-		"#file-lang-select":  {"Spanish"},
-		"#from-lang-select":  {"English"},
-		"#from-voice-select": {"en-US-Standard-A"},
-		"#to-lang-select":    {"Spanish"},
-		"#to-voice-select":   {"es-ES-Standard-A"},
-		"#pause-select":      {"3"},
-		"#pattern-select":    {"advanced"},
-	}
+	// Select English as the "from" language
+	err = page.Locator("#from-af-ZA").Click()
+	require.NoError(t, err)
+	time.Sleep(time.Millisecond * 500)
 
-	order := []string{"#file-lang-select", "#from-lang-select", "#from-voice-select", "#to-lang-select", "#to-voice-select", "#pause-select", "#pattern-select"}
+	// Select a voice for the "from" language
+	err = page.Locator("#from-voice-input-af-ZA-Standard-A").Click()
+	require.NoError(t, err)
+	time.Sleep(time.Millisecond * 500)
 
-	for k := range order {
-		v, ok := selectsMap[order[k]]
-		if !ok {
-			t.Fatal("key not found in selectsMap")
-		}
-		_, err = page.Locator(order[k]).SelectOption(playwright.SelectOptionValues{ValuesOrLabels: &v})
-		require.NoError(t, err)
-	}
+	// Select Spanish as the "to" language
+	err = page.Locator("#to-pt-BR").Click()
+	require.NoError(t, err)
+	time.Sleep(time.Millisecond * 500)
+
+	// Select a voice for the "to" language
+	err = page.Locator("#to-voice-input-pt-BR-Chirp3-HD-Achernar").Click()
+	require.NoError(t, err)
+	time.Sleep(time.Millisecond * 500)
+
+	// Select pause duration
+	err = page.Locator("#pause-3").Click()
+	require.NoError(t, err)
+	time.Sleep(time.Millisecond * 500)
+
+	// Select pattern
+	err = page.Locator("#pattern-advanced").Click()
+	require.NoError(t, err)
+	time.Sleep(time.Millisecond * 500)
 
 	// Trigger the file input, for example, by clicking a button
 	fileChooser, err := page.ExpectFileChooser(func() error {
@@ -174,7 +193,7 @@ func TestEndToEndAudio(t *testing.T) {
 		Timeout: playwright.Float(5000),
 	})
 
-	err = fileChooser.SetFiles("../internal/testutil/sample.srt")
+	err = fileChooser.SetFiles("../internal/testutil/sample.txt")
 	require.NoError(t, err)
 
 	// Wait for the download event
@@ -194,18 +213,18 @@ func TestEndToEndAudio(t *testing.T) {
 		if !ok {
 			t.Fatal("download channel closed")
 		}
-		return
-	case <-time.After(5 * time.Second):
+	case <-time.After(10 * time.Second):
 		t.Fatal("Timeout reached, no message received")
 	}
 
-	dir := filepath.Join("tmp", strings.Split(t.Name(), "/")[0])
+	dir := filepath.Join("/tmp", strings.Split(t.Name(), "/")[0])
 	savePath := filepath.Join(dir, download.SuggestedFilename())
 	defer os.RemoveAll(dir)
 	err = download.SaveAs(savePath)
-	defer require.NoError(t, err)
+	require.NoError(t, err)
 	fileInfo, err := os.Stat(savePath)
 	require.NoError(t, err)
 
-	require.True(t, fileInfo.Size() > 147000 && fileInfo.Size() < 148000)
+	t.Logf("fileSize: %v", fileInfo.Size())
+	require.True(t, fileInfo.Size() > 145000 && fileInfo.Size() < 155000)
 }

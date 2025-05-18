@@ -18,7 +18,6 @@ type Config struct {
 	TTSBasePath     string
 	FileUploadLimit int64
 	ProjectId       string
-	Platform        string
 	Container       bool
 }
 
@@ -32,11 +31,6 @@ func (cfg *Config) SetConfigs() error {
 
 	flag.Int64Var(&cfg.FileUploadLimit, "upload-size-limit", 8*8000, "File upload size limit in KB (default is 8)")
 	flag.IntVar(&cfg.MaxNumPhrases, "maximum-number-phrases", 100, "Maximum number of phrases to be turned into audio files")
-
-	flag.StringVar(&cfg.Platform, "platform", "google", "which platform you are using [google|amazon]")
-	if !slices.Contains([]string{"google", "amazon"}, cfg.Platform) {
-		return errors.New("platform variable must be [google|amazon]")
-	}
 
 	if !slices.Contains([]string{"local", "dev", "prod"}, cfg.Env) {
 		return errors.New("environment variable must be [local|dev|prod]")

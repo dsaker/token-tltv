@@ -9,11 +9,9 @@ import (
 	"os/exec"
 	"slices"
 	"strconv"
-	"talkliketv.click/tltv/internal/models"
-	"talkliketv.click/tltv/internal/services/pattern"
-	"talkliketv.click/tltv/internal/util"
-
-	"github.com/labstack/echo/v4"
+	"talkliketv.com/tltv/internal/interfaces"
+	audio "talkliketv.com/tltv/internal/services/pattern"
+	"talkliketv.com/tltv/internal/util"
 )
 
 // AudioPauseFilePath is a map to the silence mp3's of the embedded FS in
@@ -31,10 +29,10 @@ var AudioPauseFilePath = map[int]string{
 }
 
 type AudioFileX interface {
-	GetLines(echo.Context, multipart.File) ([]string, error)
-	CreateMp3Zip(echo.Context, models.Title, string) (*os.File, error)
-	BuildAudioInputFiles(echo.Context, models.Title, string, string, string, string) error
-	CreatePhrasesZip(echo.Context, iter.Seq[[]string], string, string) (*os.File, error)
+	GetLines(multipart.File) ([]string, error)
+	CreateMp3Zip(interfaces.Title, string) (*os.File, error)
+	BuildAudioInputFiles(interfaces.Title, string, string, string, string) error
+	CreatePhrasesZip(iter.Seq[[]string], string, string) (*os.File, error)
 }
 
 type AudioFile struct {
@@ -62,10 +60,9 @@ func (r *RealCmdRunner) CombinedOutput(cmd *exec.Cmd) ([]byte, error) {
 // GetLines determines if the uploaded file is an srt, in paragraph form, or one phrase per
 // line and then parses the file accordingly, returning a string slice containing the
 // phrases to be translated
-func (af *AudioFile) GetLines(e echo.Context, f multipart.File) ([]string, error) {
+func (af *AudioFile) GetLines(f multipart.File) ([]string, error) {
 	fileType, err := DetectTextFormat(f)
 	if err != nil {
-		e.Logger().Error(err)
 		return nil, err
 	}
 
@@ -84,13 +81,12 @@ func (af *AudioFile) GetLines(e echo.Context, f multipart.File) ([]string, error
 
 // BuildAudioInputFiles creates a file with the filepaths of the mp3's used to construct
 // the output files with ffmpeg in CreateMp3Zip
-func (af *AudioFile) BuildAudioInputFiles(e echo.Context, t models.Title, pause, fromLang, toLang, tmpDir string) error {
+func (af *AudioFile) BuildAudioInputFiles(t interfaces.Title, pause, fromLang, toLang, tmpDir string) error {
 	maxP := len(t.TitlePhrases) - 1
 
 	pattern := audio.GetPattern(t.Pattern)
 	if pattern == nil {
-		e.Logger().Error("error getting pattern from audio file")
-		return errors.New("no pattern")
+		return errors.New("error getting pattern from audio file")
 	}
 	// create chunks of []Audio pattern to split up audio files into ~15 minute lengths
 	chunkedSlice := slices.Chunk(pattern, 125)
@@ -102,20 +98,17 @@ func (af *AudioFile) BuildAudioInputFiles(e echo.Context, t models.Title, pause,
 		count++
 		f, err := os.Create(tmpDir + inputString)
 		if err != nil {
-			e.Logger().Error(err)
 			return err
 		}
 
 		// start audiofile with silence
 		_, err = f.WriteString(fmt.Sprintf("file '%s'\n", pause))
 		if err != nil {
-			e.Logger().Error(err)
 			return err
 		}
 		for _, audioTok := range chunk {
 			phraseIdKey, nativeLang, err := SplitShortString(strconv.Itoa(int(audioTok)))
 			if err != nil {
-				e.Logger().Error(err)
 				return err
 			}
 			native := false
@@ -128,26 +121,23 @@ func (af *AudioFile) BuildAudioInputFiles(e echo.Context, t models.Title, pause,
 			// else: add audio filepath for to language mp3
 			phraseId, err := strconv.Atoi(phraseIdKey)
 			if err != nil {
-				e.Logger().Error(err)
 				return err
 			}
 			if phraseId == maxP {
 				last = true
 			}
 
-			if err = writeStringToFile(e, native, f, fromLang, toLang, phraseIdKey, pause); err != nil {
+			if err = writeStringToFile(native, f, fromLang, toLang, phraseIdKey, pause); err != nil {
 				return err
 			}
 		}
 		// end audiofile with silence
 		_, err = f.WriteString(fmt.Sprintf("file '%s'\n", pause))
 		if err != nil {
-			e.Logger().Error(err)
 			return err
 		}
 		// Close the file explicitly
 		if err = f.Close(); err != nil {
-			e.Logger().Error("failed to close file: %v", err)
 			return err
 		}
 		if last {
@@ -158,7 +148,7 @@ func (af *AudioFile) BuildAudioInputFiles(e echo.Context, t models.Title, pause,
 	return nil
 }
 
-func writeStringToFile(e echo.Context, native bool, f *os.File, fromLang, toLang, phraseIdKey, pause string) error {
+func writeStringToFile(native bool, f *os.File, fromLang, toLang, phraseIdKey, pause string) error {
 	audioString := ""
 	if native {
 		audioString = fmt.Sprintf("file '%s%s'\n", fromLang, phraseIdKey)
@@ -169,7 +159,6 @@ func writeStringToFile(e echo.Context, native bool, f *os.File, fromLang, toLang
 	pauseString := fmt.Sprintf("file '%s'\n", pause)
 	_, err := f.WriteString(audioString + pauseString)
 	if err != nil {
-		e.Logger().Error(err)
 		return err
 	}
 

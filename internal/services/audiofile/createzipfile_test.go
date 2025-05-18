@@ -2,44 +2,53 @@ package audiofile
 
 import (
 	"archive/zip"
-	"github.com/labstack/echo/v4"
+	"fmt"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"net/http"
-	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"slices"
-	"talkliketv.click/tltv/internal/mock"
-	"talkliketv.click/tltv/internal/models"
-	"talkliketv.click/tltv/internal/services"
-	"talkliketv.click/tltv/internal/testutil"
-	"talkliketv.click/tltv/internal/util"
+	"strings"
+	"talkliketv.com/tltv/internal/interfaces"
+	"talkliketv.com/tltv/internal/mock"
+	"talkliketv.com/tltv/internal/services"
+	"talkliketv.com/tltv/internal/testutil"
+	"talkliketv.com/tltv/internal/util"
 	"testing"
 )
 
 func TestCreateMp3Zip(t *testing.T) {
-	if util.Test != "unit" {
+	if util.Test != "unit" && !testing.Short() {
 		t.Skip("skipping unit test")
 	}
 	t.Parallel()
+
+	// Create a base temporary directory for all tests
+	baseDir, err := os.MkdirTemp("/tmp/", "createzipfile-test-")
+	require.NoError(t, err)
+	defer os.RemoveAll(baseDir)
+
 	testCases := []audioFileTestCase{
 		{
-			name: "No error",
-			createTitle: func(t *testing.T) (models.Title, string) {
-				title := testutil.RandomTitle(voicesMap)
-				tmpDir := testutil.AudioBasePath + "TestCreateMp3ZipWithFfmpeg/" + title.Name + "/"
+			name: "Success - multiple files",
+			createTitle: func(t *testing.T) (interfaces.Title, string) {
+				title := testutil.RandomTitle()
+				tmpDir := filepath.Join(baseDir, title.Name, "/")
 				err := os.MkdirAll(tmpDir, 0777)
 				require.NoError(t, err)
-				file := createFile(
-					t,
-					tmpDir+"noerror.txt",
-					"This is the first sentence.\nThis is the second sentence.\n")
+
+				// Create multiple test files
+				file := createFile(t, filepath.Join(tmpDir, "file1.mp3"), "test audio content 1")
+				createFile(t, filepath.Join(tmpDir, "file2.mp3"), "test audio content 2")
+				createFile(t, filepath.Join(tmpDir, "file3.mp3"), "test audio content 3")
 				require.FileExists(t, file.Name())
+
 				return title, tmpDir
 			},
 			buildStubs: func(ma *mock.MockcmdRunnerX) {
 				ma.EXPECT().
-					CombinedOutput(gomock.Any()).Times(1).
+					CombinedOutput(gomock.Any()).Times(3).
 					Return([]byte{}, nil)
 			},
 			checkReturn: func(t *testing.T, file *os.File, err error) {
@@ -49,46 +58,76 @@ func TestCreateMp3Zip(t *testing.T) {
 		},
 		{
 			name: "No files",
-			createTitle: func(t *testing.T) (models.Title, string) {
-				title := testutil.RandomTitle(voicesMap)
-				tmpDir := testutil.AudioBasePath + "TestCreateMp3ZipWithFfmpeg/" + title.Name + "/"
+			createTitle: func(t *testing.T) (interfaces.Title, string) {
+				title := testutil.RandomTitle()
+				tmpDir := filepath.Join(baseDir, title.Name)
 				err := os.MkdirAll(tmpDir, 0777)
 				require.NoError(t, err)
 				return title, tmpDir
 			},
 			buildStubs: func(ma *mock.MockcmdRunnerX) {
+				// No calls expected
 			},
 			checkReturn: func(t *testing.T, file *os.File, err error) {
+				require.Error(t, err)
 				require.Contains(t, err.Error(), "no files found in CreateMp3Zip")
+				require.Nil(t, file)
+			},
+		},
+		{
+			name: "Ffmpeg error",
+			createTitle: func(t *testing.T) (interfaces.Title, string) {
+				title := testutil.RandomTitle()
+				tmpDir := filepath.Join(baseDir, title.Name)
+				err := os.MkdirAll(tmpDir, 0777)
+				require.NoError(t, err)
+
+				// Create a test file
+				createFile(t, filepath.Join(tmpDir, "test.mp3"), "test audio content")
+
+				return title, tmpDir
+			},
+			buildStubs: func(ma *mock.MockcmdRunnerX) {
+				ma.EXPECT().
+					CombinedOutput(gomock.Any()).Times(1).
+					Return([]byte("ffmpeg error output"), fmt.Errorf("ffmpeg failed"))
+			},
+			checkReturn: func(t *testing.T, file *os.File, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "ffmpeg failed")
+				require.Nil(t, file)
 			},
 		},
 	}
 
 	for _, tc := range testCases {
+		tc := tc // Capture range variable
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			cmdX := mock.NewMockcmdRunnerX(ctrl)
 			tc.buildStubs(cmdX)
-			defer ctrl.Finish()
-
-			e := echo.New()
-			req := httptest.NewRequest(http.MethodGet, "/fakeurl", nil)
-			rec := httptest.NewRecorder()
-			c := e.NewContext(req, rec)
 
 			audioFile := New(cmdX)
 			title, tmpDir := tc.createTitle(t)
-			osFile, err := audioFile.CreateMp3Zip(c, title, tmpDir)
+
+			// Ensure cleanup
+			//defer os.RemoveAll(tmpDir)
+
+			osFile, err := audioFile.CreateMp3Zip(title, tmpDir)
 			tc.checkReturn(t, osFile, err)
 		})
 	}
 }
 
 func TestCreatePhrasesZip(t *testing.T) {
-	if util.Test != "unit" {
+	if util.Test != "unit" && !testing.Short() {
 		t.Skip("skipping unit test")
 	}
 	t.Parallel()
+
+	basePath := "/tmp/TestCreatePhrasesZip/"
+	defer os.RemoveAll(basePath)
 
 	stringsSlice := []string{
 		"Absolutely! Here's a zany paragraph packed with punctuation:",
@@ -104,9 +143,9 @@ func TestCreatePhrasesZip(t *testing.T) {
 	testCases := []audioFileTestCase{
 		{
 			name: "3 files",
-			createTitle: func(t *testing.T) (models.Title, string) {
-				title := testutil.RandomTitle(voicesMap)
-				tmpDir := testutil.AudioBasePath + "TestCreatePhrasesZip/" + title.Name + "/"
+			createTitle: func(t *testing.T) (interfaces.Title, string) {
+				title := testutil.RandomTitle()
+				tmpDir := basePath + title.Name + "/"
 				err := os.MkdirAll(tmpDir, 0777)
 				require.NoError(t, err)
 				return title, tmpDir
@@ -116,24 +155,29 @@ func TestCreatePhrasesZip(t *testing.T) {
 			checkReturn: func(t *testing.T, file *os.File, err error) {
 				require.NoError(t, err)
 				require.FileExists(t, file.Name())
-				zipFilePath := file.Name()
 
-				reader, err := zip.OpenReader(zipFilePath)
+				// Verify zip contents
+				reader, err := zip.OpenReader(file.Name())
 				require.NoError(t, err)
-				count := 0
-				for range reader.File {
-					count++
+				defer reader.Close()
+
+				fileCount := len(reader.File)
+				require.Equal(t, 3, fileCount, "Zip should contain exactly 3 files")
+
+				// Check file extensions and naming pattern
+				for i, f := range reader.File {
+					assert.True(t, strings.HasSuffix(f.Name, ".txt"),
+						fmt.Sprintf("File %d should have .txt extension", i))
 				}
-				require.Equal(t, 3, count)
 			},
 			values:       map[string]any{"size": 3},
 			stringsSlice: stringsSlice,
 		},
 		{
 			name: "5 files",
-			createTitle: func(t *testing.T) (models.Title, string) {
-				title := testutil.RandomTitle(voicesMap)
-				tmpDir := testutil.AudioBasePath + "TestCreatePhrasesZip/" + title.Name + "/"
+			createTitle: func(t *testing.T) (interfaces.Title, string) {
+				title := testutil.RandomTitle()
+				tmpDir := basePath + title.Name + "/"
 				err := os.MkdirAll(tmpDir, 0777)
 				require.NoError(t, err)
 				return title, tmpDir
@@ -143,24 +187,29 @@ func TestCreatePhrasesZip(t *testing.T) {
 			checkReturn: func(t *testing.T, file *os.File, err error) {
 				require.NoError(t, err)
 				require.FileExists(t, file.Name())
-				zipFilePath := file.Name()
 
-				reader, err := zip.OpenReader(zipFilePath)
+				// Verify zip contents
+				reader, err := zip.OpenReader(file.Name())
 				require.NoError(t, err)
-				count := 0
-				for range reader.File {
-					count++
+				defer reader.Close()
+
+				fileCount := len(reader.File)
+				require.Equal(t, 5, fileCount, "Zip should contain exactly 5 files")
+
+				// Check file extensions and naming pattern
+				for i, f := range reader.File {
+					assert.True(t, strings.HasSuffix(f.Name, ".txt"),
+						fmt.Sprintf("File %d should have .txt extension", i))
 				}
-				require.Equal(t, 5, count)
 			},
 			values:       map[string]any{"size": 2},
 			stringsSlice: stringsSlice,
 		},
 		{
 			name: "No One File",
-			createTitle: func(t *testing.T) (models.Title, string) {
-				title := testutil.RandomTitle(voicesMap)
-				tmpDir := testutil.AudioBasePath + "TestCreatePhrasesZip/" + title.Name + "/"
+			createTitle: func(t *testing.T) (interfaces.Title, string) {
+				title := testutil.RandomTitle()
+				tmpDir := basePath + title.Name + "/"
 				err := os.MkdirAll(tmpDir, 0777)
 				require.NoError(t, err)
 				return title, tmpDir
@@ -173,29 +222,53 @@ func TestCreatePhrasesZip(t *testing.T) {
 			values:       map[string]any{"size": 3},
 			stringsSlice: []string{},
 		},
+		{
+			name: "Write error simulation",
+			createTitle: func(t *testing.T) (interfaces.Title, string) {
+				title := testutil.RandomTitle()
+				// Create a path to a directory that's read-only
+				tmpDir := basePath + title.Name + "/"
+				err := os.MkdirAll(tmpDir, 0444) // Read-only permissions
+				require.NoError(t, err)
+				return title, tmpDir
+			},
+			buildStubs: func(ma *mock.MockcmdRunnerX) {
+				// No calls expected
+			},
+			checkReturn: func(t *testing.T, file *os.File, err error) {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "permission denied")
+				assert.Nil(t, file)
+			},
+			values:       map[string]any{"size": 3},
+			stringsSlice: stringsSlice,
+		},
 	}
 
 	for _, tc := range testCases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			cmdX := mock.NewMockcmdRunnerX(ctrl)
 			tc.buildStubs(cmdX)
 			defer ctrl.Finish()
 
-			e := echo.New()
-			req := httptest.NewRequest(http.MethodGet, "/fakeurl", nil)
-			rec := httptest.NewRecorder()
-			c := e.NewContext(req, rec)
-
 			audioFile := New(cmdX)
 			title, tmpDir := tc.createTitle(t)
 			chunkedPhrases := slices.Chunk(tc.stringsSlice, tc.values["size"].(int))
 			// remove phrasesBasePath after you have sent zipfile
-			defer func(path string) {
-				err := os.RemoveAll(path)
-				require.NoError(t, err)
-			}(tmpDir)
-			osFile, err := audioFile.CreatePhrasesZip(c, chunkedPhrases, tmpDir, title.Name)
+			defer os.RemoveAll(tmpDir)
+
+			osFile, err := audioFile.CreatePhrasesZip(chunkedPhrases, tmpDir, title.Name)
+
+			// If osFile is not nil, ensure it's closed and removed after test
+			if osFile != nil {
+				defer func() {
+					osFile.Close()
+					os.Remove(osFile.Name())
+				}()
+			}
+
 			tc.checkReturn(t, osFile, err)
 		})
 	}

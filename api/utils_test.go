@@ -2,7 +2,6 @@ package api
 
 import (
 	"bytes"
-	"cloud.google.com/go/firestore"
 	"context"
 	"flag"
 	"github.com/playwright-community/playwright-go"
@@ -12,36 +11,31 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strings"
-	"talkliketv.click/tltv/internal/models"
-	"talkliketv.click/tltv/internal/testflags"
-	"talkliketv.click/tltv/internal/testutil"
+	"talkliketv.com/tltv/internal/config"
+	"talkliketv.com/tltv/internal/models"
+	"talkliketv.com/tltv/internal/services/tokens"
+	"talkliketv.com/tltv/internal/testflags"
+	"talkliketv.com/tltv/internal/testutil"
+	"talkliketv.com/tltv/internal/util"
 	"testing"
 
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"talkliketv.click/tltv/internal/config"
-	"talkliketv.click/tltv/internal/util"
 )
 
 var (
-	testCfg   TestConfig
-	voicesMap map[int]models.Voice
-	langsMap  map[int]models.Language
+	testCfg  TestConfig
+	local    = false
+	headless = true
+	saFile   string
 )
 
 const (
 	audioBasePath  = "/v1/audio"
 	parseBasePath  = "/v1/parse"
 	validSentences = "This is the first sentence.\nThis is the second sentence.\nThis is the third sentence.\nThis is the fourth sentence.\nThis is the fifth sentence.\n"
-)
-
-var (
-	local    = false
-	headless = true
-	saFile   string
 )
 
 type TestConfig struct {
@@ -54,7 +48,7 @@ type TestConfig struct {
 // testCase struct groups together the fields necessary for running most of the test cases
 type testCase struct {
 	name          string
-	buildStubs    func(stubs testutil.MockStubs)
+	mocks         func(stubs testutil.MockStubs)
 	multipartBody func(t *testing.T) (*bytes.Buffer, *multipart.Writer)
 	checkResponse func(res *http.Response)
 }
@@ -73,8 +67,6 @@ func TestMain(m *testing.M) {
 	headless = testflags.Headless
 	saFile = testflags.SAFile
 
-	langsMap, voicesMap = models.MakeGoogleMaps()
-
 	testCfg.url = "http://localhost:8080"
 	if util.Test == "end-to-end" {
 		getBrowserContext(headless, saFile)
@@ -88,22 +80,16 @@ func TestMain(m *testing.M) {
 	os.Exit(exitCode)
 }
 
-func addTokenFirestore(t *testing.T, client *firestore.Client, ctx context.Context) (*string, models.Tokens) {
+func addTokenFirestore(ctx context.Context, t *testing.T, client *models.Models) (string, string) {
 	// generate new token
-	testToken, plaintext, err := models.GenerateToken()
+	testToken, plaintext, err := tokens.GenerateToken()
 	require.NoError(t, err)
-
-	testName := strings.Split(t.Name(), "/")[0]
-	// get the tokens collection from the database
-	testColl := client.Collection(testName)
-
-	tokens := models.Tokens{Coll: testColl}
 
 	// add test token to the collection
-	err = tokens.AddToken(ctx, *testToken)
+	err = client.AddToken(ctx, *testToken)
 	require.NoError(t, err)
 
-	return &plaintext, tokens
+	return plaintext, testToken.Hash
 }
 
 // getBrowserContext sets up the playwright browser context
@@ -163,9 +149,9 @@ func readBody(t *testing.T, rs *http.Response) string {
 // setupServerTest sets up testCase that will include the middleware not included in handler tests
 func setupServerTest(ctrl *gomock.Controller, tc testCase) *httptest.Server {
 	stubs := testutil.NewMockStubs(ctrl)
-	tc.buildStubs(stubs)
+	tc.mocks(stubs)
 
-	srv := NewServer(testCfg.Config, stubs.TranslateX, stubs.AudioFileX, stubs.TokensX, stubs.ModelsX)
+	srv := NewServer(testCfg.Config, stubs.TranslateX, stubs.AudioFileX, stubs.ModelsX)
 
 	e := srv.NewEcho(nil)
 	ts := httptest.NewServer(e)

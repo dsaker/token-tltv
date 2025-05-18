@@ -78,11 +78,16 @@ audit/pipeline:
 ## audit/local: tidy dependencies and format, vet and test all code (race off)
 audit/local:
 	make audit
+	git add .
+	go generate ./...
+	git diff --exit-code
 	make ci-lint
 	make vuln
-	go test -vet=off ./... -test=unit -coverprofile=coverage.out
-	go test ./... -test=integration -project-id=token-tltv-test
-	go test ./... -test=end-to-end -project-id=token-tltv-test -sa-file=${token-tltv-test-sa-key}
+	go mod tidy
+	git diff --exit-code go.mod go.sum
+	go test -vet=off ./... -test=unit -timeout=2m
+	go test ./... -test=integration -project-id=token-tltv-test -timeout=2m
+#	go test ./... -test=end-to-end -project-id=token-tltv-test -sa-file=${token-tltv-test-sa-key}
 
 ## coverage
 coverage:

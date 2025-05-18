@@ -2,20 +2,17 @@ package audiofile
 
 import (
 	"flag"
-	"net/http"
-	"net/http/httptest"
 	"os"
-	"talkliketv.click/tltv/internal/mock"
-	"talkliketv.click/tltv/internal/models"
-	"talkliketv.click/tltv/internal/testflags"
-	"talkliketv.click/tltv/internal/testutil"
+	"talkliketv.com/tltv/internal/interfaces"
+	"talkliketv.com/tltv/internal/mock"
+	"talkliketv.com/tltv/internal/testflags"
+	"talkliketv.com/tltv/internal/testutil"
+	"talkliketv.com/tltv/internal/util"
 	"testing"
 
-	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"talkliketv.click/tltv/internal/util"
 )
 
 type audioFileTestCase struct {
@@ -25,16 +22,21 @@ type audioFileTestCase struct {
 	buildFile    func(*testing.T) *os.File
 	checkLines   func([]string, error)
 	buildStubs   func(*mock.MockcmdRunnerX)
-	createTitle  func(*testing.T) (models.Title, string)
+	createTitle  func(*testing.T) (interfaces.Title, string)
 	checkReturn  func(*testing.T, *os.File, error)
 }
 
-var (
-	voicesMap map[int]models.Voice
-)
+func TestMain(m *testing.M) {
+	testflags.ParseFlags()
+	flag.Parse()
+
+	util.Test = testflags.TestType
+
+	os.Exit(testflags.RunTests(m))
+}
 
 func TestGetLines(t *testing.T) {
-	if util.Test != "unit" {
+	if util.Test != "unit" && !testing.Short() {
 		t.Skip("skipping unit test")
 	}
 	t.Parallel()
@@ -136,33 +138,25 @@ el cine, la política y los deportes`
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			e := echo.New()
-			req := httptest.NewRequest(http.MethodGet, "/fakeurl", nil)
-			rec := httptest.NewRecorder()
-			c := e.NewContext(req, rec)
-
 			file := tc.buildFile(t)
 			audioFile := AudioFile{}
-			stringsSlice, err := audioFile.GetLines(c, file)
+			stringsSlice, err := audioFile.GetLines(file)
 			tc.checkLines(stringsSlice, err)
 		})
 	}
 }
 
 func TestBuildAudioInputFiles(t *testing.T) {
-	if util.Test != "unit" {
+	if util.Test != "unit" && !testing.Short() {
 		t.Skip("skipping unit test")
 	}
 	t.Parallel()
 
-	title := testutil.RandomTitle(voicesMap)
+	title := testutil.RandomTitle()
 	phrase1 := testutil.RandomPhrase()
 	phrase2 := testutil.RandomPhrase()
-	title.TitlePhrases = []models.Phrase{phrase1, phrase2}
-	title.ToPhrases = []models.Phrase{phrase1, phrase2}
+	title.TitlePhrases = []interfaces.Phrase{phrase1, phrase2}
+	title.ToPhrases = []interfaces.Phrase{phrase1, phrase2}
 	pause := testutil.RandomString(4)
 	from := testutil.RandomString(4)
 	to := testutil.RandomString(4)
@@ -185,14 +179,8 @@ func TestBuildAudioInputFiles(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-
-			e := echo.New()
-			req := httptest.NewRequest(http.MethodGet, "/fakeurl", nil)
-			rec := httptest.NewRecorder()
-			c := e.NewContext(req, rec)
 			audioFile := AudioFile{}
 			err := audioFile.BuildAudioInputFiles(
-				c,
 				title,
 				pause,
 				fromPath,
@@ -207,7 +195,7 @@ func TestBuildAudioInputFiles(t *testing.T) {
 }
 
 func TestSplitBigPhrases(t *testing.T) {
-	if util.Test != "unit" {
+	if util.Test != "unit" && !testing.Short() {
 		t.Skip("skipping unit test")
 	}
 	t.Parallel()
@@ -311,14 +299,4 @@ func createFile(t *testing.T, filename, fileString string) *os.File {
 	require.NoError(t, err)
 
 	return file
-}
-
-// internal/models/models_test.go
-func TestMain(m *testing.M) {
-	testflags.ParseFlags()
-	flag.Parse()
-
-	util.Test = testflags.TestType
-
-	os.Exit(testflags.RunTests(m))
 }

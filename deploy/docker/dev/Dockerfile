@@ -1,27 +1,27 @@
-FROM golang:latest AS build
-
-# Set destination for COPY
+# Stage 1: Build the application
+FROM golang:1.23.8 AS builder
 WORKDIR /app
 
-# Download Go modules
-COPY ./ .
+# Install dependencies first (better caching)
+COPY go.mod go.sum ./
 RUN go mod download
 
-## Copy the source code. Note the slash at the end, as explained in
-## https://docs.docker.com/reference/dockerfile/#copy
-#COPY ../ .
+# Copy the rest of the code
+COPY . .
+# Build for Alpine
+RUN CGO_ENABLED=0 GOOS=linux go build -o app .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /api
-
-FROM alpine:latest
-
+# Stage 2: Create the final image
+FROM alpine:3.19
 # install ffmpeg
 RUN apk update
 RUN apk upgrade
 RUN apk add --no-cache ffmpeg
 
-COPY --from=build ./api /app/api
+# Copy the binary from builder
+COPY --from=builder /app/app .
 
 EXPOSE 8080
 
-CMD ["/app/api", "-maximum-number-phrases=10", "-env=dev"]
+ENTRYPOINT ["/app"]
+CMD ["-maximum-number-phrases=10"]

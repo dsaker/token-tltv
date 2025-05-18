@@ -1,22 +1,16 @@
 # token-tltv
 
-TalkLikeTv is a language learning application designed to address limitations I’ve encountered 
-in other popular language learning apps, such as Pimsleur, Babbel, and Duolingo. While these 
-tools serve as strong foundational resources, I’ve found that they tend to plateau once reaching 
-an intermediate level. Currently, I can understand French and Spanish well enough to follow 
-audiobooks and read at a high level, but I still face challenges in expressing myself and 
-comprehending native speakers during travel.
+TalkLikeTV is a language learning application I developed to address the limitations I’ve experienced with 
+popular apps like Pimsleur, Babbel, and Duolingo. While these tools offer a solid foundation, I found they 
+often fall short at the intermediate level, where progress tends to plateau.
 
-To overcome these barriers, I’ve created an application that generates a Pimsleur-like audio 
-course from any file the user selects. Personally, I use subtitles from current TV shows from 
-the countries I plan to visit. This approach has several benefits: it familiarizes me with 
-contemporary slang, improves my understanding of spoken dialogue, and challenges me to 
-express myself more naturally. Practicing with these audio files not only enhances comprehension 
-of the shows but also provides an immersive, effective way to advance my language skills.
+To overcome these challenges, I created an app that generates Pimsleur-style audio courses from any file 
+the user provides—particularly useful when using subtitles from current TV shows in the target language. 
+This method offers multiple advantages: it exposes users to modern slang, improves comprehension of natural 
+spoken dialogue, and encourages more authentic self-expression. Practicing with these audio files not only 
+boosts understanding of the source material but also provides a more immersive and practical way to advance language skills.
 
-token-tltv is a simplified version of [echo-oapi-tltv](https://github.com/dsaker/echo-oapi-tltv) 
-can be deployed to GCP Cloud Run. This approach reduces operational costs and provides the flexibility to share access by 
-distributing tokens to selected users, removing the need for a formal authentication process.
+token-tltv is a simplified version of [echo-oapi-tltv](https://github.com/dsaker/echo-oapi-tltv)  It uses token-based access to stay publicly accessible without risking unexpected usage costs.
 
 ### Required Tools
 

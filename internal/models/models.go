@@ -1,300 +1,175 @@
 package models
 
 import (
-	"encoding/json"
+	"cloud.google.com/go/firestore"
+	"context"
 	"errors"
-	"log"
+	"fmt"
+	"sort"
 	"strings"
+	"sync"
+	"talkliketv.com/tltv/internal/interfaces"
+	"time"
 )
-
-// aws_languages => aws translate list-Languages > aws_languages.json
-// aws_voices => aws polly describe-Voices > aws_voices.json
-// google_languages => /scripts/python/supported_languages.json
-// google_voices => /scripts/python/voices_api.json
 
 var (
-	ErrTooManyPhrases    = errors.New("too many phrases")
-	ErrVoiceIdInvalid    = errors.New("voice id invalid")
-	ErrPauseNotFound     = errors.New("audio pause file not found")
-	ErrLanguageIdInvalid = errors.New("language id invalid")
+	ErrLanguageIdInvalid   = errors.New("language id invalid")
+	ErrLanguageCodeInvalid = errors.New("language code invalid")
+	ErrVoiceIdInvalid      = errors.New("voice id invalid")
+	ErrUsedToken           = errors.New("token already used")
 )
-
-type Title struct {
-	Name         string
-	TitleLangId  int
-	ToVoiceId    int
-	FromVoiceId  int
-	Pause        int
-	TitlePhrases []Phrase
-	ToPhrases    []Phrase
-	Pattern      int
-}
-
-type Phrase struct {
-	ID   int
-	Text string
-}
-
-type Gender int
 
 const (
-	MALE Gender = iota + 1
-	FEMALE
-	NEUTRAL
+	LangCollString     = "languages"
+	VoiceCollString    = "voices"
+	LangCodeCollString = "languageCodes"
+	TokenCollString    = "tokens"
 )
 
-type GoogleJsonVoice struct {
-	LanguageCodes          []string `json:"language_codes"`
-	SsmlGender             Gender   `json:"ssml_gender"`
-	Name                   string   `json:"name"`
-	NaturalSampleRateHertz int      `json:"natural_sample_rate_hertz"`
-}
-
-type GoogleJsonLanguage struct {
-	Language string `json:"Tag"`
-	Name     string `json:"Name"`
-}
-
-type AmazonLanguageArray struct {
-	Languages []AmazonJsonLanguage
-}
-type AmazonJsonLanguage struct {
-	LanguageCode string
-	LanguageName string
-}
-
-type AmazonVoiceArray struct {
-	Voices []AmazonJsonVoice
-}
-
-type AmazonJsonVoice struct {
-	Gender           string
-	Id               string
-	LanguageCode     string
-	LanguageName     string
-	Name             string
-	SupportedEngines []string
-}
-
-type Language struct {
-	ID   int
-	Code string
-	Name string
-}
-
-type Voice struct {
-	ID                     int
-	LanguageCodes          []string
-	Gender                 Gender
-	VoiceName              string
-	LanguageName           string
-	NaturalSampleRateHertz int
-	Engine                 string
-	LangId                 int
-}
-
-type Status int
-
-const (
-	New Status = iota
-	Used
-)
-
-type ModelsX interface {
-	GetLanguage(int) (Language, error)
-	GetVoice(int) (Voice, error)
-	GetLanguages() map[int]Language
-	GetVoices() map[int]Voice
-}
-
+// Models implements ModelsX interface using Firestore
 type Models struct {
-	Languages map[int]Language
-	Voices    map[int]Voice
+	tokenCollection    *firestore.CollectionRef // Add this field
+	langCollection     *firestore.CollectionRef
+	voiceCollection    *firestore.CollectionRef
+	langCodeCollection *firestore.CollectionRef
+	languageCache      map[string]interfaces.Language
+	languageCodeCache  []interfaces.LanguageCode
+	voiceCache         []interfaces.Voice
+	cacheExpiration    time.Time
+	cacheDuration      time.Duration
+	cacheMutex         sync.RWMutex
 }
 
-func (m *Models) GetLanguage(id int) (Language, error) {
-	lang, ok := m.Languages[id]
-	if !ok {
-		return Language{}, ErrLanguageIdInvalid
-	}
-	return lang, nil
+// FirestoreClient interface defines the methods we use from firestore.Client
+type FirestoreClient interface {
+	Collection(path string) *firestore.CollectionRef
 }
 
-func (m *Models) GetVoice(id int) (Voice, error) {
-	voice, ok := m.Voices[id]
-	if !ok {
-		return Voice{}, ErrVoiceIdInvalid
-	}
-	return voice, nil
-}
-
-func (m *Models) GetLanguages() map[int]Language {
-	return m.Languages
-}
-
-func (m *Models) GetVoices() map[int]Voice {
-	return m.Voices
-}
-
-func MakeGoogleMaps() (map[int]Language, map[int]Voice) {
-	languageFile, err := JsonModels.Open("jsonmodels/google_languages.json")
-	if err != nil {
-		log.Fatal(err)
-	}
-	// Decode the JSON data into a struct
-	var glangs []GoogleJsonLanguage
-	decoder := json.NewDecoder(languageFile)
-	err = decoder.Decode(&glangs)
-	if err != nil {
-		log.Fatal("Error decoding JSON:", err)
-	}
-
-	voiceFile, err := JsonModels.Open("jsonmodels/google_voices.json")
-	if err != nil {
-		log.Fatal(err)
-	}
-	// Decode the JSON data into a struct
-	var voices []GoogleJsonVoice
-	decoder = json.NewDecoder(voiceFile)
-	err = decoder.Decode(&voices)
-	if err != nil {
-		log.Fatal("Error decoding JSON:", err)
-	}
-
-	usedLangs := make(map[int]bool)
-	voiceMap := make(map[int]Voice)
-	for i, voice := range voices {
-		langCode := voice.LanguageCodes[0]
-		// get the language id for the voice from the language tag
-		langTag := strings.Split(langCode, "-")
-		found := false
-		langId := -1
-		// find the language id (key) for the language that corresponds to the voice
-		for j, lang := range glangs {
-			// filipino voice langTag does not match language tag
-			if langTag[0] == "fil" && lang.Language == "tl" {
-				found = true
-				langId = j
-				break
-			}
-			// norwegian voice langTag does not match language tag
-			if langTag[0] == "nb" && lang.Language == "no" {
-				found = true
-				langId = j
-				break
-			}
-			if lang.Language == langTag[0] {
-				found = true
-				langId = j
-				break
-			}
-		}
-		if !found {
-			//log.Println("langId not found for " + voice.Name + " : " + voice.LanguageCodes[0])
-		} else {
-			usedLangs[langId] = true
-			// add to VoiceLangId map
-			voiceMap[i] = Voice{
-				ID:                     i,
-				LanguageCodes:          voice.LanguageCodes,
-				Gender:                 voice.SsmlGender,
-				VoiceName:              voice.Name,
-				NaturalSampleRateHertz: voice.NaturalSampleRateHertz,
-				LangId:                 langId,
-			}
-		}
-	}
-	languageMap := make(map[int]Language)
-	// only add google language to models.Language if it has a voice
-	for i, lang := range glangs {
-		_, ok := usedLangs[i]
-		// If the key exists
-		if ok {
-			languageMap[i] = Language{
-				ID:   i,
-				Code: lang.Language,
-				Name: lang.Name,
-			}
-		}
-	}
-	return languageMap, voiceMap
-}
-
-func MakeAmazonMaps() (map[int]Language, map[int]Voice) {
-	languageFile, err := JsonModels.Open("jsonmodels/aws_languages.json")
-	if err != nil {
-		log.Fatal(err)
-	}
-	// Decode the JSON data into a struct
-	var langArray AmazonLanguageArray
-	decoder := json.NewDecoder(languageFile)
-	err = decoder.Decode(&langArray)
-	if err != nil {
-		log.Fatal("Error decoding JSON:", err)
-	}
-	languages := langArray.Languages
-
-	voiceFile, err := JsonModels.Open("jsonmodels/aws_voices.json")
-	if err != nil {
-		log.Fatal(err)
-	}
-	// Decode the JSON data into a struct
-	var voices AmazonVoiceArray
-	decoder = json.NewDecoder(voiceFile)
-	err = decoder.Decode(&voices)
-	if err != nil {
-		log.Fatal("Error decoding JSON:", err)
-	}
-
-	usedLangs := make(map[int]bool)
-	voiceMap := make(map[int]Voice)
-	for i, voice := range voices.Voices {
-		langCode := voice.LanguageCode
-		// get the language id for the voice from the language tag
-		langTag := strings.Split(langCode, "-")
-		found := false
-		langId := -1
-		// find the language id (key) for the language that corresponds to the voice
-		for j, lang := range languages {
-			if lang.LanguageCode == langTag[0] {
-				found = true
-				langId = j
-				break
-			}
-		}
-		if !found {
-			log.Println("langId not found for " + voice.Name + voice.LanguageCode)
-		} else {
-			usedLangs[langId] = true
-			// add to VoiceLangId map
-			var gender = MALE
-			if voice.Gender == "Female" {
-				gender = FEMALE
-			}
-			voiceMap[i] = Voice{
-				ID:            i,
-				LanguageCodes: []string{voice.LanguageCode},
-				Gender:        gender,
-				VoiceName:     voice.Id,
-				LanguageName:  voice.LanguageName,
-				LangId:        langId,
-				Engine:        voice.SupportedEngines[0],
-			}
+// NewModels creates a new Models instance
+func NewModels(client FirestoreClient, env, lang, langCode, voice, tok string) (*Models, error) {
+	// Validate collection paths
+	collections := []string{lang, langCode, voice, tok}
+	for _, coll := range collections {
+		if err := validateCollectionPath(coll); err != nil {
+			return nil, fmt.Errorf("warning: Invalid Firestore collection path: %s, error: %v", coll, err)
 		}
 	}
 
-	langaugeMap := make(map[int]Language)
-	// only add the language to models.Language if it has a voice
-	for i, lang := range languages {
-		_, ok := usedLangs[i]
-		// If the key exists
-		if ok {
-			langaugeMap[i] = Language{
-				ID:   i,
-				Code: lang.LanguageCode,
-				Name: lang.LanguageName,
-			}
+	models := &Models{
+		langCollection:     client.Collection(lang),
+		langCodeCollection: client.Collection(langCode),
+		voiceCollection:    client.Collection(voice),
+		tokenCollection:    client.Collection(tok),
+		cacheExpiration:    time.Time{},
+		cacheDuration:      60 * time.Minute,
+		languageCache:      make(map[string]interfaces.Language),
+		languageCodeCache:  make([]interfaces.LanguageCode, 0),
+		voiceCache:         make([]interfaces.Voice, 0),
+	}
+
+	if env == "prod" {
+		err := models.refreshCache(context.Background())
+		if err != nil {
+			return nil, fmt.Errorf("failed to refresh cache: %w", err)
 		}
 	}
-	return langaugeMap, voiceMap
+
+	return models, nil
+}
+
+// validateCollectionPath checks if a collection path follows Firestore rules
+func validateCollectionPath(path string) error {
+	if path == "" {
+		return fmt.Errorf("collection path cannot be empty")
+	}
+
+	// Check for invalid characters in the path
+	// Firestore collection names can't contain: '/', '.', '..', '/', '//'
+	invalidPatterns := []string{"/", ".", "..", "//"}
+	for _, pattern := range invalidPatterns {
+		if strings.Contains(path, pattern) {
+			return fmt.Errorf("collection path cannot contain '%s'", pattern)
+		}
+	}
+
+	// Check that path is not too long (Firestore has a limit)
+	if len(path) > 1500 {
+		return fmt.Errorf("collection path too long, maximum is 1500 characters")
+	}
+
+	return nil
+}
+
+// refreshCache loads all languages and voices from Firestore
+func (m *Models) refreshCache(ctx context.Context) error {
+	m.cacheMutex.Lock()
+	defer m.cacheMutex.Unlock()
+
+	// Check if cache is still valid
+	if !m.cacheExpiration.IsZero() && time.Now().Before(m.cacheExpiration) {
+		return nil
+	}
+
+	// Load languages
+	langDocs, err := m.langCollection.Documents(ctx).GetAll()
+	if err != nil || len(langDocs) == 0 {
+		return fmt.Errorf("failed to get languages: %v", err)
+	}
+
+	newLangCache := make(map[string]interfaces.Language)
+	for _, doc := range langDocs {
+		var lang interfaces.Language
+		if err := doc.DataTo(&lang); err != nil {
+			return fmt.Errorf("error parsing language data: %w", err)
+		}
+		newLangCache[doc.Ref.ID] = lang
+	}
+
+	// Load language codes
+	langCodeDocs, err := m.langCodeCollection.Documents(ctx).GetAll()
+	if err != nil || len(langCodeDocs) == 0 {
+		return fmt.Errorf("failed to get language codes: %w", err)
+	}
+
+	newLangCodeCache := make([]interfaces.LanguageCode, 0, len(langCodeDocs))
+	for _, doc := range langCodeDocs {
+		var langCode interfaces.LanguageCode
+		if err := doc.DataTo(&langCode); err != nil {
+			return fmt.Errorf("error parsing language code data: %w", err)
+		}
+		newLangCodeCache = append(newLangCodeCache, langCode)
+	}
+
+	// Sort language codes by name
+	sort.Slice(newLangCodeCache, func(i, j int) bool {
+		return newLangCodeCache[i].Name < newLangCodeCache[j].Name
+	})
+
+	// Load voices
+	voiceDocs, err := m.voiceCollection.Documents(ctx).GetAll()
+	if err != nil || len(voiceDocs) == 0 {
+		return fmt.Errorf("failed to get voices: %w", err)
+	}
+
+	newVoiceCache := make([]interfaces.Voice, 0, len(voiceDocs))
+	for _, doc := range voiceDocs {
+		var voice interfaces.Voice
+		if err := doc.DataTo(&voice); err != nil {
+			return fmt.Errorf("error parsing voice data: %w", err)
+		}
+		newVoiceCache = append(newVoiceCache, voice)
+	}
+
+	// Sort voices by name
+	sort.Slice(newVoiceCache, func(i, j int) bool {
+		return newVoiceCache[i].Name < newVoiceCache[j].Name
+	})
+
+	// Update cache
+	m.languageCache = newLangCache
+	m.languageCodeCache = newLangCodeCache
+	m.voiceCache = newVoiceCache
+	m.cacheExpiration = time.Now().Add(m.cacheDuration)
+
+	return nil
 }

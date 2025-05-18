@@ -4,9 +4,8 @@
 
 {{define "content"}}
     <h2>What is it?</h2>
-    <p>TalkLikeTv is a language learning application designed to address limitations I’ve encountered in other popular language learning apps, such as Pimsleur, Babbel, and Duolingo. While these tools serve as strong foundational resources, I’ve found that they tend to plateau once reaching an intermediate level. Currently, I can understand French and Spanish well enough to follow audiobooks and read at a high level, but I still face challenges in expressing myself and comprehending native speakers during travel.</p>
-    <p>To overcome these barriers, I’ve created an application that generates a Pimsleur-like audio course from any file the user selects. Personally, I use subtitles from current TV shows from the countries I plan to visit. This approach has several benefits: it familiarizes me with contemporary slang, improves my understanding of spoken dialogue, and challenges me to express myself more naturally. Practicing with these audio files not only enhances comprehension of the shows but also provides an immersive, effective way to advance my language skills.</p>
-    <p>The code to build this application and directions to deploy it are available <a href='https://github.com/dsaker/token-tltv' target="_blank">here</a></p>
+    <p>TalkLikeTV is a language learning application I developed to address the limitations I’ve experienced with popular apps like Pimsleur, Babbel, and Duolingo. While these tools offer a solid foundation, I found they often fall short at the intermediate level, where progress tends to plateau.</p>
+    <p>To overcome these challenges, I created an app that generates Pimsleur-style audio courses from any file the user provides—particularly useful when using subtitles from current TV shows in the target language. This method offers multiple advantages: it exposes users to modern slang, improves comprehension of natural spoken dialogue, and encourages more authentic self-expression. Practicing with these audio files not only boosts understanding of the source material but also provides a more immersive and practical way to advance language skills.</p>
     <br/>
     <h2>How to use it</h2>
     <ol>
@@ -18,7 +17,7 @@
                 <li class="ul-li">If your file contains more than the maximum number of phrases allowed, it will return multiple parsed files of the maximum allowed phrases.</li>
             </ul>
         </li>
-        <li>Choose the voices that you want to learn from <a href='https://cloud.google.com/text-to-speech/docs/voices' target="_blank"> here</a></li>
+        <li>Choose the voices that you want to learn from <a href='/audio' target="_blank"> here</a></li>
         <li>Choose the pause in seconds you want between phrases.
             <ul>
                 <li class="ul-li"> A four-second pause works well if you plan on sitting at a computer and can pause playback.</li>
@@ -27,11 +26,11 @@
         </li>
         <li>Choose the pattern you want to learn from.
             <ul>
-                <li class="ul-li">Standard works well for most uses.</li>
+                <li class="ul-li">Standard works well for most cases.</li>
                 <li class="ul-li">Advanced repeats the phrases less and is suitable if you are already beyond an intermediate level.</li>
                 <li class="ul-li">Review only repeats the phrases one time.</li>
             </ul>
         </li>
-        <li>After making your choices go to <a href='/audio'>Create</a> </li>
+        <li>After making your parsing your file and making your choices, go to <a href='/audio'>Audio</a> </li>
     </ol>
 {{end}}
